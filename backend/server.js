@@ -25,8 +25,8 @@ app.use('/api/policies', policyRoutes);
 app.get('/', (req, res) => {
     res.json({
         message: 'Broker IA Web API - Ativa e Escalável',
-        version: '1.0.0',
-        status: 'Multitenant Engine Ready'
+        version: '1.1.0-FIX-LOGS',
+        status: 'Sistema Pronto e Monitorado'
     });
 });
 

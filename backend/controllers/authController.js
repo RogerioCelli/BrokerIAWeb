@@ -25,6 +25,8 @@ const authController = {
             // Normaliza o identificador: se for apenas números, remove qualquer formatação prévia
             const cleanIdentifier = identifier.includes('@') ? identifier : identifier.replace(/\D/g, '');
 
+            console.log(`[DEBUG-AUTH] Buscando: ${cleanIdentifier} (Bruto: ${identifier}) na Org: ${orgId}`);
+
             const clientResult = await db.query(
                 `SELECT id, nome, email, telefone FROM clientes 
                  WHERE org_id = $1 AND REPLACE(REPLACE(cpf_cnpj, '.', ''), '-', '') = $2`,
