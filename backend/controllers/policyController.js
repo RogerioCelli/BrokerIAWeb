@@ -28,7 +28,9 @@ exports.getMyPolicies = async (req, res) => {
                 a.detalhes_imovel,
                 a.pdf_url,
                 s.telefone_capital,
-                s.telefone_0800
+                s.telefone_0800,
+                s.email,
+                s.site_url
             FROM apolices a
             LEFT JOIN seguradoras s ON s.nome = a.seguradora
             WHERE a.cliente_id = $1 AND a.org_id = $2

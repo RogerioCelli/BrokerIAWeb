@@ -76,16 +76,30 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ? `${policy.detalhes_veiculo?.modelo} (${policy.detalhes_veiculo?.placa})`
                 : 'Residencial';
 
-            const tel0800 = policy.telefone_0800 || 'Suporte 24h';
+            const tel0800 = policy.telefone_0800 || 'Assitência 24h';
             const telCap = policy.telefone_capital ? `${policy.telefone_capital} / ` : '';
             const telFull = `${telCap}${tel0800}`;
+            const siteUrl = policy.site_url || '#';
+            const email = policy.email || '';
 
             return `
                 <div class="policy-card">
                     <div class="policy-header">
                         <div class="seguradora-container">
                             <span class="seguradora-tag">${policy.seguradora}</span>
-                            <span class="support-phone"><i class="fas fa-phone-alt"></i> ${telFull}</span>
+                            <div class="support-links">
+                                <a href="tel:${tel0800.replace(/\D/g, '')}" class="support-item">
+                                    <i class="fas fa-phone-alt"></i> ${telFull}
+                                </a>
+                                ${policy.site_url ? `
+                                <a href="${siteUrl}" target="_blank" class="support-item">
+                                    <i class="fas fa-globe"></i> Website Oficial
+                                </a>` : ''}
+                                ${policy.email ? `
+                                <a href="mailto:${email}" class="support-item">
+                                    <i class="fas fa-envelope"></i> ${email}
+                                </a>` : ''}
+                            </div>
                         </div>
                         <i class="${icon} ramo-icon"></i>
                     </div>

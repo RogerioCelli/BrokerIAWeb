@@ -128,14 +128,30 @@
             width: fit-content;
         }
 
-        .support-phone {
+        .support-links {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        .support-item {
             font-size: 0.7rem;
             color: #94a3b8;
-            font-weight: 500;
+            text-decoration: none;
             display: flex;
             align-items: center;
-            gap: 4px;
-            margin-left: 4px;
+            gap: 6px;
+            transition: color 0.2s;
+        }
+
+        .support-item:hover {
+            color: #10b981;
+        }
+
+        .support-item i {
+            width: 12px;
+            text-align: center;
         }
 
         .ramo-icon {
