@@ -128,12 +128,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         chatInput.value = '';
 
         try {
-            // Charme: Indicador de digitação
-            const typingIndicator = showTypingIndicator();
+            // --- Orquestração de Agentes (Estilo AgentFlow) ---
+            const agentStatus = showAgentStatus('<i class="fas fa-search"></i> Agente de Busca consultando banco de dados...');
 
-            // Simula um tempo de "pensamento" da IA (2 segundos)
+            // Simula delay de orquestração
             const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-            await delay(2000);
+            await delay(1200);
+
+            agentStatus.innerHTML = '<i class="fas fa-brain"></i> Agente de Análise processando apólice...';
+            await delay(1500);
+
+            agentStatus.innerHTML = '<i class="fas fa-check-circle"></i> Resposta gerada com sucesso';
+            await delay(500);
+            agentStatus.remove();
 
             const response = await fetch(`${API_URL}/policies/chat`, {
                 method: 'POST',
@@ -145,16 +152,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             const data = await response.json();
-
-            // Remove o indicador e coloca a resposta real
-            typingIndicator.remove();
             addMessage('bot', data.response);
 
         } catch (error) {
             console.error('Erro no chat:', error);
-            // Se der erro, garante que remove o indicador
-            const existingIndicator = document.querySelector('.typing-indicator');
-            if (existingIndicator) existingIndicator.remove();
+            const status = document.querySelector('.agent-status');
+            if (status) status.remove();
             addMessage('bot', 'Desculpe, tive um problema técnico. Pode repetir?');
         }
     }
@@ -173,14 +176,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         return div;
     }
 
-    function showTypingIndicator() {
+    function showAgentStatus(html) {
         const div = document.createElement('div');
-        div.className = 'typing-indicator';
-        div.innerHTML = `
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-        `;
+        div.className = 'agent-status';
+        div.innerHTML = html;
         chatMessages.appendChild(div);
         chatMessages.scrollTop = chatMessages.scrollHeight;
         return div;

@@ -333,6 +333,33 @@
             }
         }
 
+        /* Agent Orchestration Styles */
+        .agent-status {
+            font-size: 0.75rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            opacity: 0.8;
+            font-weight: 500;
+        }
+
+        .agent-status i {
+            font-size: 0.7rem;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
         .message.user {
             background: #10b981;
             color: white;
