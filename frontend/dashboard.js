@@ -22,19 +22,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = 'index.html';
     });
 
-    // Manipulação de cliques em ações das apólices (Assistência e Envio de Docs)
+    // Manipulação de cliques em ações das apólices (Documentos e Envio de Docs)
     policiesGrid.addEventListener('click', (e) => {
         const btn = e.target.closest('.btn-action');
         if (!btn) return;
 
-        const isAssistance = btn.classList.contains('btn-details');
+        const isDocuments = btn.classList.contains('btn-documents');
         const policyNum = btn.closest('.policy-card').querySelector('.policy-details').textContent;
 
-        if (isAssistance) {
-            alert(`Para assistência 24h (${policyNum}), chame o nosso chat IA e peça o "Telefone de Suporte".`);
+        if (isDocuments) {
+            alert(`Documentos Disponíveis (${policyNum}):\n\n1. Carteirinha Digital.pdf\n2. Guia de Assistência 24h.pdf\n3. Condições Gerais ${userData.nome.split(' ')[0]}.pdf\n\n(Acesso liberado pelo repositório da Corretora)`);
         } else {
             const safePath = userData.cpf_cnpj.replace(/\D/g, '');
-            alert(`Módulo de Envio:\nSeus arquivos (Fotos de vistoria, CNH, etc) serão salvos na sua pasta exclusiva:\n/upload_cliente/${safePath}/\n\nA corretora será notificada assim que o upload for concluído.`);
+            alert(`Módulo de Envio:\nSeus arquivos (Fotos de vistoria, CNH, etc) serão salvos na sua pasta exclusiva de cliente:\n/upload_cliente/${safePath}/\n\nA corretora será notificada para conferência.`);
         }
     });
 
@@ -76,10 +76,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ? `${policy.detalhes_veiculo?.modelo} (${policy.detalhes_veiculo?.placa})`
                 : 'Residencial';
 
+            const telefones = {
+                'Porto Seguro': '0800 727 0800',
+                'Liberty Seguros': '0800 701 4120',
+                'Azul Seguros': '0800 703 1280'
+            };
+            const tel = telefones[policy.seguradora] || 'Suporte 24h';
+
             return `
                 <div class="policy-card">
                     <div class="policy-header">
-                        <span class="seguradora-tag">${policy.seguradora}</span>
+                        <div class="seguradora-container">
+                            <span class="seguradora-tag">${policy.seguradora}</span>
+                            <span class="support-phone"><i class="fas fa-phone-alt"></i> ${tel}</span>
+                        </div>
                         <i class="${icon} ramo-icon"></i>
                     </div>
                     <div class="policy-title">${policy.ramo}</div>
@@ -96,14 +106,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     <div class="pdf-status ${policy.pdf_url ? 'ready' : ''}" style="margin-top: 1rem; font-size: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
                         <i class="fas ${policy.pdf_url ? 'fa-file-medical' : 'fa-file-circle-exclamation'}" style="color: ${policy.pdf_url ? '#10b981' : '#94a3b8'}"></i>
-                        <span>${policy.pdf_url ? 'Apólice Oficial Disponível' : 'Aguardando Documento da Corretora'}</span>
+                        <span>${policy.pdf_url ? 'Carteirinha Digital Disponível' : 'Aguardando Documento Oficial'}</span>
                     </div>
 
                     <div class="policy-actions" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                        <button class="btn-action btn-details" style="flex: 1; padding: 0.5rem; border-radius: 8px; font-size: 0.75rem; cursor: pointer; background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2);">
-                            <i class="fas fa-phone-alt"></i> Assistência
+                        <button class="btn-action btn-documents" style="flex: 1; padding: 0.5rem; border-radius: 8px; font-size: 0.75rem; cursor: pointer; background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2);">
+                            <i class="fas fa-folder-open"></i> Documentos
                         </button>
-                        <button class="btn-action btn-upload-pdf" style="flex: 1; padding: 0.5rem; border-radius: 8px; font-size: 0.75rem; cursor: pointer; background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2);" title="Use para enviar CNH, Fotos de Vistoria, etc.">
+                        <button class="btn-action btn-upload-pdf" style="flex: 1; padding: 0.5rem; border-radius: 8px; font-size: 0.75rem; cursor: pointer; background: rgba(255, 255, 255, 0.05); color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.1);" title="Envio de fotos de vistoria, CNH, etc.">
                             <i class="fas fa-camera"></i> Enviar Docs
                         </button>
                     </div>
