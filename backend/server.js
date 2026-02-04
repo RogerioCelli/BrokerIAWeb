@@ -6,6 +6,7 @@ require('dotenv').config();
 
 // Importar Rotas
 const authRoutes = require('./routes/authRoutes');
+const policyRoutes = require('./routes/policyRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -18,6 +19,7 @@ app.use(morgan('dev'));
 
 // Rotas da API
 app.use('/api/auth', authRoutes);
+app.use('/api/policies', policyRoutes);
 
 // Rotas Base
 app.get('/', (req, res) => {

@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 mainButton.textContent = 'Sucesso!';
                 setTimeout(() => {
                     alert(`Bem-vindo, ${data.user.nome}! Redirecionando...`);
+                    window.location.href = 'dashboard.html';
                 }, 500);
             }
         } catch (error) {
