@@ -97,4 +97,72 @@ document.addEventListener('DOMContentLoaded', async () => {
             default: return 'fas fa-file-contract';
         }
     }
+
+    // --- Lógica do Chat ---
+    const chatFab = document.getElementById('chatFab');
+    const chatContainer = document.getElementById('chatContainer');
+    const closeChat = document.getElementById('closeChat');
+    const chatInput = document.getElementById('chatInput');
+    const sendMessage = document.getElementById('sendMessage');
+    const chatMessages = document.getElementById('chatMessages');
+
+    // Abre/Fecha Chat
+    chatFab.addEventListener('click', () => {
+        chatContainer.style.display = 'flex';
+        chatFab.style.display = 'none';
+        chatInput.focus();
+    });
+
+    closeChat.addEventListener('click', () => {
+        chatContainer.style.display = 'none';
+        chatFab.style.display = 'flex';
+    });
+
+    // Enviar Mensagem
+    async function handleSend() {
+        const text = chatInput.value.trim();
+        if (!text) return;
+
+        // Adiciona mensagem do usuário
+        addMessage('user', text);
+        chatInput.value = '';
+
+        try {
+            // Typing indicator (opcional)
+            const botMsg = addMessage('bot', 'Digitando...');
+
+            const response = await fetch(`${API_URL}/policies/chat`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: text })
+            });
+
+            const data = await response.json();
+
+            // Remove o "Digitando..." e coloca a resposta real
+            botMsg.remove();
+            addMessage('bot', data.response);
+
+        } catch (error) {
+            console.error('Erro no chat:', error);
+            addMessage('bot', 'Desculpe, tive um problema técnico. Pode repetir?');
+        }
+    }
+
+    sendMessage.addEventListener('click', handleSend);
+    chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleSend();
+    });
+
+    function addMessage(type, text) {
+        const div = document.createElement('div');
+        div.className = `message ${type}`;
+        div.textContent = text;
+        chatMessages.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return div;
+    }
 });

@@ -5,6 +5,7 @@ const { authenticateToken } = require('../middlewares/authMiddleware');
 
 // Todas as rotas de apólices exigem login
 router.get('/my', authenticateToken, policyController.getMyPolicies);
+router.post('/chat', authenticateToken, policyController.chatWithAI);
 router.get('/:id', authenticateToken, policyController.getPolicyDetails);
 
 module.exports = router;
