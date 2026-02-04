@@ -128,8 +128,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         chatInput.value = '';
 
         try {
-            // Typing indicator (opcional)
-            const botMsg = addMessage('bot', 'Digitando...');
+            // Charme: Indicador de digitação
+            const typingIndicator = showTypingIndicator();
+
+            // Simula um tempo de "pensamento" da IA (2 segundos)
+            const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+            await delay(2000);
 
             const response = await fetch(`${API_URL}/policies/chat`, {
                 method: 'POST',
@@ -142,12 +146,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = await response.json();
 
-            // Remove o "Digitando..." e coloca a resposta real
-            botMsg.remove();
+            // Remove o indicador e coloca a resposta real
+            typingIndicator.remove();
             addMessage('bot', data.response);
 
         } catch (error) {
             console.error('Erro no chat:', error);
+            // Se der erro, garante que remove o indicador
+            const existingIndicator = document.querySelector('.typing-indicator');
+            if (existingIndicator) existingIndicator.remove();
             addMessage('bot', 'Desculpe, tive um problema técnico. Pode repetir?');
         }
     }
@@ -161,6 +168,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         const div = document.createElement('div');
         div.className = `message ${type}`;
         div.textContent = text;
+        chatMessages.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return div;
+    }
+
+    function showTypingIndicator() {
+        const div = document.createElement('div');
+        div.className = 'typing-indicator';
+        div.innerHTML = `
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+        `;
         chatMessages.appendChild(div);
         chatMessages.scrollTop = chatMessages.scrollHeight;
         return div;
