@@ -38,8 +38,14 @@ app.get('/api/health', (req, res) => {
 // Inicialização
 app.listen(PORT, () => {
     console.log(`
-    🚀 Broker IA Web SaaS Rodando!
+    🚀 Broker IA Web SaaS Rodando! [VERSÃO 1.1.5]
     📡 Porta: ${PORT}
     🏠 Ambiente: ${process.env.NODE_ENV}
+    ⏰ Hora do Start: ${new Date().toLocaleString('pt-BR')}
     `);
+
+    // Relógio de Autoverificação (Heartbeat) - Se isso não mudar no log, o log travou!
+    setInterval(() => {
+        console.log(`[HEARTBEAT] Servidor Ativo: ${new Date().toLocaleTimeString('pt-BR')}`);
+    }, 5000);
 });
