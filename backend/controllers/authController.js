@@ -22,9 +22,13 @@ const authController = {
             const orgId = orgResult.rows[0].id;
 
             // 2. Buscar o cliente (CPF ou E-mail) dentro dessa organização
+            // Normaliza o identificador: se for apenas números, remove qualquer formatação prévia
+            const cleanIdentifier = identifier.includes('@') ? identifier : identifier.replace(/\D/g, '');
+
             const clientResult = await db.query(
-                'SELECT id, nome, email, telefone FROM clientes WHERE org_id = $1 AND (cpf_cnpj = $2 OR email = $2)',
-                [orgId, identifier]
+                `SELECT id, nome, email, telefone FROM clientes 
+                 WHERE org_id = $1 AND (REPLACE(REPLACE(cpf_cnpj, '.', ''), '-', '') = $2 OR email = $3)`,
+                [orgId, cleanIdentifier, identifier]
             );
 
             if (clientResult.rows.length === 0) {
