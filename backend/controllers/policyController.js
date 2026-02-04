@@ -93,7 +93,7 @@ exports.chatWithAI = async (req, res) => {
         const n8nWebhook = process.env.N8N_WEBHOOK_URL;
 
         if (n8nWebhook) {
-            console.log(`[CHAT-IA] Encaminhando para n8n: ${message.substring(0, 30)}...`);
+            console.log(`[CHAT-IA] Tentando contato com n8n: ${n8nWebhook}`);
             try {
                 const n8nResponse = await fetch(n8nWebhook, {
                     method: 'POST',
@@ -103,8 +103,8 @@ exports.chatWithAI = async (req, res) => {
                         contexto: {
                             nome: req.user.nome,
                             cpf_real: req.user.cpf_cnpj,
-                            cpf_exibicao: `***.***.***-${req.user.cpf_cnpj.slice(-2)}`,
-                            token_validado: "SIM", // No portal o usuário já está logado
+                            cpf_exibicao: `***.***.***-${req.user.cpf_cnpj ? req.user.cpf_cnpj.slice(-2) : '00'}`,
+                            token_validado: "SIM",
                             cadastrado: true,
                             telefone: req.user.telefone,
                             email_cadastrado: req.user.email,
@@ -115,18 +115,21 @@ exports.chatWithAI = async (req, res) => {
                     })
                 });
 
+                console.log(`[CHAT-IA] Status n8n: ${n8nResponse.status} ${n8nResponse.statusText}`);
+
                 if (n8nResponse.ok) {
                     const n8nData = await n8nResponse.json();
-
-                    // Suporte a diferentes formatos de resposta do n8n
                     const aiReply = n8nData.output || n8nData.response || n8nData.text || (Array.isArray(n8nData) ? n8nData[0]?.output : null);
 
                     if (aiReply) {
                         return res.json({ response: aiReply });
                     }
+                } else {
+                    const errorText = await n8nResponse.text();
+                    console.error(`[N8N-ERROR-BODY]: ${errorText}`);
                 }
             } catch (n8nError) {
-                console.error('[N8N-WEBHOOK-ERROR]', n8nError.message);
+                console.error('[N8N-FETCH-CRITICAL-ERROR]', n8nError.message);
                 // Segue para a lógica local em caso de erro no n8n
             }
         }
