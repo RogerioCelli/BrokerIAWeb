@@ -100,9 +100,12 @@ async function runMigrations() {
         // 4. Configurar dados reais do cliente para teste de validação (Rogério Celli)
         await db.query(`
             UPDATE clientes SET 
+                nome = 'Rogério Celli',
+                cpf_cnpj = '118.065.628-80',
                 telefone = '5511972155241',
                 email = 'rogerio.celli@gmail.com'
-            WHERE nome LIKE 'Rogério Celli%';
+            WHERE id = 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22' 
+               OR nome LIKE 'Rogerio Cliente%';
         `);
 
         // 5. Aplicar padrão numérico oficial nas apólices (13 dígitos)
