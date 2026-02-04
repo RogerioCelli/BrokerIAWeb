@@ -35,10 +35,15 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+const { runMigrations } = require('./db/init');
+
 // Inicialização
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+    // Garantir que o banco de dados está sincronizado antes de atender requisições
+    await runMigrations();
+
     console.log(`
-    🚀 Broker IA Web SaaS Rodando! [VERSÃO 1.1.5]
+    🚀 Broker IA Web SaaS Rodando! [VERSÃO 1.1.6]
     📡 Porta: ${PORT}
     🏠 Ambiente: ${process.env.NODE_ENV}
     ⏰ Hora do Start: ${new Date().toLocaleString('pt-BR')}
