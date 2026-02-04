@@ -68,37 +68,44 @@ exports.chatWithAI = async (req, res) => {
 
         // Busca apólices para dar contexto ao "robô"
         const { rows: policies } = await db.query(
-            'SELECT ramo, seguradora, data_fim, detalhes_veiculo FROM apolices WHERE cliente_id = $1 AND org_id = $2',
+            'SELECT numero_apolice, ramo, seguradora, data_fim, detalhes_veiculo FROM apolices WHERE cliente_id = $1 AND org_id = $2',
             [clientId, orgId]
         );
 
         const msg = message.toLowerCase();
         let response = "";
 
-        if (msg.includes('seguro') || msg.includes('apólice') || msg.includes('quais')) {
-            if (policies.length > 0) {
-                const lista = policies.map(p => `- ${p.ramo} na ${p.seguradora}`).join('\n');
-                response = `Você possui ${policies.length} seguros ativos comigo:\n${lista}. Como posso ajudar com algum deles?`;
+        if (msg.includes('número') || msg.includes('numero') || msg.includes('qual é a minha apólice')) {
+            const p = policies[0];
+            if (p) {
+                response = `O número da sua apólice de ${p.ramo} na ${p.seguradora} é: **${p.numero_apolice}**.`;
             } else {
-                response = "Ainda não encontrei apólices ativas no seu nome. Quer que eu verifique com o time de suporte?";
+                response = "Não encontrei nenhuma apólice ativa para te informar o número.";
+            }
+        } else if (msg.includes('seguro') || msg.includes('apólice') || msg.includes('quais') || msg.includes('listar')) {
+            if (policies.length > 0) {
+                const lista = policies.map(p => `- ${p.ramo} (${p.seguradora}): ${p.numero_apolice}`).join('\n');
+                response = `Você possui ${policies.length} seguros ativos:\n${lista}. Como posso ajudar?`;
+            } else {
+                response = "Ainda não encontrei apólices ativas no seu nome.";
             }
         } else if (msg.includes('vencimento') || msg.includes('quando vence') || msg.includes('validade')) {
             const p = policies[0];
             if (p) {
                 const dataStr = new Date(p.data_fim).toLocaleDateString('pt-BR');
-                response = `Sua apólice de ${p.ramo} está protegida até o dia ${dataStr}. Fique tranquilo!`;
+                response = `A sua apólice de ${p.ramo} vence em ${dataStr}.`;
             } else {
-                response = "Não identifiquei apólices ativas para checar o vencimento.";
+                response = "Não identifiquei apólices ativas.";
             }
-        } else if (msg.includes('tesla') || msg.includes('carro') || msg.includes('veículo')) {
+        } else if (msg.includes('tesla') || msg.includes('carro') || msg.includes('veículo') || msg.includes('placa')) {
             const p = policies.find(p => p.ramo === 'AUTOMOVEL');
             if (p && p.detalhes_veiculo) {
-                response = `O seu ${p.detalhes_veiculo.modelo} de placa ${p.detalhes_veiculo.placa} está com cobertura total na ${p.seguradora}.`;
+                response = `O seu ${p.detalhes_veiculo.modelo} (Placa: ${p.detalhes_veiculo.placa}) está segurado pela ${p.seguradora}.`;
             } else {
-                response = "Não encontrei um seguro de automóvel no seu perfil.";
+                response = "Não encontrei dados de veículo no seu perfil.";
             }
         } else {
-            response = "Entendi! Sou o Broker IA e estou aqui para facilitar sua vida. Posso te falar sobre seus vencimentos, coberturas ou listar seus seguros. O que prefere?";
+            response = "Entendi! Posso te informar o **número da apólice**, data de **vencimento**, **listar seus seguros** ou dar detalhes do seu **veículo**. O que você precisa?";
         }
 
         res.json({ response });
