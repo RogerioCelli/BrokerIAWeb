@@ -4,14 +4,20 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 require('dotenv').config();
 
+// Importar Rotas
+const authRoutes = require('./routes/authRoutes');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(helmet()); // Segurança
-app.use(cors()); // Cross-Origin Resource Sharing
-app.use(express.json()); // Parsing JSON bodies
-app.use(morgan('dev')); // Logging
+app.use(helmet());
+app.use(cors());
+app.use(express.json());
+app.use(morgan('dev'));
+
+// Rotas da API
+app.use('/api/auth', authRoutes);
 
 // Rotas Base
 app.get('/', (req, res) => {
