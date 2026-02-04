@@ -29,7 +29,25 @@ async function runMigrations() {
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='apolices' AND column_name='pdf_url') THEN
                     ALTER TABLE apolices ADD COLUMN pdf_url TEXT;
                 END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='organizacoes' AND column_name='endereco') THEN
+                    ALTER TABLE organizacoes ADD COLUMN endereco TEXT;
+                    ALTER TABLE organizacoes ADD COLUMN telefone_fixo VARCHAR(20);
+                    ALTER TABLE organizacoes ADD COLUMN telefone_celular VARCHAR(20);
+                    ALTER TABLE organizacoes ADD COLUMN email_contato VARCHAR(255);
+                    ALTER TABLE organizacoes ADD COLUMN website_url TEXT;
+                END IF;
             END $$;
+        `);
+
+        // 3. Atualizar Org Demo com dados de contato
+        await db.query(`
+            UPDATE organizacoes SET 
+                endereco = 'Av. Paulista, 1000 - São Paulo/SP',
+                telefone_fixo = '(11) 4004-0000',
+                telefone_celular = '(11) 99999-9999',
+                email_contato = 'contato@brokeriaweb.com.br',
+                website_url = 'https://brokeriaweb.com.br'
+            WHERE slug = 'corretora-demo'
         `);
 
         // 3. Popular Seguradoras (Se tabela estiver vazia)

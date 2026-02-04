@@ -9,9 +9,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Preenche dados básicos
+    // Preenche dados básicos e da organização
     document.getElementById('welcomeName').textContent = `Olá, ${userData.nome.split(' ')[0]}!`;
-    document.getElementById('orgName').textContent = 'Broker IA Corretora Demo';
+    document.getElementById('orgName').textContent = userData.org_nome || 'Broker IA Corretora Demo';
+
+    // Preencher Rodapé Institucional (Dados da Corretora)
+    if (userData.contatos_org) {
+        document.getElementById('footerOrgName').textContent = userData.org_nome;
+        document.getElementById('footerAddress').textContent = userData.contatos_org.endereco || 'Endereço não informado';
+
+        const footerContacts = document.getElementById('footerContacts');
+        const c = userData.contatos_org;
+
+        footerContacts.innerHTML = `
+            <div class="contact-group">
+                <h4>Atendimento Digital</h4>
+                ${c.site ? `<a href="${c.site}" target="_blank" class="footer-link"><i class="fas fa-globe"></i> ${c.site.replace('https://', '').replace(/\/$/, '')}</a>` : ''}
+                ${c.email ? `<a href="mailto:${c.email}" class="footer-link"><i class="fas fa-envelope"></i> ${c.email}</a>` : ''}
+            </div>
+            <div class="contact-group">
+                <h4>Fale Conosco</h4>
+                ${c.fixo ? `<a href="tel:${c.fixo.replace(/\D/g, '')}" class="footer-link"><i class="fas fa-phone-alt"></i> ${c.fixo} (Fixo)</a>` : ''}
+                ${c.celular ? `<a href="https://wa.me/${c.celular.replace(/\D/g, '')}" target="_blank" class="footer-link" style="color: #25d366;"><i class="fab fa-whatsapp"></i> ${c.celular} (WhatsApp)</a>` : ''}
+            </div>
+        `;
+    }
 
     const policiesGrid = document.getElementById('policiesGrid');
     const logoutBtn = document.getElementById('logoutBtn');

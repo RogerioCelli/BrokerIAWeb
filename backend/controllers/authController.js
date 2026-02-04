@@ -98,7 +98,9 @@ const authController = {
 
             // 3. Buscar dados completos do cliente e da org para o JWT
             const clientData = await db.query(
-                `SELECT c.*, o.nome as org_nome, o.logo_url 
+                `SELECT c.*, o.nome as org_nome, o.logo_url, 
+                        o.endereco, o.telefone_fixo, o.telefone_celular, 
+                        o.email_contato, o.website_url 
                  FROM clientes c 
                  JOIN organizacoes o ON c.org_id = o.id 
                  WHERE c.id = $1`,
@@ -120,8 +122,16 @@ const authController = {
                 user: {
                     id: user.id,
                     nome: user.nome,
+                    cpf_cnpj: user.cpf_cnpj,
                     org_nome: user.org_nome,
-                    logo: user.logo_url
+                    logo: user.logo_url,
+                    contatos_org: {
+                        endereco: user.endereco,
+                        fixo: user.telefone_fixo,
+                        celular: user.telefone_celular,
+                        email: user.email_contato,
+                        site: user.website_url
+                    }
                 }
             });
 

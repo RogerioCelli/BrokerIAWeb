@@ -23,6 +23,11 @@ CREATE TABLE IF NOT EXISTS organizacoes (
     logo_url TEXT,
     primaria_color VARCHAR(7) DEFAULT '#10b981',
     secundaria_color VARCHAR(7) DEFAULT '#050a10',
+    endereco TEXT,
+    telefone_fixo VARCHAR(20),
+    telefone_celular VARCHAR(20),
+    email_contato VARCHAR(255),
+    website_url TEXT,
     configuracoes JSONB DEFAULT '{}', -- Configurações de IA, tom de voz, etc.
     data_criacao TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     ativo BOOLEAN DEFAULT TRUE

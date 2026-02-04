@@ -478,6 +478,76 @@
             transform: scale(1.05);
         }
 
+        /* Institutional Footer Styles */
+        .institutional-footer {
+            margin-top: 4rem;
+            padding: 2.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+        }
+
+        .footer-brand h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: white;
+        }
+
+        .footer-brand p {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+
+        .footer-contacts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .contact-group h4 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05rem;
+            color: #10b981;
+            margin-bottom: 0.8rem;
+        }
+
+        .footer-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+            color: #eee;
+            text-decoration: none;
+            margin-bottom: 0.6rem;
+            transition: color 0.2s;
+        }
+
+        .footer-link:hover {
+            color: #10b981;
+        }
+
+        .footer-link i {
+            width: 16px;
+            text-align: center;
+            color: #10b981;
+        }
+
+        @media (max-width: 768px) {
+            .institutional-footer {
+                grid-template-columns: 1fr;
+                padding: 1.5rem;
+            }
+
+            .footer-contacts {
+                grid-template-columns: 1fr;
+            }
+        }
+
         @media (max-width: 480px) {
             .chat-container {
                 width: 100%;
@@ -514,6 +584,17 @@
                 </div>
             </div>
         </section>
+
+        <!-- Rodapé da Corretora -->
+        <footer class="institutional-footer" id="institutionalFooter">
+            <div class="footer-brand">
+                <h3 id="footerOrgName">Broker IA</h3>
+                <p id="footerAddress">Carregando endereço comercial...</p>
+            </div>
+            <div class="footer-contacts" id="footerContacts">
+                <!-- Contatos serão injetados via JS -->
+            </div>
+        </footer>
     </div>
 
     <!-- Interface do Assistente IA -->
