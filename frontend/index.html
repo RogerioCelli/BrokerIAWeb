@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Broker IA | Portal do Segurado</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="shortcut icon" href="https://img.icons8.com/fluency/48/shield.png" type="image/x-icon">
 </head>
 
@@ -22,11 +23,34 @@
             </div>
 
             <form id="loginForm">
-                <div class="form-group">
+                <div class="form-group" id="identifierGroup">
                     <label for="identifier">Identificação</label>
                     <div class="input-wrapper">
                         <input type="text" id="identifier" name="identifier" class="premium-input"
                             placeholder="Seu CPF ou E-mail" required>
+                    </div>
+                </div>
+
+                <!-- Nova Etapa: Seleção de Canal -->
+                <div class="form-group" id="channelGroup" style="display: none;">
+                    <label>Como deseja receber o seu código?</label>
+                    <div class="channel-options">
+                        <label class="channel-card">
+                            <input type="radio" name="auth_channel" value="whatsapp" checked>
+                            <i class="fab fa-whatsapp"></i>
+                            <div class="channel-info">
+                                <span class="channel-name">WhatsApp</span>
+                                <span class="channel-detail" id="maskedPhone"></span>
+                            </div>
+                        </label>
+                        <label class="channel-card">
+                            <input type="radio" name="auth_channel" value="email">
+                            <i class="fas fa-envelope"></i>
+                            <div class="channel-info">
+                                <span class="channel-name">E-mail</span>
+                                <span class="channel-detail" id="maskedEmail"></span>
+                            </div>
+                        </label>
                     </div>
                 </div>
 

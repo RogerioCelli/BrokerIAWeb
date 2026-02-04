@@ -1,24 +1,30 @@
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
+    const identifierGroup = document.getElementById('identifierGroup');
+    const channelGroup = document.getElementById('channelGroup');
     const tokenGroup = document.getElementById('tokenGroup');
     const mainButton = document.getElementById('mainButton');
+
     const identifierInput = document.getElementById('identifier');
     const tokenInput = document.getElementById('token');
+    const maskedPhone = document.getElementById('maskedPhone');
+    const maskedEmail = document.getElementById('maskedEmail');
 
     const ORG_SLUG = 'corretora-demo';
     const API_URL = 'https://brokeriaweb-api-brokeriaweb.cx0m9g.easypanel.host/api';
 
-    let isTokenStep = false;
+    let currentStep = 'IDENTIFICATION'; // IDENTIFICATION, CHANNEL, TOKEN
     let clientId = null;
 
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        if (mainButton.disabled) return;
         mainButton.disabled = true;
         const originalBtnText = mainButton.textContent;
 
         try {
-            if (!isTokenStep) {
+            if (currentStep === 'IDENTIFICATION') {
                 mainButton.textContent = 'Verificando...';
 
                 const response = await fetch(`${API_URL}/auth/request`, {
@@ -31,20 +37,43 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 const data = await response.json();
-                if (!response.ok) throw new Error(data.error || 'Erro ao solicitar acesso');
+                if (!response.ok) throw new Error(data.error || 'Erro na identificação');
 
+                // Prepara próxima etapa (Seleção de Canal)
                 clientId = data.client_id;
-                identifierInput.disabled = true;
+                maskedPhone.textContent = data.masked_phone || 'Não cadastrado';
+                maskedEmail.textContent = data.masked_email || 'Não cadastrado';
+
+                identifierGroup.style.display = 'none';
+                channelGroup.style.display = 'block';
+                mainButton.textContent = 'Enviar Código';
+                currentStep = 'CHANNEL';
+
+            } else if (currentStep === 'CHANNEL') {
+                const selectedChannel = document.querySelector('input[name="auth_channel"]:checked').value;
+                mainButton.textContent = 'Enviando...';
+
+                // Simula re-envio especificando o canal
+                const response = await fetch(`${API_URL}/auth/request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        identifier: identifierInput.value,
+                        org_slug: ORG_SLUG,
+                        channel: selectedChannel
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Erro ao enviar código');
+
+                channelGroup.style.display = 'none';
                 tokenGroup.style.display = 'block';
-                tokenGroup.style.animation = 'fadeInScale 0.5s ease forwards';
-                if (tokenInput) tokenInput.focus();
-
                 mainButton.textContent = 'Validar Acesso';
-                mainButton.disabled = false;
-                isTokenStep = true;
+                currentStep = 'TOKEN';
 
-            } else {
-                mainButton.textContent = 'Autenticando...';
+            } else if (currentStep === 'TOKEN') {
+                mainButton.textContent = 'Validando...';
 
                 const response = await fetch(`${API_URL}/auth/validate`, {
                     method: 'POST',
@@ -70,6 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             alert(error.message);
             mainButton.textContent = originalBtnText;
+        } finally {
             mainButton.disabled = false;
         }
     });

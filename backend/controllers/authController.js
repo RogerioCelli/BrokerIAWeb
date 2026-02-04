@@ -42,13 +42,24 @@ const authController = {
                 [client.id, token, expiresAt]
             );
 
-            // 5. Simular envio (Aqui integraria com API de E-mail ou WhatsApp no futuro)
-            console.log(`[AUTH] Token para ${client.nome} (${org_slug}): ${token}`);
+            // 5. Preparar dados mascarados para o frontend
+            const maskedEmail = client.email ? client.email.replace(/(.{2})(.*)(@.*)/, "$1******$3") : "Não cadastrado";
+            const maskedPhone = client.telefone ? client.telefone.replace(/.*(\d{2})$/, "(**) *****-**$1") : "Não cadastrado";
+
+            const { channel } = req.body;
+
+            if (channel) {
+                console.log(`[AUTH] Enviando Token via ${channel.toUpperCase()} para ${client.nome}: ${token}`);
+            } else {
+                console.log(`[AUTH] Token gerado para ${client.nome} (Aguardando escolha de canal): ${token}`);
+            }
 
             return res.json({
-                message: 'Token enviado com sucesso',
-                step: 'VALIDATION',
-                client_id: client.id
+                message: channel ? 'Token enviado com sucesso' : 'Selecione o canal de envio',
+                step: channel ? 'VALIDATION' : 'CHANNEL_SELECTION',
+                client_id: client.id,
+                masked_email: maskedEmail,
+                masked_phone: maskedPhone
             });
 
         } catch (error) {
