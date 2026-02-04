@@ -1,4 +1,5 @@
 const db = require('../db');
+const { runMigrations } = require('../db/init');
 
 /**
  * Lista todas as apólices do cliente logado
@@ -6,6 +7,13 @@ const db = require('../db');
 exports.getMyPolicies = async (req, res) => {
     try {
         const { id: clientId, org_id: orgId } = req.user;
+
+        // Tenta garantir que as tabelas existem antes da consulta (Segurança Redobrada)
+        try {
+            await runMigrations();
+        } catch (migError) {
+            console.error('[MIG-ON-DEMAND] Falha silenciosa na migração:', migError.message);
+        }
 
         const query = `
             SELECT 
