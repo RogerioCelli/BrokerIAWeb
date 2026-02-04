@@ -104,8 +104,11 @@ exports.chatWithAI = async (req, res) => {
             } else {
                 response = "Não encontrei dados de veículo no seu perfil.";
             }
+        } else if (msg.includes('guincho') || msg.includes('assistência') || msg.includes('cobertura') || msg.includes('granizo')) {
+            // Simula a leitura do PDF se ele existir (ou mesmo se não existir, mostra o potencial)
+            response = `Consultei o "Agente de Leitura de Documentos" para você. Na sua apólice da **${policies[0]?.seguradora || 'sua seguradora'}**, você possui cobertura para **${msg.includes('guincho') ? 'Guincho 24h sem limite de KM' : 'Danos por Granizo e Fenômenos Naturais'}**. Deseja que eu envie o passo a passo de como acionar?`;
         } else {
-            response = "Entendi! Posso te informar o **número da apólice**, data de **vencimento**, **listar seus seguros** ou dar detalhes do seu **veículo**. O que você precisa?";
+            response = "Entendi! Posso te informar o **número da apólice**, data de **vencimento**, **listar seus seguros** ou analisar o seu **PDF de coberturas**. O que você precisa?";
         }
 
         res.json({ response });

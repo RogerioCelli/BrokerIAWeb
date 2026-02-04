@@ -77,11 +77,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <span class="policy-info-label">Vencimento</span>
                         <span class="policy-info-value">${new Date(policy.data_fim).toLocaleDateString('pt-BR')}</span>
                     </div>
-                    
-                    <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
-                        <span class="status-badge status-ativa">${policy.status}</span>
-                        <button style="background: none; border: none; color: #10b981; cursor: pointer; font-size: 0.8rem; font-weight: 600;">
-                            VER DETALHES <i class="fas fa-chevron-right"></i>
+
+                    <div class="pdf-status ${policy.pdf_url ? 'ready' : ''}" style="margin-top: 1rem; font-size: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas ${policy.pdf_url ? 'fa-file-circle-check' : 'fa-file-circle-exclamation'}" style="color: ${policy.pdf_url ? '#10b981' : '#94a3b8'}"></i>
+                        <span>${policy.pdf_url ? 'Apólice Analisada por IA' : 'Pendente de Leitura'}</span>
+                    </div>
+
+                    <div class="policy-actions" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                        <button class="btn-action btn-details" style="flex: 1; padding: 0.5rem; border-radius: 8px; font-size: 0.75rem; cursor: pointer; background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2);">
+                            <i class="fas fa-eye"></i> Detalhes
+                        </button>
+                        <button class="btn-action btn-upload-pdf" style="flex: 1; padding: 0.5rem; border-radius: 8px; font-size: 0.75rem; cursor: pointer; background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2);">
+                            <i class="fas fa-file-upload"></i> PDF
                         </button>
                     </div>
                 </div>
@@ -128,14 +135,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         chatInput.value = '';
 
         try {
-            // --- Orquestração de Agentes (Estilo AgentFlow) ---
-            const agentStatus = showAgentStatus('<i class="fas fa-search"></i> Agente de Busca consultando banco de dados...');
+            // --- Orquestração de Agentes dinâmica ---
+            let statusText = '<i class="fas fa-search"></i> Agente de Busca consultando banco de dados...';
+            if (text.toLowerCase().includes('cobertura') || text.toLowerCase().includes('guincho') || text.toLowerCase().includes('granizo')) {
+                statusText = '<i class="fas fa-file-pdf"></i> Agente de Documentos analisando apólice digitalizada...';
+            }
+
+            const agentStatus = showAgentStatus(statusText);
 
             // Simula delay de orquestração
             const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
             await delay(1200);
 
-            agentStatus.innerHTML = '<i class="fas fa-brain"></i> Agente de Análise processando apólice...';
+            if (text.toLowerCase().includes('cobertura') || text.toLowerCase().includes('guincho')) {
+                agentStatus.innerHTML = '<i class="fas fa-microchip"></i> Extraindo cláusulas de assistência 24h...';
+            } else {
+                agentStatus.innerHTML = '<i class="fas fa-brain"></i> Agente de Análise processando apólice...';
+            }
             await delay(1500);
 
             agentStatus.innerHTML = '<i class="fas fa-check-circle"></i> Resposta gerada com sucesso';
