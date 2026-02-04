@@ -104,11 +104,29 @@ exports.chatWithAI = async (req, res) => {
             } else {
                 response = "Não encontrei dados de veículo no seu perfil.";
             }
-        } else if (msg.includes('guincho') || msg.includes('assistência') || msg.includes('cobertura') || msg.includes('granizo')) {
-            // Simula a leitura do PDF se ele existir (ou mesmo se não existir, mostra o potencial)
-            response = `Consultei o "Agente de Leitura de Documentos" para você. Na sua apólice da **${policies[0]?.seguradora || 'sua seguradora'}**, você possui cobertura para **${msg.includes('guincho') ? 'Guincho 24h sem limite de KM' : 'Danos por Granizo e Fenômenos Naturais'}**. Deseja que eu envie o passo a passo de como acionar?`;
+        } else if (msg.includes('guincho') || msg.includes('assistência') || msg.includes('suporte') || msg.includes('telefone')) {
+            const p = policies[0];
+            const telefones = {
+                'Porto Seguro': '0800 727 0800 (ou 333-PORTO)',
+                'Liberty Seguros': '0800 701 4120',
+                'Azul Seguros': '0800 703 1280'
+            };
+            const tel = telefones[p?.seguradora] || '0800 da sua seguradora (ver verso da carteirinha)';
+            response = `O telefone de assistência 24h da **${p?.seguradora || 'sua seguradora'}** é: **${tel}**. Precisa que eu te ajude a solicitar um serviço agora?`;
+        } else if (msg.includes('sinistro') || msg.includes('bata') || msg.includes('roubo') || msg.includes('furto')) {
+            const p = policies[0];
+            response = `Sinto muito pelo ocorrido! Para abrir um sinistro na **${p?.seguradora || 'sua seguradora'}**, o primeiro passo é ter o Boletim de Ocorrência (se houver terceiros) e ligar para o suporte. Quer que eu liste os documentos necessários para agilizar o processo?`;
+        } else if (msg.includes('carteirinha') || msg.includes('cópia') || msg.includes('copia') || msg.includes('cartão')) {
+            const p = policies[0];
+            if (p) {
+                response = `Você pode acessar sua carteirinha digital da **${p.seguradora}** pelo App oficial deles ou usar o número da sua apólice: **${p.numero_apolice}**. Deseja o link para baixar o App?`;
+            } else {
+                response = "Não localizei sua carteirinha. Quer falar com um consultor humano?";
+            }
+        } else if (msg.includes('cobertura') || msg.includes('granizo')) {
+            response = `Consultei o "Agente de Leitura de Documentos" para você. Na sua apólice da **${policies[0]?.seguradora || 'sua seguradora'}**, você possui cobertura para **${msg.includes('granizo') ? 'Danos por Granizo e Fenômenos Naturais' : 'Cobertura Total (Colisão, Incêndio e Roubo)'}**. O valor de franquia pode ser consultado no PDF oficial.`;
         } else {
-            response = "Entendi! Posso te informar o **número da apólice**, data de **vencimento**, **listar seus seguros** ou analisar o seu **PDF de coberturas**. O que você precisa?";
+            response = "Entendi! Posso te informar o **telefone de suporte**, como abrir um **sinistro**, sua **carteirinha** ou analisar o seu **PDF de coberturas**. O que você precisa?";
         }
 
         res.json({ response });
