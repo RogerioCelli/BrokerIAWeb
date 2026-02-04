@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS seguradoras (
     nome VARCHAR(100) UNIQUE NOT NULL,
     telefone_capital VARCHAR(20),
     telefone_0800 VARCHAR(20),
+    email VARCHAR(255),
     observacao TEXT,
     site_url TEXT,
     ativo BOOLEAN DEFAULT TRUE
