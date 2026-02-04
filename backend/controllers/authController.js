@@ -27,8 +27,8 @@ const authController = {
 
             const clientResult = await db.query(
                 `SELECT id, nome, email, telefone FROM clientes 
-                 WHERE org_id = $1 AND (REPLACE(REPLACE(cpf_cnpj, '.', ''), '-', '') = $2 OR email = $3)`,
-                [orgId, cleanIdentifier, identifier]
+                 WHERE org_id = $1 AND REPLACE(REPLACE(cpf_cnpj, '.', ''), '-', '') = $2`,
+                [orgId, cleanIdentifier]
             );
 
             if (clientResult.rows.length === 0) {

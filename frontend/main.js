@@ -44,6 +44,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             if (currentStep === 'IDENTIFICATION') {
+                const val = identifierInput.value;
+                const onlyNums = val.replace(/\D/g, '');
+
+                // Validação estrita: apenas CPF (11) ou CNPJ (14)
+                if (onlyNums.length !== 11 && onlyNums.length !== 14) {
+                    throw new Error('Por favor, insira um CPF (11 dígitos) ou CNPJ (14 dígitos) válido.');
+                }
+
                 mainButton.textContent = 'Verificando...';
 
                 const response = await fetch(`${API_URL}/auth/request`, {
