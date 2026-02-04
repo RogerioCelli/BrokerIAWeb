@@ -478,73 +478,95 @@
             transform: scale(1.05);
         }
 
-        /* Institutional Footer Styles */
+        /* Institutional Footer Full Width Styles */
         .institutional-footer {
-            margin-top: 4rem;
-            padding: 2.5rem;
-            background: rgba(255, 255, 255, 0.02);
+            width: 100%;
+            margin-top: 6rem;
+            padding: 4rem 0;
+            background: rgba(10, 15, 25, 0.8);
             border-top: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
+            backdrop-filter: blur(20px);
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
             display: grid;
             grid-template-columns: 1fr 2fr;
-            gap: 2rem;
+            gap: 4rem;
         }
 
         .footer-brand h3 {
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
+            font-size: 1.4rem;
+            margin-bottom: 0.8rem;
             color: white;
+            font-weight: 700;
         }
 
         .footer-brand p {
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             color: #94a3b8;
-            line-height: 1.5;
+            line-height: 1.6;
+            max-width: 300px;
         }
 
         .footer-contacts {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
+            gap: 2rem;
         }
 
         .contact-group h4 {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
-            letter-spacing: 0.05rem;
+            letter-spacing: 0.1rem;
             color: #10b981;
-            margin-bottom: 0.8rem;
+            margin-bottom: 1.2rem;
+            font-weight: 600;
         }
 
         .footer-link {
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-size: 0.85rem;
-            color: #eee;
+            gap: 12px;
+            font-size: 0.9rem;
+            color: #dee2e6;
             text-decoration: none;
-            margin-bottom: 0.6rem;
-            transition: color 0.2s;
+            margin-bottom: 0.8rem;
+            transition: all 0.2s;
         }
 
         .footer-link:hover {
             color: #10b981;
+            transform: translateX(5px);
         }
 
         .footer-link i {
-            width: 16px;
+            width: 18px;
             text-align: center;
             color: #10b981;
         }
 
+        @media (max-width: 992px) {
+            .footer-content {
+                grid-template-columns: 1fr;
+                gap: 3rem;
+            }
+
+            .footer-brand p {
+                max-width: 100%;
+            }
+        }
+
         @media (max-width: 768px) {
             .institutional-footer {
-                grid-template-columns: 1fr;
-                padding: 1.5rem;
+                padding: 3rem 0;
             }
 
             .footer-contacts {
                 grid-template-columns: 1fr;
+                gap: 1.5rem;
             }
         }
 
@@ -584,9 +606,11 @@
                 </div>
             </div>
         </section>
+    </div>
 
-        <!-- Rodapé da Corretora -->
-        <footer class="institutional-footer" id="institutionalFooter">
+    <!-- Rodapé da Corretora Full Width -->
+    <footer class="institutional-footer" id="institutionalFooter">
+        <div class="footer-content">
             <div class="footer-brand">
                 <h3 id="footerOrgName">Broker IA</h3>
                 <p id="footerAddress">Carregando endereço comercial...</p>
@@ -594,8 +618,8 @@
             <div class="footer-contacts" id="footerContacts">
                 <!-- Contatos serão injetados via JS -->
             </div>
-        </footer>
-    </div>
+        </div>
+    </footer>
 
     <!-- Interface do Assistente IA -->
     <div class="chat-container" id="chatContainer">
