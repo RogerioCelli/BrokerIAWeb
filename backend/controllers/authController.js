@@ -101,6 +101,7 @@ const authController = {
                 message: 'Acesso autorizado',
                 token: sessionToken,
                 user: {
+                    id: user.id,
                     nome: user.nome,
                     org_nome: user.org_nome,
                     logo: user.logo_url
