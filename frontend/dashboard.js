@@ -76,19 +76,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ? `${policy.detalhes_veiculo?.modelo} (${policy.detalhes_veiculo?.placa})`
                 : 'Residencial';
 
-            const telefones = {
-                'Porto Seguro': '0800 727 0800',
-                'Liberty Seguros': '0800 701 4120',
-                'Azul Seguros': '0800 703 1280'
-            };
-            const tel = telefones[policy.seguradora] || 'Suporte 24h';
+            const tel0800 = policy.telefone_0800 || 'Suporte 24h';
+            const telCap = policy.telefone_capital ? `${policy.telefone_capital} / ` : '';
+            const telFull = `${telCap}${tel0800}`;
 
             return `
                 <div class="policy-card">
                     <div class="policy-header">
                         <div class="seguradora-container">
                             <span class="seguradora-tag">${policy.seguradora}</span>
-                            <span class="support-phone"><i class="fas fa-phone-alt"></i> ${tel}</span>
+                            <span class="support-phone"><i class="fas fa-phone-alt"></i> ${telFull}</span>
                         </div>
                         <i class="${icon} ramo-icon"></i>
                     </div>

@@ -9,18 +9,22 @@ exports.getMyPolicies = async (req, res) => {
 
         const query = `
             SELECT 
-                id, 
-                numero_apolice, 
-                seguradora, 
-                ramo, 
-                data_inicio, 
-                data_fim, 
-                status, 
-                detalhes_veiculo, 
-                detalhes_imovel
-            FROM apolices
-            WHERE cliente_id = $1 AND org_id = $2
-            ORDER BY data_fim DESC
+                a.id, 
+                a.numero_apolice, 
+                a.seguradora, 
+                a.ramo, 
+                a.data_inicio, 
+                a.data_fim, 
+                a.status, 
+                a.detalhes_veiculo, 
+                a.detalhes_imovel,
+                a.pdf_url,
+                s.telefone_capital,
+                s.telefone_0800
+            FROM apolices a
+            LEFT JOIN seguradoras s ON s.nome = a.seguradora
+            WHERE a.cliente_id = $1 AND a.org_id = $2
+            ORDER BY a.data_fim DESC
         `;
 
         const { rows } = await db.query(query, [clientId, orgId]);
@@ -66,9 +70,13 @@ exports.chatWithAI = async (req, res) => {
         const { message } = req.body;
         const { id: clientId, org_id: orgId } = req.user;
 
-        // Busca apólices para dar contexto ao "robô"
+        // Busca apólices para dar contexto ao "robô" (com dados de suporte da tabela seguradoras)
         const { rows: policies } = await db.query(
-            'SELECT numero_apolice, ramo, seguradora, data_fim, detalhes_veiculo FROM apolices WHERE cliente_id = $1 AND org_id = $2',
+            `SELECT a.numero_apolice, a.ramo, a.seguradora, a.data_fim, a.detalhes_veiculo, 
+                    s.telefone_capital, s.telefone_0800 
+             FROM apolices a
+             LEFT JOIN seguradoras s ON s.nome = a.seguradora
+             WHERE a.cliente_id = $1 AND a.org_id = $2`,
             [clientId, orgId]
         );
 
@@ -106,12 +114,7 @@ exports.chatWithAI = async (req, res) => {
             }
         } else if (msg.includes('guincho') || msg.includes('assistência') || msg.includes('suporte') || msg.includes('telefone')) {
             const p = policies[0];
-            const telefones = {
-                'Porto Seguro': '0800 727 0800 (ou 333-PORTO)',
-                'Liberty Seguros': '0800 701 4120',
-                'Azul Seguros': '0800 703 1280'
-            };
-            const tel = telefones[p?.seguradora] || '0800 da sua seguradora (ver verso da carteirinha)';
+            const tel = p?.telefone_0800 || p?.telefone_capital || '0800 da sua seguradora (ver verso da carteirinha)';
             response = `O telefone de assistência 24h da **${p?.seguradora || 'sua seguradora'}** é: **${tel}**. Precisa que eu te ajude a solicitar um serviço agora?`;
         } else if (msg.includes('sinistro') || msg.includes('bata') || msg.includes('roubo') || msg.includes('furto')) {
             const p = policies[0];

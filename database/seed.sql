@@ -2,6 +2,39 @@
 -- BROKER IA WEB - DADOS INICIAIS DE TESTE (SEED)
 -- ########################################################
 
+-- 0. Popular Seguradoras do Brasil
+INSERT INTO seguradoras (nome, telefone_capital, telefone_0800, observacao) VALUES
+('AIG Seguros', NULL, '0800 726 6130', 'SAC'),
+('Alfa Seguradora', '4003 2532', '0800 888 2532', 'SAC'),
+('Allianz', NULL, '0800 130 700', 'SAC / Assistência'),
+('Azul Seguros', '4004 3700', '0800 703 0203', 'Auto'),
+('Aruana Seguradora', NULL, '0800 701 4887', 'SAC'),
+('BB Seguros', NULL, '0800 729 7000', 'SAC'),
+('Berkley', NULL, '0800 777 3123', 'SAC'),
+('Bradesco Seguros', '4004 2757', '0800 701 2757', 'SAC / Sinistro'),
+('Chubb', NULL, '0800 055 9091', 'SAC'),
+('Ezze Seguros', NULL, '0800 702 9985', 'SAC'),
+('Generali', NULL, '0800 707 0211', 'SAC'),
+('HDI Seguros', '3003 5390', '0800 434 4340', 'SAC / Assistência'),
+('Icatu Seguros', '4002 004', '0800 285 3000', 'Vida / Previdência'),
+('Itaú Seguros', '3003 1010', '0800 720 1010', 'SAC'),
+('Justos', NULL, '0800 591 2259', 'Auto'),
+('Kovr Seguradora', NULL, '0800 646 8378', 'Garantia'),
+('Liberty Seguros', NULL, '0800 701 4120', 'Assistência'),
+('MAPFRE', '4002 1000', '0800 775 1000', 'SAC'),
+('Pier', NULL, '0800 770 9356', 'Auto'),
+('Porto Seguro', '4004 7678', '0800 727 0800', 'SAC / Assistência'),
+('Previsul', NULL, '0800 722 0264', 'Vida'),
+('Sompo', NULL, '0800 016 2727', 'SAC'),
+('Suhai', NULL, '0800 327 8424', 'Auto'),
+('Sura', NULL, '0800 774 0772', 'SAC'),
+('Tokio Marine', NULL, '0800 318 6546', 'SAC'),
+('Líder DPVAT', NULL, '0800 022 1204', 'Sinistro DPVAT')
+ON CONFLICT (nome) DO UPDATE SET 
+    telefone_capital = EXCLUDED.telefone_capital,
+    telefone_0800 = EXCLUDED.telefone_0800,
+    observacao = EXCLUDED.observacao;
+
 -- 1. Criar a Organização Demo
 INSERT INTO organizacoes (id, nome, cnpj, slug, logo_url, primaria_color, secundaria_color, configuracoes)
 VALUES (

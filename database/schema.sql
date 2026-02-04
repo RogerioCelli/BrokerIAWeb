@@ -2,6 +2,17 @@
 -- BROKER IA WEB - SCHEMA MULTITENANT (PÓS-GRADUADO)
 -- ########################################################
 
+-- 0. Tabela de Seguradoras (Master Data)
+CREATE TABLE IF NOT EXISTS seguradoras (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nome VARCHAR(100) UNIQUE NOT NULL,
+    telefone_capital VARCHAR(20),
+    telefone_0800 VARCHAR(20),
+    observacao TEXT,
+    site_url TEXT,
+    ativo BOOLEAN DEFAULT TRUE
+);
+
 -- 1. Tabela de Organizações (As Corretoras que assinam o SaaS)
 CREATE TABLE IF NOT EXISTS organizacoes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
