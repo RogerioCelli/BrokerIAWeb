@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tokenInput = document.getElementById('token');
 
     const ORG_SLUG = 'corretora-demo';
-    const API_URL = 'http://localhost:5000/api';
+    const API_URL = 'https://brokeriaweb-api-brokeriaweb.cx0m9g.easypanel.host/api';
 
     let isTokenStep = false;
     let clientId = null;
