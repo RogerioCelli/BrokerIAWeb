@@ -90,6 +90,44 @@ exports.chatWithAI = async (req, res) => {
             [clientId, orgId]
         );
 
+        const n8nWebhook = process.env.N8N_WEBHOOK_URL;
+
+        if (n8nWebhook) {
+            console.log(`[CHAT-IA] Encaminhando para n8n: ${message.substring(0, 30)}...`);
+            try {
+                const n8nResponse = await fetch(n8nWebhook, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        usuario: {
+                            id: clientId,
+                            nome: req.user.nome,
+                            org_id: orgId
+                        },
+                        pergunta: message,
+                        contexto: {
+                            quant_apolices: policies.length,
+                            apolices: policies
+                        }
+                    })
+                });
+
+                if (n8nResponse.ok) {
+                    const n8nData = await n8nResponse.json();
+
+                    // Suporte a diferentes formatos de resposta do n8n
+                    const aiReply = n8nData.output || n8nData.response || n8nData.text || (Array.isArray(n8nData) ? n8nData[0]?.output : null);
+
+                    if (aiReply) {
+                        return res.json({ response: aiReply });
+                    }
+                }
+            } catch (n8nError) {
+                console.error('[N8N-WEBHOOK-ERROR]', n8nError.message);
+                // Segue para a lógica local em caso de erro no n8n
+            }
+        }
+
         const msg = message.toLowerCase();
         let response = "";
         const p = policies[0];

@@ -111,7 +111,13 @@ const authController = {
 
             // 4. Gerar o JWT (Token de Sessão)
             const sessionToken = jwt.sign(
-                { id: user.id, org_id: user.org_id, role: 'customer' },
+                {
+                    id: user.id,
+                    nome: user.nome,
+                    org_id: user.org_id,
+                    org_slug: user.org_slug,
+                    role: 'customer'
+                },
                 process.env.JWT_SECRET,
                 { expiresIn: '8h' }
             );
