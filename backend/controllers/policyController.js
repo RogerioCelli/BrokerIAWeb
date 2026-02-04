@@ -99,18 +99,18 @@ exports.chatWithAI = async (req, res) => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        usuario: {
-                            id: clientId,
-                            nome: req.user.nome,
-                            cpf_cnpj: req.user.cpf_cnpj, // Identificador universal no seu ecossistema
-                            org_id: orgId,
-                            org_slug: req.user.org_slug
-                        },
-                        pergunta: message,
-                        origem: 'PORTAL_WEB', // Para o n8n saber que veio do site
+                        pergunta_cliente: message,
                         contexto: {
-                            quant_apolices: policies.length,
-                            apolices: policies
+                            nome: req.user.nome,
+                            cpf_real: req.user.cpf_cnpj,
+                            cpf_exibicao: `***.***.***-${req.user.cpf_cnpj.slice(-2)}`,
+                            token_validado: "SIM", // No portal o usuário já está logado
+                            cadastrado: true,
+                            telefone: req.user.telefone,
+                            email_cadastrado: req.user.email,
+                            resumo_apolices: policies,
+                            tipo_cliente: "CADASTRADO",
+                            origem: "PORTAL_WEB"
                         }
                     })
                 });
@@ -208,15 +208,14 @@ exports.publicChat = async (req, res) => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        usuario: {
-                            id: 'lead_web_' + Date.now(),
-                            nome: 'Visitante Web',
-                            role: 'LEAD',
-                            whatsapp: null // Novo cliente ainda não identificado
-                        },
-                        pergunta: message,
-                        origem: 'LOGIN_PAGE',
-                        intent: 'LEAD_GENERATION'
+                        pergunta_cliente: message,
+                        contexto: {
+                            nome: "Visitante Web",
+                            token_validado: "NÃO",
+                            cadastrado: false,
+                            tipo_cliente: "NOVO",
+                            origem: "LOGIN_PAGE"
+                        }
                     })
                 });
 
