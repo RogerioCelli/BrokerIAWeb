@@ -97,6 +97,25 @@ async function runMigrations() {
             }
         }
 
+        // 4. Configurar dados reais do cliente para teste de validação (Rogério Celli)
+        await db.query(`
+            UPDATE clientes SET 
+                telefone = '5511972155241',
+                email = 'rogerio.celli@gmail.com'
+            WHERE nome LIKE 'Rogério Celli%';
+        `);
+
+        // 5. Aplicar padrão numérico oficial nas apólices (13 dígitos)
+        await db.query(`
+            UPDATE apolices SET 
+                numero_apolice = '8022026227130'
+            WHERE ramo = 'AUTOMOVEL';
+            
+            UPDATE apolices SET 
+                numero_apolice = '9011055338240'
+            WHERE ramo = 'RESIDENCIAL';
+        `);
+
         console.log('✅ Banco de dados sincronizado e pronto.');
     } catch (error) {
         console.error('❌ Falha ao sincronizar banco de dados:', error);

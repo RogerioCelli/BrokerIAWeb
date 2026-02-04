@@ -54,10 +54,31 @@ const authController = {
 
             const { channel } = req.body;
 
+            // 6. Se um canal for selecionado, disparar o n8n para enviar o código REAL
+            if (channel && process.env.N8N_WEBHOOK_URL) {
+                const target = channel === 'whatsapp' ? client.telefone : client.email;
+                console.log(`[AUTH-REAL] Disparando n8n (${channel}) para ${client.nome}: ${target}`);
+
+                try {
+                    // Aqui usamos uma rota específica do n8n ou passamos um parâmetro de ação
+                    fetch(process.env.N8N_WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'SEND_2FA_TOKEN',
+                            channel: channel,
+                            client_name: client.nome,
+                            target: target,
+                            token: token
+                        })
+                    }).catch(e => console.error('[AUTH-N8N-FETCH-ERROR]', e.message));
+                } catch (error) {
+                    console.error('[AUTH-N8N-ERROR]', error.message);
+                }
+            }
+
             if (channel) {
-                console.log(`[AUTH] Enviando Token via ${channel.toUpperCase()} para ${client.nome}: ${token}`);
-            } else {
-                console.log(`[AUTH] Token gerado para ${client.nome} (Aguardando escolha de canal): ${token}`);
+                console.log(`[AUTH-LOG] Token para ${client.nome}: ${token}`);
             }
 
             return res.json({
