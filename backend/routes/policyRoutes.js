@@ -3,9 +3,12 @@ const router = express.Router();
 const policyController = require('../controllers/policyController');
 const { authenticateToken } = require('../middlewares/authMiddleware');
 
-// Todas as rotas de apólices exigem login
+// Rotas de Usuário Logado
 router.get('/my', authenticateToken, policyController.getMyPolicies);
 router.post('/chat', authenticateToken, policyController.chatWithAI);
 router.get('/:id', authenticateToken, policyController.getPolicyDetails);
+
+// Rota Pública (Para novos clientes / leads)
+router.post('/public-chat', policyController.publicChat);
 
 module.exports = router;

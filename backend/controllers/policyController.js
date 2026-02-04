@@ -102,9 +102,12 @@ exports.chatWithAI = async (req, res) => {
                         usuario: {
                             id: clientId,
                             nome: req.user.nome,
-                            org_id: orgId
+                            cpf_cnpj: req.user.cpf_cnpj, // Identificador universal no seu ecossistema
+                            org_id: orgId,
+                            org_slug: req.user.org_slug
                         },
                         pergunta: message,
+                        origem: 'PORTAL_WEB', // Para o n8n saber que veio do site
                         contexto: {
                             quant_apolices: policies.length,
                             apolices: policies
@@ -186,6 +189,61 @@ exports.chatWithAI = async (req, res) => {
 
     } catch (error) {
         console.error('Erro no chat IA:', error);
+        res.status(500).json({ error: 'Erro ao processar sua pergunta' });
+    }
+};
+
+/**
+ * Chat Público para Novos Clientes (Leads)
+ */
+exports.publicChat = async (req, res) => {
+    try {
+        const { message } = req.body;
+        const n8nWebhook = process.env.N8N_WEBHOOK_URL;
+
+        if (n8nWebhook) {
+            console.log(`[LEAD-IA] Novo contato via web: ${message.substring(0, 30)}...`);
+            try {
+                const n8nResponse = await fetch(n8nWebhook, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        usuario: {
+                            id: 'lead_web_' + Date.now(),
+                            nome: 'Visitante Web',
+                            role: 'LEAD',
+                            whatsapp: null // Novo cliente ainda não identificado
+                        },
+                        pergunta: message,
+                        origem: 'LOGIN_PAGE',
+                        intent: 'LEAD_GENERATION'
+                    })
+                });
+
+                if (n8nResponse.ok) {
+                    const n8nData = await n8nResponse.json();
+                    const aiReply = n8nData.output || n8nData.response || n8nData.text || (Array.isArray(n8nData) ? n8nData[0]?.output : null);
+                    if (aiReply) return res.json({ response: aiReply });
+                }
+            } catch (n8nError) {
+                console.error('[N8N-LEAD-ERROR]', n8nError.message);
+            }
+        }
+
+        // Fallback Local para Leads
+        let response = "Olá! Seja bem-vindo à Broker IA. Como ainda não te conheço, posso te ajudar a saber mais sobre nossos seguros ou te encaminhar para um consultor humano. O que você procura hoje?";
+
+        const msg = message.toLowerCase();
+        if (msg.includes('cotação') || msg.includes('cotacao') || msg.includes('preço') || msg.includes('valor')) {
+            response = "Excelente! Para fazer uma cotação personalizada, eu precisaria do seu nome e qual tipo de seguro você busca. Ou se preferir, você pode se identificar no portal se já for nosso cliente.";
+        } else if (msg.includes('humano') || msg.includes('atendente') || msg.includes('falar com alguém')) {
+            response = "Vou te encaminhar agora mesmo. Você também pode nos chamar no WhatsApp pelo link no rodapé!";
+        }
+
+        res.json({ response });
+
+    } catch (error) {
+        console.error('Erro no chat público:', error);
         res.status(500).json({ error: 'Erro ao processar sua pergunta' });
     }
 };
