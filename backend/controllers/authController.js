@@ -1,5 +1,20 @@
 const db = require('../db');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
+
+// Configuração do Transportador de E-mail (SMTP)
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT),
+    secure: process.env.SMTP_PORT == 465,
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS.replace(/\s/g, '') // Remove qualquer espaço da senha
+    },
+    tls: {
+        rejectUnauthorized: false
+    }
+});
 
 /**
  * Controller para Autenticação de Segurados (Login 2FA)
@@ -28,7 +43,7 @@ const authController = {
             console.log(`[DEBUG-AUTH] Buscando: ${cleanIdentifier} (Bruto: ${identifier}) na Org: ${orgId}`);
 
             const clientResult = await db.query(
-                `SELECT id, nome, email, telefone FROM clientes 
+                `SELECT id, nome, email, telefone, cpf_cnpj FROM clientes 
                  WHERE org_id = $1 AND REPLACE(REPLACE(cpf_cnpj, '.', ''), '-', '') = $2`,
                 [orgId, cleanIdentifier]
             );
@@ -54,27 +69,47 @@ const authController = {
 
             const { channel } = req.body;
 
-            // 6. Se um canal for selecionado, disparar o n8n para enviar o código REAL
-            if (channel && process.env.N8N_WEBHOOK_URL) {
-                const target = channel === 'whatsapp' ? client.telefone : client.email;
-                console.log(`[AUTH-REAL] Disparando n8n (${channel}) para ${client.nome}: ${target}`);
+            // 6. Se um canal for selecionado, disparar o ENVIO DIRETO
+            if (channel === 'email') {
+                console.log(`[AUTH-LOCAL] Enviando E-mail direto para ${client.nome}: ${client.email}`);
 
-                try {
-                    // Aqui usamos uma rota específica do n8n ou passamos um parâmetro de ação
-                    fetch(process.env.N8N_WEBHOOK_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            action: 'SEND_2FA_TOKEN',
-                            channel: channel,
-                            client_name: client.nome,
-                            target: target,
-                            token: token
-                        })
-                    }).catch(e => console.error('[AUTH-N8N-FETCH-ERROR]', e.message));
-                } catch (error) {
-                    console.error('[AUTH-N8N-ERROR]', error.message);
-                }
+                const mailOptions = {
+                    from: `"Portal DWF Seguros" <${process.env.SMTP_USER}>`,
+                    to: client.email,
+                    subject: `Código de Acesso: ${token}`,
+                    html: `
+                        <div style="font-family: sans-serif; padding: 20px; color: #333;">
+                            <h2>Olá, ${client.nome}!</h2>
+                            <p>Seu código de acesso ao portal DWF Seguros é:</p>
+                            <div style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #2563eb; padding: 20px 0;">
+                                ${token}
+                            </div>
+                            <p>Este código expira em 10 minutos.</p>
+                            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                            <p style="font-size: 12px; color: #999;">Se você não solicitou este código, ignore este e-mail.</p>
+                        </div>
+                    `
+                };
+
+                transporter.sendMail(mailOptions).catch(err => {
+                    console.error('[AUTH-SMTP-ERROR]', err.message);
+                });
+            } else if (channel === 'whatsapp' && process.env.N8N_WEBHOOK_URL) {
+                // Mantém n8n apenas para WhatsApp se necessário
+                const target = client.telefone;
+                const cpfFinal = (client.cpf_cnpj || cleanIdentifier || "").toString().replace(/\D/g, ''); // Define cpfFinal here
+                fetch(process.env.N8N_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'SEND_2FA_TOKEN',
+                        channel: 'whatsapp',
+                        client_name: client.nome,
+                        target: target,
+                        token: token,
+                        cpf: cpfFinal
+                    })
+                }).catch(e => console.error('[AUTH-N8N-FETCH-ERROR]', e.message));
             }
 
             if (channel) {
