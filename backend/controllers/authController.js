@@ -9,7 +9,7 @@ const transporter = nodemailer.createTransport({
     secure: process.env.SMTP_PORT == 465,
     auth: {
         user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS.replace(/\s/g, '') // Remove qualquer espaço da senha
+        pass: process.env.SMTP_PASS.replace(/\s/g, '')
     },
     tls: {
         rejectUnauthorized: false
@@ -37,7 +37,6 @@ const authController = {
             const orgId = orgResult.rows[0].id;
 
             // 2. Buscar o cliente (CPF ou E-mail) dentro dessa organização
-            // Normaliza o identificador: se for apenas números, remove qualquer formatação prévia
             const cleanIdentifier = identifier.includes('@') ? identifier : identifier.replace(/\D/g, '');
 
             console.log(`[DEBUG-AUTH] Buscando: ${cleanIdentifier} (Bruto: ${identifier}) na Org: ${orgId}`);
@@ -65,11 +64,11 @@ const authController = {
 
             // 5. Preparar dados mascarados para o frontend
             const maskedEmail = client.email ? client.email.replace(/(.{2})(.*)(@.*)/, "$1******$3") : "Não cadastrado";
-            const maskedPhone = client.telefone ? client.telefone.replace(/.*(\d{2})$/, "(**) *****-**$1") : "Não cadastrado";
+            const maskedPhone = client.telefone ? client.telefone.replace(/.*(\\d{2})$/, "(**) *****-**$1") : "Não cadastrado";
 
             const { channel } = req.body;
 
-            // 6. Se um canal for selecionado, disparar o ENVIO DIRETO
+            // 6. Envio Omnichannel (E-mail Local ou WhatsApp via n8n)
             if (channel === 'email') {
                 console.log(`[AUTH-LOCAL] Enviando E-mail direto para ${client.nome}: ${client.email}`);
 
@@ -95,9 +94,10 @@ const authController = {
                     console.error('[AUTH-SMTP-ERROR]', err.message);
                 });
             } else if (channel === 'whatsapp' && process.env.N8N_WEBHOOK_URL) {
-                // Mantém n8n apenas para WhatsApp se necessário
-                const target = client.telefone;
-                const cpfFinal = (client.cpf_cnpj || cleanIdentifier || "").toString().replace(/\D/g, ''); // Define cpfFinal here
+                const cpfFinal = (client.cpf_cnpj || cleanIdentifier || "").toString().replace(/\D/g, '');
+
+                console.log(`[AUTH-WHATSAPP] Disparando n8n para ${client.nome} no WhatsApp: ${client.telefone}`);
+
                 fetch(process.env.N8N_WEBHOOK_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -105,7 +105,7 @@ const authController = {
                         action: 'SEND_2FA_TOKEN',
                         channel: 'whatsapp',
                         client_name: client.nome,
-                        target: target,
+                        target: client.telefone,
                         token: token,
                         cpf: cpfFinal
                     })

@@ -94,13 +94,16 @@
     },
     {
       "parameters": {
+        "description": "OBRIGATÓRIO: Use esta ferramenta para enviar o código de 6 dígitos. Aceita e-mail ou WhatsApp como destino.",
         "workflowId": "o4B6ABk9dbBuA2fV",
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
             "token": "={{ $json.token || $json.token_portal || $('Normalizar Portal').first().json.contexto.token_portal }}",
             "email_destino": "={{ $json.email_destino || $json.email || $('Normalizar Portal').first().json.contexto.email_cadastrado }}",
-            "cpf_cliente": "={{ $json.cpf_cliente || $json.cpf || $('Normalizar Portal').first().json.contexto.cpf_real }}"
+            "telefone_destino": "={{ $json.telefone || $('Normalizar Portal').first().json.contexto.telefone }}",
+            "cpf_cliente": "={{ $json.cpf_cliente || $json.cpf || $('Normalizar Portal').first().json.contexto.cpf_real }}",
+            "canal": "={{ $json.action === 'SEND_2FA_TOKEN' ? 'portal' : 'chat' }}"
           }
         }
       },
