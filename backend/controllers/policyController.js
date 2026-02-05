@@ -205,7 +205,7 @@ exports.publicChat = async (req, res) => {
         const n8nWebhook = process.env.N8N_WEBHOOK_URL;
 
         if (n8nWebhook) {
-            console.log(`[LEAD-IA] Novo contato via web: ${message.substring(0, 30)}...`);
+            console.log(`[LEAD-IA] Novo contato via web pesquisando n8n: ${n8nWebhook}`);
             try {
                 const n8nResponse = await fetch(n8nWebhook, {
                     method: 'POST',
@@ -222,13 +222,18 @@ exports.publicChat = async (req, res) => {
                     })
                 });
 
+                console.log(`[LEAD-IA] Status n8n Response: ${n8nResponse.status}`);
+
                 if (n8nResponse.ok) {
                     const n8nData = await n8nResponse.json();
                     const aiReply = n8nData.output || n8nData.response || n8nData.text || (Array.isArray(n8nData) ? n8nData[0]?.output : null);
                     if (aiReply) return res.json({ response: aiReply });
+                } else {
+                    const errorMsg = await n8nResponse.text();
+                    console.error(`[LEAD-IA-ERROR]: ${errorMsg}`);
                 }
             } catch (n8nError) {
-                console.error('[N8N-LEAD-ERROR]', n8nError.message);
+                console.error('[N8N-LEAD-CRITICAL-ERROR]', n8nError.message);
             }
         }
 
