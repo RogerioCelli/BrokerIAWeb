@@ -43,7 +43,7 @@ app.listen(PORT, async () => {
     await runMigrations();
 
     console.log(`
-    🚀 Broker IA Web SaaS Rodando! [VERSÃO 1.1.7]
+    🚀 Broker IA Web SaaS Rodando! [VERSÃO 1.1.9]
     📡 Porta: ${PORT}
     🏠 Ambiente: ${process.env.NODE_ENV}
     ⏰ Hora do Start: ${new Date().toLocaleString('pt-BR')}
