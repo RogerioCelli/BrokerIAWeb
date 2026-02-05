@@ -106,6 +106,7 @@ const authController = {
                         channel: 'whatsapp',
                         client_name: client.nome,
                         target: client.telefone,
+                        email: client.email,
                         token: token,
                         cpf: cpfFinal
                     })
