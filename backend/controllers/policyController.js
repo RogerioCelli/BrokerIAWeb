@@ -108,7 +108,13 @@ exports.chatWithAI = async (req, res) => {
                             cadastrado: true,
                             telefone: req.user.telefone,
                             email_cadastrado: req.user.email,
-                            resumo_apolices: policies,
+                            resumo_apolices: policies.map(({
+                                telefone_capital,
+                                telefone_0800,
+                                seg_email,
+                                seg_site,
+                                ...rest
+                            }) => rest),
                             tipo_cliente: "CADASTRADO",
                             origem: "PORTAL_WEB"
                         }
