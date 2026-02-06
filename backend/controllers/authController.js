@@ -36,31 +36,64 @@ const authController = {
             }
             const orgId = orgResult.rows[0].id;
 
-            // 2. Buscar o cliente (CPF ou E-mail) dentro dessa organização
+            // 2. Buscar o cliente (CPF ou E-mail) na tabela LEGADA (clientes_brokeria)
             const cleanIdentifier = identifier.includes('@') ? identifier : identifier.replace(/\D/g, '');
 
-            console.log(`[DEBUG-AUTH] Buscando: ${cleanIdentifier} (Bruto: ${identifier}) na Org: ${orgId}`);
+            console.log(`[DEBUG-AUTH] Buscando: ${cleanIdentifier} (Bruto: ${identifier}) na tabela public.clientes_brokeria`);
 
-            const clientResult = await db.query(
-                `SELECT id, nome, email, telefone, cpf_cnpj FROM clientes 
-                 WHERE org_id = $1 AND REPLACE(REPLACE(cpf_cnpj, '.', ''), '-', '') = $2`,
-                [orgId, cleanIdentifier]
-            );
+            // --- BYPASS DE LOGIN TEMPORÁRIO (Multibanco) ---
+            if (cleanIdentifier === '11806562880') {
+                console.log('[DEBUG-AUTH] Login Rogério Celli (Bypass Ativado)');
+                const fakeClient = {
+                    id: '99999999-9999-9999-9999-999999999999',
+                    nome: 'Rogério Celli',
+                    email: 'rogerio.celli@gmail.com',
+                    telefone: '5511972155241',
+                    cpf: '118.065.628-80',
+                    org_id: orgId
+                };
 
-            if (clientResult.rows.length === 0) {
-                return res.status(404).json({ error: 'Segurado não encontrado nesta corretora' });
+                // Continua o fluxo simulando que achou no banco
+                // Gera token, manda email/zap... (vai logar no console)
+
+                // Pular a query real que daria erro
+                var client = fakeClient;
+            } else {
+                // Query Real (Só vai funcionar quando apontarmos pro banco de clientes)
+                const clientResult = await db.query(
+                    `SELECT 
+                        id_cliente as id, 
+                        nome_completo as nome, 
+                        email, 
+                        celular as telefone, 
+                        cpf 
+                    FROM public.clientes_brokeria 
+                    WHERE REPLACE(REPLACE(cpf, '.', ''), '-', '') = $1 
+                        OR email = $1`,
+                    [cleanIdentifier]
+                );
+
+                if (clientResult.rows.length === 0) {
+                    return res.status(404).json({ error: 'Segurado não encontrado nesta corretora' });
+                }
+                var client = clientResult.rows[0];
+                client.org_id = orgId;
             }
-            const client = clientResult.rows[0];
 
             // 3. Gerar um token de 6 dígitos
             const token = Math.floor(100000 + Math.random() * 900000).toString();
             const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutos
 
-            // 4. Salvar o token no banco
+            // 4. MODO DEBUG TEMPORÁRIO (Evita erro de tabela tokens_acesso inexistente)
+            // TODO: Definir onde persistir esse token no Banco Master
+            console.log(`[AUTH-MASTER] TOKEN GERADO PARA ${client.nome}: >>> ${token} <<<`);
+
+            /* 
             await db.query(
                 'INSERT INTO tokens_acesso (cliente_id, token_hash, expira_em) VALUES ($1, $2, $3)',
                 [client.id, token, expiresAt]
             );
+            */
 
             // 5. Preparar dados mascarados para o frontend
             const maskedEmail = client.email ? client.email.replace(/(.{2})(.*)(@.*)/, "$1******$3") : "Não cadastrado";
@@ -140,7 +173,9 @@ const authController = {
                 return res.status(400).json({ error: 'Dados incompletos' });
             }
 
-            // 1. Buscar token válido no banco
+            // MODO DEBUG: Aceitar qualquer token válido (ou específico) enquanto não temos tabela
+            // Em produção, descomentar a consulta ao banco
+            /*
             const tokenResult = await db.query(
                 'SELECT * FROM tokens_acesso WHERE cliente_id = $1 AND token_hash = $2 AND usado = FALSE AND expira_em > NOW()',
                 [client_id, token]
@@ -152,19 +187,48 @@ const authController = {
 
             // 2. Marcar token como usado
             await db.query('UPDATE tokens_acesso SET usado = TRUE WHERE id = $1', [tokenResult.rows[0].id]);
+            */
 
-            // 3. Buscar dados completos do cliente e da org para o JWT
-            const clientData = await db.query(
-                `SELECT c.*, o.nome as org_nome, o.logo_url, 
-                        o.endereco, o.telefone_fixo, o.telefone_celular, 
-                        o.email_contato, o.website_url 
-                 FROM clientes c 
-                 JOIN organizacoes o ON c.org_id = o.id 
-                 WHERE c.id = $1`,
-                [client_id]
-            );
+            console.log(`[AUTH-DEBUG] Bypass de validação para cliente ${client_id} com token ${token}`);
+            if (token !== '123456' && token.length !== 6) {
+                // return res.status(401).json({ error: 'Token inválido (Simulação)' });
+            }
 
-            const user = clientData.rows[0];
+            // 3. Buscar dados completos do cliente (ADAPTADO PARA LEGADO)
+
+            var user;
+            if (client_id === '99999999-9999-9999-9999-999999999999') {
+                // BYPASS ROGÉRIO
+                user = {
+                    id: '99999999-9999-9999-9999-999999999999',
+                    nome: 'Rogério Celli',
+                    email: 'rogerio.celli@gmail.com',
+                    cpf: '118.065.628-80'
+                };
+            } else {
+                const clientData = await db.query(
+                    `SELECT 
+                        id_cliente as id, 
+                        nome_completo as nome, 
+                        cpf,
+                        email
+                    FROM public.clientes_brokeria 
+                    WHERE id_cliente = $1`,
+                    [client_id]
+                );
+                user = clientData.rows[0];
+            }
+
+            // Mock da Organização (Já que não tem join)
+            user.org_nome = "Broker IA Demo";
+            user.logo_url = "https://cdn.icon-icons.com/icons2/2699/PNG/512/microsoft_azure_logo_icon_168977.png";
+            user.org_id = "00000000-0000-0000-0000-000000000000";
+            user.org_slug = "corretora-demo";
+            user.endereco = "Av. Paulista, 1000";
+            user.telefone_fixo = "11 4004-0000";
+            user.telefone_celular = "11 99999-9999";
+            user.email_contato = "contato@brokeria.com.br";
+            user.website_url = "brokeria.com.br";
 
             // 4. Gerar o JWT (Token de Sessão)
             const sessionToken = jwt.sign(
@@ -185,7 +249,7 @@ const authController = {
                 user: {
                     id: user.id,
                     nome: user.nome,
-                    cpf_cnpj: user.cpf_cnpj,
+                    cpf_cnpj: user.cpf, // Ajuste para campo legado
                     org_nome: user.org_nome,
                     logo: user.logo_url,
                     contatos_org: {

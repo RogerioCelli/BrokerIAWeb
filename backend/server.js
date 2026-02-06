@@ -50,8 +50,9 @@ app.listen(PORT, async () => {
     // Garantir que o banco de dados está sincronizado antes de atender requisições
     await runMigrations();
 
+    const packageJson = require('./package.json');
     console.log(`
-    🚀 Broker IA Web SaaS Rodando! [VERSÃO 1.1.9]
+    🚀 Broker IA Web SaaS Rodando! [VERSÃO ${packageJson.version}]
     📡 Porta: ${PORT}
     🏠 Ambiente: ${process.env.NODE_ENV}
     ⏰ Hora do Start: ${new Date().toLocaleString('pt-BR')}
