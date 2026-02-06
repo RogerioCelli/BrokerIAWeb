@@ -1,8 +1,8 @@
 const db = require('../db');
 
 /**
- * Controller de Apólices - Versão 1.1.22 (ESTABILIZADA)
- * Focado exclusivamente no banco apolices-brokeria
+ * Controller de Apólices - Versão 1.1.24 (SCHEMA DETECTOR)
+ * Detecta automaticamente onde a tabela está antes de consultar
  */
 const policyController = {
     getMyPolicies: async (req, res) => {
@@ -11,20 +11,38 @@ const policyController = {
             if (!userCpf) return res.status(400).json({ error: 'Sessão sem CPF' });
 
             const cleanCpf = userCpf.replace(/\D/g, '');
-            console.log(`[DIRECT-ACCESS] Buscando apólices para CPF: ${cleanCpf}`);
+            console.log(`[SCHEMA-DETECT] Iniciando busca para CPF: ${cleanCpf}`);
 
-            // 1. Diagnóstico: Listar tabelas disponíveis
+            // 1. DETECTAR SCHEMA
+            let tableName = 'apolices_brokeria'; // Fallback
+            let schemaTable = 'Nenhuma tabela detectada';
+
             try {
-                const { rows: tableList } = await db.apolicesQuery(`
-                    SELECT table_name FROM information_schema.tables 
-                    WHERE table_schema = 'public'
+                const { rows: found } = await db.apolicesQuery(`
+                    SELECT table_schema, table_name 
+                    FROM information_schema.tables 
+                    WHERE table_name = 'apolices_brokeria'
                 `);
-                console.log(`[DIRECT-ACCESS] Tabelas no banco:`, tableList.map(t => t.table_name).join(', '));
+
+                if (found.length > 0) {
+                    const schema = found[0].table_schema;
+                    tableName = `"${schema}"."apolices_brokeria"`;
+                    console.log(`✅ [SCHEMA-DETECT] Tabela localizada em: ${tableName}`);
+                    schemaTable = tableName;
+                } else {
+                    console.log(`❌ [SCHEMA-DETECT] Tabela apolices_brokeria NÃO encontrada no information_schema.`);
+                    // Vamos tentar listar o que existe para debug
+                    const { rows: allTables } = await db.apolicesQuery(`
+                        SELECT table_name FROM information_schema.tables 
+                        WHERE table_schema = 'public' LIMIT 5
+                    `);
+                    schemaTable = 'Não encontrada. Visíveis: ' + (allTables.map(t => t.table_name).join(', ') || 'Nenhuma');
+                }
             } catch (e) {
-                console.error(`[DIRECT-ACCESS-ERR] Erro diagnostico:`, e.message);
+                console.error('[SCHEMA-DETECT-ERR]', e.message);
             }
 
-            // 2. Consulta Direta (usando template strings para evitar erro de aspas)
+            // 2. CONSULTA BLINDADA
             const queryText = `
                 SELECT 
                     id_apolice as id,
@@ -36,13 +54,14 @@ const policyController = {
                     status_apolice as status,
                     url_pdf as pdf_url,
                     placa
-                FROM apolices_brokeria
+                FROM ${tableName}
                 WHERE REPLACE(REPLACE(cpf, '.', ''), '-', '') = $1
                 ORDER BY vigencia_fim DESC
             `;
 
             const { rows } = await db.apolicesQuery(queryText, [cleanCpf]);
 
+            // Busca detalhes
             const enrichedRows = await Promise.all(rows.map(async (p) => {
                 try {
                     const { rows: details } = await db.apolicesQuery(
@@ -61,23 +80,8 @@ const policyController = {
             res.json(enrichedRows);
 
         } catch (error) {
-            console.error('[DIRECT-ERROR]', error.message);
-
-            // Tenta listar tabelas para retornar no erro
-            let tableListStr = 'Nenhuma tabela encontrada';
-            try {
-                const { rows: tableList } = await db.apolicesQuery(`
-                    SELECT table_name FROM information_schema.tables 
-                    WHERE table_schema = 'public'
-                `);
-                if (tableList.length > 0) {
-                    tableListStr = tableList.map(t => t.table_name).join(', ');
-                }
-            } catch (e) {
-                tableListStr = 'Erro ao listar: ' + e.message;
-            }
-
-            res.status(500).json({ error: `Erro no banco: ${error.message}. (Tabelas visíveis: ${tableListStr})` });
+            console.error('[POLICIES-CRITICAL]', error.message);
+            res.status(500).json({ error: `Erro Crítico: ${error.message}` });
         }
     },
 
