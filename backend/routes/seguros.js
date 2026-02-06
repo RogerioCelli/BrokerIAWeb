@@ -16,8 +16,8 @@ router.get('/estrutura', async (req, res) => {
                 json_agg(json_build_object('id', t.id, 'nome', t.nome)) as tipos
             FROM categorias_seguros c
             LEFT JOIN tipos_seguros t ON c.id = t.categoria_id
-            GROUP BY c.id, c.nome
-            ORDER BY c.id;
+            GROUP BY c.id, c.nome, c.ordem
+            ORDER BY c.ordem NULLS LAST, c.id;
         `;
 
         const result = await db.query(query);

@@ -40,11 +40,28 @@ async function migrate() {
         // 3. Popular Categorias e Tipos
         console.log('Populando dados de Seguros...');
 
+        // 3.1 Correções de Schema e Dados (Renomear e Ordenar) - Executado antes do loop principal para garantir base limpa
+        await db.query(`
+            ALTER TABLE categorias_seguros ADD COLUMN IF NOT EXISTS ordem INTEGER;
+            
+            -- Renomear Mobilidade para Automóvel e Transporte
+            UPDATE categorias_seguros SET nome = 'Automóvel e Transporte', ordem = 1 
+            WHERE nome = 'Mobilidade e Transporte' OR nome = 'Automóvel e Transporte';
+            
+            -- Ordenar Patrimoniais
+            UPDATE categorias_seguros SET ordem = 2 WHERE nome = 'Patrimoniais';
+            
+            -- Renomear Seguros para Pessoas para Vida
+            UPDATE categorias_seguros SET nome = 'Vida', ordem = 3 
+            WHERE nome = 'Seguros para Pessoas' OR nome = 'Vida';
+        `);
+
+        // Atualizando a estrutura para refletir os novos nomes nas próximas execuções
         const estruturaSeguros = {
-            "Seguros para Pessoas": [
+            "Vida": [ // Antigo Seguros para Pessoas
                 "Vida Individual", "Vida em Grupo", "Funeral", "Acidentes Pessoais", "Doenças Graves", "Viagem", "Saúde"
             ],
-            "Mobilidade e Transporte": [
+            "Automóvel e Transporte": [ // Antigo Mobilidade e Transporte
                 "Automóvel", "Moto", "Caminhão", "Frota", "Transporte de Carga"
             ],
             "Patrimoniais": [
