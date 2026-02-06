@@ -92,6 +92,24 @@ const policyController = {
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
+    },
+    // Chat Público (Para leads/visitantes)
+    publicChat: async (req, res) => {
+        try {
+            const { message } = req.body;
+            const response = await fetch(process.env.N8N_WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'chat_publico',
+                    message
+                })
+            });
+            const data = await response.json();
+            res.json(data);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
 };
 
