@@ -28,6 +28,10 @@ const policyController = {
                 }
             }
 
+            // Se a conexão funcionar mas não achar a tabela, vamos investigar ONDE estamos conectados
+            const { rows: currentDb } = await db.apolicesQuery('SELECT current_database() as db_name, current_user as user_name');
+            console.log(`[CONEXAO-REAL] Conectado no banco: ${currentDb[0].db_name} como usuário: ${currentDb[0].user_name}`);
+
             // Se conectou, tenta a tabela direta com COLUNAS VERIFICADAS
             const queryText = `
                 SELECT 
@@ -67,8 +71,13 @@ const policyController = {
 
             // RAIO-X: Se a tabela não existe, me mostre o que existe!
             let tablesFound = 'Nenhuma tabela';
+            let currentDbName = 'Desconhecido';
+
             if (error.message.includes('does not exist')) {
                 try {
+                    const { rows: dbInfo } = await db.apolicesQuery('SELECT current_database() as db_name');
+                    currentDbName = dbInfo[0].db_name;
+
                     const { rows } = await db.apolicesQuery(`
                         SELECT table_name 
                         FROM information_schema.tables 
@@ -81,7 +90,7 @@ const policyController = {
                 }
             }
 
-            res.status(500).json({ error: `Erro no Banco: ${error.message}. (O que existe lá: ${tablesFound})` });
+            res.status(500).json({ error: `Erro no Banco (${currentDbName}): ${error.message}. (O que existe lá: ${tablesFound})` });
         }
     },
 
