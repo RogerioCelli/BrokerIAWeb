@@ -1,39 +1,64 @@
 const { Pool } = require('pg');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL.includes('sslmode=disable'))
-        ? { rejectUnauthorized: false }
-        : false
+/**
+ * CONEXÃO 1: Banco do Portal (db-brokeriaweb)
+ * Onde guardamos tokens, sessões e controle do próprio site.
+ */
+const poolPortal = new Pool({
+    connectionString: process.env.DATABASE_URL, // O banco do Easypanel deste projeto
 });
 
 /**
- * Função utilitária para executar queries com segurança.
- * @param {string} text - A query SQL
- * @param {Array} params - Os parâmetros da query
+ * CONEXÃO 2: Banco Master (brokeria-seguros)
+ * Onde estão as Seguradoras, Categorias e Veículos.
  */
-const query = (text, params) => pool.query(text, params);
+const poolMaster = new Pool({
+    connectionString: process.env.MASTER_DATABASE_URL,
+});
 
 /**
- * MIDDLEWARE DE ISOLAMENTO (MULTITENANCY)
- * Garante que qualquer query feita no contexto de uma corretora
- * seja filtrada pelo ID da organização.
+ * CONEXÃO 3: Banco de Clientes (cliente-brokeria)
+ * Onde estão os cadastros de CPF/Email/Telefone.
  */
-const tenantFilter = (orgId) => {
-    return {
-        wrap: (sql) => {
-            // Adiciona logicamente o filtro de org_id se não estiver presente
-            if (sql.toLowerCase().includes('where')) {
-                return sql.replace(/where/i, `WHERE org_id = '${orgId}' AND `);
-            }
-            return `${sql} WHERE org_id = '${orgId}'`;
-        }
-    };
+const poolClientes = new Pool({
+    connectionString: process.env.CLIENTES_DATABASE_URL,
+});
+
+/**
+ * CONEXÃO 4: Banco de Registros (registros-brokeria)
+ * Onde o Master salva o histórico e as cotações oficiais.
+ */
+const poolRegistros = new Pool({
+    connectionString: process.env.REGISTROS_DATABASE_URL,
+});
+
+// Helper para tratar SSL em conexões internas
+const disableSSL = (pool) => {
+    if (pool.options.connectionString && (pool.options.connectionString.includes('brokeria_') || pool.options.connectionString.includes('sslmode=disable'))) {
+        pool.options.ssl = false;
+    } else {
+        pool.options.ssl = { rejectUnauthorized: false };
+    }
 };
 
+disableSSL(poolPortal);
+disableSSL(poolMaster);
+disableSSL(poolClientes);
+disableSSL(poolRegistros);
+
 module.exports = {
-    pool,
-    query,
-    tenantFilter
+    // Padrão (Portal - Sessões/Tokens)
+    query: (text, params) => poolPortal.query(text, params),
+    poolPortal,
+    // Master (Inteligência - Categorias/Seguros)
+    masterQuery: (text, params) => poolMaster.query(text, params),
+    poolMaster,
+    // Clientes (Identidade - CPF/Cadastro)
+    clientesQuery: (text, params) => poolClientes.query(text, params),
+    poolClientes,
+    // Registros (Central de Cotações - Onde o Master e o Portal guardam tudo)
+    registrosQuery: (text, params) => poolRegistros.query(text, params),
+    poolRegistros
 };

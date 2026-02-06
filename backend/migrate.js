@@ -1,134 +1,54 @@
-const db = require('./db'); // Ajustado para rodar de dentro de backend/
+const db = require('./db');
 
+/**
+ * Migração para o Banco do Portal (db-brokeriaweb)
+ * Cria apenas as tabelas necessárias para o funcionamento do site,
+ * sem mexer nos bancos Master ou de Clientes.
+ */
 async function migrate() {
     try {
-        console.log('--- Iniciando Criação de Estrutura de Seguros e Veículos ---');
+        console.log('--- [PORTAL] Iniciando Migração de Tabelas Internas ---');
 
-        // 1. Criar Tabelas de Categoria e Tipos de Seguro
-        console.log('Criando tabelas de seguros...');
-
+        // 1. Tabela de Organizações (Cache Local do Portal)
+        console.log('[PORTAL] Garantindo tabela de organizações...');
         await db.query(`
-            CREATE TABLE IF NOT EXISTS categorias_seguros (
-                id SERIAL PRIMARY KEY,
-                nome VARCHAR(255) UNIQUE NOT NULL
-            );
-        `);
-
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS tipos_seguros (
-                id SERIAL PRIMARY KEY,
+            CREATE TABLE IF NOT EXISTS organizacoes (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 nome VARCHAR(255) NOT NULL,
-                categoria_id INTEGER REFERENCES categorias_seguros(id) ON DELETE CASCADE,
-                UNIQUE(nome, categoria_id)
+                slug VARCHAR(100) UNIQUE NOT NULL,
+                logo_url TEXT,
+                ativo BOOLEAN DEFAULT TRUE,
+                config_json JSONB,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
         `);
 
-        // 2. Criar Tabela Unificada de Veículos (Estrutura Hierárquica)
-        console.log('Criando tabela unificada de veículos...');
-
+        // 2. Inserir Corretora Padrão se não existir (Demo)
         await db.query(`
-            CREATE TABLE IF NOT EXISTS veiculos_base (
+            INSERT INTO organizacoes (nome, slug, logo_url)
+            VALUES ('Broker IA', 'corretora-demo', 'https://cdn.icon-icons.com/icons2/2699/PNG/512/microsoft_azure_logo_icon_168977.png')
+            ON CONFLICT (slug) DO NOTHING;
+        `);
+
+        // 3. Tabela de Tokens de Acesso (2FA do Portal)
+        console.log('[PORTAL] Garantindo tabela de tokens_acesso...');
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS tokens_acesso (
                 id SERIAL PRIMARY KEY,
-                nome VARCHAR(255) NOT NULL,
-                tipo VARCHAR(50) NOT NULL, -- MARCA, MODELO, VERSAO
-                fipe_codigo VARCHAR(50), 
-                parent_id INTEGER REFERENCES veiculos_base(id) ON DELETE CASCADE, -- Auto-relacionamento
-                categoria_veiculo VARCHAR(50) -- CARRO, MOTO, CAMINHAO
+                cliente_id VARCHAR(255) UNIQUE NOT NULL, -- ID do banco de clientes (ou CPF)
+                token_hash VARCHAR(255) NOT NULL,
+                expira_em TIMESTAMP WITH TIME ZONE NOT NULL,
+                usado BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
         `);
 
-        // 3. Popular Categorias e Tipos
-        console.log('Populando dados de Seguros...');
-
-        // 3.1 Correções de Schema e Dados (Renomear e Ordenar) - Executado antes do loop principal para garantir base limpa
-        await db.query(`
-            ALTER TABLE categorias_seguros ADD COLUMN IF NOT EXISTS ordem INTEGER;
-            
-            -- Renomear Mobilidade para Automóvel e Transporte
-            UPDATE categorias_seguros SET nome = 'Automóvel e Transporte', ordem = 1 
-            WHERE nome = 'Mobilidade e Transporte' OR nome = 'Automóvel e Transporte';
-            
-            -- Ordenar Patrimoniais
-            UPDATE categorias_seguros SET ordem = 2 WHERE nome = 'Patrimoniais';
-            
-            -- Renomear Seguros para Pessoas para Vida
-            UPDATE categorias_seguros SET nome = 'Vida', ordem = 3 
-            WHERE nome = 'Seguros para Pessoas' OR nome = 'Vida';
-        `);
-
-        // Atualizando a estrutura para refletir os novos nomes nas próximas execuções
-        const estruturaSeguros = {
-            "Vida": [ // Antigo Seguros para Pessoas
-                "Vida Individual", "Vida em Grupo", "Funeral", "Acidentes Pessoais", "Doenças Graves", "Viagem", "Saúde"
-            ],
-            "Automóvel e Transporte": [ // Antigo Mobilidade e Transporte
-                "Automóvel", "Moto", "Caminhão", "Frota", "Transporte de Carga"
-            ],
-            "Patrimoniais": [
-                "Residencial", "Condomínio", "Empresarial"
-            ],
-            "Responsabilidade Civil": [
-                "RC Profissional", "RC Geral", "RC Obras", "RC Eventos", "RC D&O (Diretores)"
-            ],
-            "Rurais": [
-                "Agricola", "Pecuário", "Benfeitorias", "Florestas"
-            ],
-            "Empresas e Negócios": [
-                "Riscos de Engenharia", "Garantia", "Lucros Cessantes", "Cyber Risk (Cibernético)"
-            ],
-            "Financeiros": [
-                "Fiança Locatícia", "Capitalização", "Previdência Privada"
-            ],
-            "Náutico e Aeronáutico": [
-                "Embarcações (Casco)", "Aeronáutico (Reta e Casco)"
-            ],
-            "Especiais": [
-                "Equipamentos Portáteis", "Bicicleta", "Animais (Pet)"
-            ]
-        };
-
-        for (const [categoria, tipos] of Object.entries(estruturaSeguros)) {
-            // Inserir Categoria
-            const resCat = await db.query(
-                `INSERT INTO categorias_seguros (nome) VALUES ($1) ON CONFLICT (nome) DO UPDATE SET nome = EXCLUDED.nome RETURNING id`,
-                [categoria]
-            );
-            const catId = resCat.rows[0].id;
-
-            // Inserir Tipos
-            for (const tipo of tipos) {
-                await db.query(
-                    `INSERT INTO tipos_seguros (nome, categoria_id) VALUES ($1, $2) ON CONFLICT (nome, categoria_id) DO NOTHING`,
-                    [tipo, catId]
-                );
-            }
-        }
-
-        console.log('✅ Estrutura criada e populada com sucesso!');
-
-        // 4. Inserir Exemplo de Veículos (Apenas para teste)
-        console.log('Inserindo exemplos de veículos...');
-        const resMarca = await db.query(`
-            INSERT INTO veiculos_base (nome, tipo, categoria_veiculo) 
-            VALUES ('Chevrolet', 'MARCA', 'CARRO') 
-            RETURNING id
-        `);
-
-        if (resMarca.rows.length > 0) {
-            const marcaId = resMarca.rows[0].id;
-            await db.query(`
-                INSERT INTO veiculos_base (nome, tipo, parent_id, categoria_veiculo) 
-                VALUES ('Onix 1.0 Turbo', 'MODELO', $1, 'CARRO')
-            `, [marcaId]);
-        }
-
-        console.log('--- Migração Concluída ---');
-        return; // Retorna para continuar o startup do servidor
+        console.log('✅ [PORTAL] Estrutura interna configurada com sucesso!');
+        return;
     } catch (error) {
-        console.error('❌ Erro na migração:', error);
-        throw error; // Lança o erro para ser tratado quem chamou
+        console.error('❌ [PORTAL] Erro na migração:', error);
+        throw error;
     }
 }
 
-// Exporta a função para ser usada no startup do servidor
 module.exports = { migrate };

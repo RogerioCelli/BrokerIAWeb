@@ -31,9 +31,10 @@ app.use('/api/seguros', segurosRoutes); // Endpoint Público de Seguros
 
 // Rotas Base
 app.get('/', (req, res) => {
+    const packageJson = require('./package.json');
     res.json({
         message: 'Broker IA Web API - Ativa e Escalável',
-        version: '1.1.0-FIX-LOGS',
+        version: packageJson.version,
         status: 'Sistema Pronto e Monitorado'
     });
 });
