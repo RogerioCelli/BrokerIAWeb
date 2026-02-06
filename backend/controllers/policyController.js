@@ -46,6 +46,25 @@ const policyController = {
 
         } catch (error) {
             console.error('[POLICIES-ERROR]', error.message);
+
+            // Log diagnóstico de emergência
+            if (error.message.includes('relation') || error.message.includes('does not exist')) {
+                try {
+                    const { rows: allTables } = await db.apolicesQuery(`
+                        SELECT table_schema, table_name 
+                        FROM information_schema.tables 
+                        WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
+                    `);
+                    const list = allTables.map(t => `${t.table_schema}.${t.table_name}`).join(', ');
+                    console.log('[POLICIES-DIAGNOSTIC] Tabelas que eu REALMENTE vejo aqui:', list || 'NENHUMA (Banco Vazio)');
+
+                    const url = process.env.APOLICES_DATABASE_URL || "";
+                    console.log('[POLICIES-DIAGNOSTIC] URL usada:', url.split('@')[1] || 'URL não configurada');
+                } catch (diagErr) {
+                    console.error('[POLICIES-DIAGNOSTIC-ERR]', diagErr.message);
+                }
+            }
+
             res.status(500).json({ error: 'Erro ao buscar dados das apólices: ' + error.message });
         }
     },
