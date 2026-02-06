@@ -26,13 +26,21 @@ async function runMigrations() {
             );
         `);
 
-        // 2. Garantir pdf_url na tabela oficial se não existir
+        // 2. Garantir pdf_url na tabela oficial e adicionar dados de contato na organizacoes
         await db.query(`
             DO $$ 
             BEGIN 
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='apolices_brokeria' AND column_name='url_pdf') THEN
                     -- Se não existe a coluna na tabela oficial, apenas logamos (a tabela é externa)
                     RAISE NOTICE 'Verifique a existência da coluna url_pdf na tabela apolices_brokeria';
+                END IF;
+
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='organizacoes' AND column_name='endereco') THEN
+                    ALTER TABLE organizacoes ADD COLUMN endereco TEXT;
+                    ALTER TABLE organizacoes ADD COLUMN telefone_fixo VARCHAR(20);
+                    ALTER TABLE organizacoes ADD COLUMN telefone_celular VARCHAR(20);
+                    ALTER TABLE organizacoes ADD COLUMN email_contato VARCHAR(255);
+                    ALTER TABLE organizacoes ADD COLUMN website_url TEXT;
                 END IF;
             END $$;
         `);
@@ -48,7 +56,7 @@ async function runMigrations() {
             WHERE slug = 'corretora-demo'
         `);
 
-        // 3. Popular Seguradoras (Se tabela estiver vazia)
+        // 4. Popular Seguradoras (Se tabela estiver vazia)
         const check = await db.query('SELECT COUNT(*) FROM seguradoras');
         if (parseInt(check.rows[0].count) < 20) {
             console.log('[DB] Populando base mestra de seguradoras...');
@@ -95,7 +103,7 @@ async function runMigrations() {
             }
         }
 
-        // 4. Configurar dados reais do cliente para teste de validação (Rogério Celli)
+        // 5. Configurar dados reais do cliente para teste de validação (Rogério Celli)
         await db.query(`
             UPDATE clientes SET 
                 nome = 'Rogério Celli',
@@ -104,17 +112,6 @@ async function runMigrations() {
                 email = 'rogerio.celli@gmail.com'
             WHERE id = 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22' 
                OR nome LIKE 'Rogerio Cliente%';
-        `);
-
-        // 5. Aplicar padrão numérico oficial nas apólices (13 dígitos)
-        await db.query(`
-            UPDATE apolices SET 
-                numero_apolice = '8022026227130'
-            WHERE ramo = 'AUTOMOVEL';
-            
-            UPDATE apolices SET 
-                numero_apolice = '9011055338240'
-            WHERE ramo = 'RESIDENCIAL';
         `);
 
         console.log('✅ Banco de dados sincronizado e pronto.');
