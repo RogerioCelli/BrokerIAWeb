@@ -70,10 +70,86 @@ const policyController = {
         }
     },
 
-    // Integração com Chat IA (pode ser expandida conforme o n8n for configurado)
+    // Integração com Chat IA para usuários logados
     chatWithAI: async (req, res) => {
-        // ... Lógica similar ao chat anterior, mas buscando contexto no banco de apólices real ...
-        res.json({ response: "O Agente de IA está sendo conectado aos seus dados reais. Em breve poderei responder tudo sobre elas!" });
+        try {
+            const { message } = req.body;
+            const { cpf: userCpf } = req.user;
+
+            // Busca contexto real de apólices para a IA
+            const { rows: policies } = await db.apolicesQuery(
+                `SELECT numero_apolice, ramo, seguradora, data_fim, detalhes_veiculo, status_apolice as status
+                 FROM public.apolices_brokeria 
+                 WHERE REPLACE(REPLACE(cpf_segurado, '.', ''), '-', '') = REPLACE(REPLACE($1, '.', ''), '-', '')`,
+                [userCpf]
+            );
+
+            const n8nWebhook = process.env.N8N_WEBHOOK_URL;
+
+            if (n8nWebhook) {
+                const n8nResponse = await fetch(n8nWebhook, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        pergunta_cliente: message,
+                        contexto: {
+                            nome: req.user.nome,
+                            cpf: userCpf,
+                            token_validado: "SIM",
+                            cadastrado: true,
+                            apolices: policies,
+                            origem: "PORTAL_WEB_LOGADO"
+                        }
+                    })
+                });
+
+                if (n8nResponse.ok) {
+                    const n8nData = await n8nResponse.json();
+                    const aiReply = n8nData.output || n8nData.response || n8nData.text;
+                    if (aiReply) return res.json({ response: aiReply });
+                }
+            }
+
+            res.json({ response: "Estou analisando seus dados de seguro. Em que posso ajudar hoje?" });
+        } catch (error) {
+            console.error('[CHAT-IA-LOGADO-ERR]', error.message);
+            res.status(500).json({ error: 'Erro ao processar chat' });
+        }
+    },
+
+    // Chat Público para Leads
+    publicChat: async (req, res) => {
+        try {
+            const { message } = req.body;
+            const n8nWebhook = process.env.N8N_WEBHOOK_URL;
+
+            if (n8nWebhook) {
+                const n8nResponse = await fetch(n8nWebhook, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        pergunta_cliente: message,
+                        contexto: {
+                            nome: "Visitante Web",
+                            token_validado: "NÃO",
+                            cadastrado: false,
+                            origem: "PORTAL_WEB_PUBLICO"
+                        }
+                    })
+                });
+
+                if (n8nResponse.ok) {
+                    const n8nData = await n8nResponse.json();
+                    const aiReply = n8nData.output || n8nData.response || n8nData.text;
+                    if (aiReply) return res.json({ response: aiReply });
+                }
+            }
+
+            res.json({ response: "Olá! Como posso ajudar você a proteger o que é importante hoje?" });
+        } catch (error) {
+            console.error('[CHAT-IA-PUBLIC-ERR]', error.message);
+            res.status(500).json({ error: 'Erro ao processar chat' });
+        }
     }
 };
 
