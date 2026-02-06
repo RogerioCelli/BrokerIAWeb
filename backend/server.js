@@ -7,6 +7,7 @@ require('dotenv').config();
 // Importar Rotas
 const authRoutes = require('./routes/authRoutes');
 const policyRoutes = require('./routes/policyRoutes');
+const segurosRoutes = require('./routes/seguros'); // Rotas de Seguros Dinâmicos
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -20,6 +21,7 @@ app.use(morgan('dev'));
 // Rotas da API
 app.use('/api/auth', authRoutes);
 app.use('/api/policies', policyRoutes);
+app.use('/api/seguros', segurosRoutes); // Endpoint Público de Seguros
 
 // Rotas Base
 app.get('/', (req, res) => {
