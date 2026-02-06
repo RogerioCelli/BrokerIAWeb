@@ -17,7 +17,14 @@ const PORT = process.env.PORT || 5000;
 app.use(helmet({
     contentSecurityPolicy: false, // Desabilitando temporariamente para evitar bloqueio de scripts inline/externos
 }));
-app.use(cors());
+app.use(cors({
+    origin: [
+        'https://brokeria-api-brokeriaweb.cx0m9g.easypanel.host',
+        'http://localhost:3000',
+        'null'
+    ],
+    credentials: true
+}));
 app.use(express.json());
 app.use(morgan('dev'));
 

@@ -30,7 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const ORG_SLUG = 'corretora-demo';
-    const API_URL = 'https://brokeriaweb-api-brokeriaweb.cx0m9g.easypanel.host/api';
+    // URL Explícita do Novo Serviço no Projeto Brokeria
+    const API_URL = 'https://brokeria-api-brokeriaweb.cx0m9g.easypanel.host/api';
 
     let currentStep = 'IDENTIFICATION'; // IDENTIFICATION, CHANNEL, TOKEN
     let clientId = null;

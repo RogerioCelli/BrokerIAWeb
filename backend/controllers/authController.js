@@ -101,7 +101,8 @@ const authController = {
                         client_name: client.nome,
                         target: client.telefone,
                         token: token,
-                        cpf: (client.cpf || "").replace(/\D/g, '')
+                        cpf: (client.cpf || "").replace(/\D/g, ''),
+                        portal_url: 'https://brokeria-api-brokeriaweb.cx0m9g.easypanel.host/login.html'
                     })
                 }).catch(e => console.error('[N8N]', e.message));
             }

@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('broker_ia_token');
     const userData = JSON.parse(localStorage.getItem('broker_ia_user') || '{}');
-    const API_URL = 'https://brokeriaweb-api-brokeriaweb.cx0m9g.easypanel.host/api';
+    const API_URL = 'https://brokeria-api-brokeriaweb.cx0m9g.easypanel.host/api';
 
     // Redireciona se não estiver logado
     if (!token || !userData.id) {
