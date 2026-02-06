@@ -106,11 +106,10 @@ async function migrate() {
         }
 
         console.log('--- Migração Concluída ---');
-        process.exit(0);
-
+        return; // Retorna para continuar o startup do servidor
     } catch (error) {
         console.error('❌ Erro na migração:', error);
-        process.exit(1);
+        throw error; // Lança o erro para ser tratado quem chamou
     }
 }
 
