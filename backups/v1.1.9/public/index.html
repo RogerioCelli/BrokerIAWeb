@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broker IA | Home</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Estilos específicos para a Home baseados no tema */
+        .home-container {
+            width: 100%;
+            max-width: 1200px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hero-section {
+            text-align: center;
+            margin-bottom: 4rem;
+            animation: fadeInScale 0.8s ease-out;
+        }
+
+        .hero-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #f8fafc, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .hero-subtitle {
+            color: var(--text-dim);
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .service-card {
+            background: var(--bg-surface);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            padding: 2rem;
+            border-radius: var(--radius-xl);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 15px 30px rgba(16, 185, 129, 0.15);
+        }
+
+        .icon-box {
+            width: 70px;
+            height: 70px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
+            color: var(--primary);
+            transition: all 0.3s ease;
+        }
+
+        .service-card:hover .icon-box {
+            background: var(--primary);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .card-title {
+            color: var(--text-main);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-desc {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* Área institucional */
+        .institutional-section {
+            margin-top: 5rem;
+            text-align: center;
+            padding: 3rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--glass-border);
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: center;
+            gap: 4rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-item h3 {
+            font-size: 2.5rem;
+            color: var(--primary);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-item p {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Elementos decorativos -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <main class="home-container">
+        <!-- Hero Section -->
+        <div class="hero-section">
+            <h1 class="hero-title">Broker IA</h1>
+            <p class="hero-subtitle">Seguros inteligentes com atendimento humanizado e tecnologia de ponta. Protegendo o
+                que importa, 24/7.</p>
+        </div>
+
+        <!-- Grid de Serviços -->
+        <div class="services-grid">
+            <!-- Card Cotação -->
+            <!-- Card Cotação -->
+            <a href="cotacao.html" class="service-card">
+                <div class="icon-box">
+                    <i class="fas fa-calculator"></i>
+                </div>
+                <h2 class="card-title">Solicitar Cotação</h2>
+                <p class="card-desc">Solicite aqui cotação de seguro auto, residencial, entre outros, em poucos cliques
+                    e com suporte total da nossa IA.</p>
+            </a>
+
+            <!-- Card Área do Cliente -->
+            <a href="login.html" class="service-card">
+                <div class="icon-box">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <h2 class="card-title">Área do Cliente</h2>
+                <p class="card-desc">Acesse suas apólices, boletos e solicitações em nosso portal seguro.</p>
+            </a>
+
+            <!-- Card Atendimento -->
+            <a href="https://wa.me/5511999999999" target="_blank" class="service-card">
+                <div class="icon-box">
+                    <i class="fab fa-whatsapp"></i>
+                </div>
+                <h2 class="card-title">Falar no WhatsApp</h2>
+                <p class="card-desc">Atendimento instantâneo com nossa Inteligência Artificial ou corretores.</p>
+            </a>
+        </div>
+
+        <!-- Seção Institucional -->
+        <div class="institutional-section">
+            <h2 class="card-title" style="margin-bottom: 1rem;">Por que escolher a Broker IA?</h2>
+            <p class="card-desc" style="max-width: 700px; margin: 0 auto;">
+                Unimos a expertise de corretores experientes com a velocidade da inteligência artificial para oferecer a
+                melhor proteção pelo menor custo.
+            </p>
+
+            <div class="stats-row">
+                <div class="stat-item">
+                    <h3>+5k</h3>
+                    <p>Clientes Protegidos</p>
+                </div>
+                <div class="stat-item">
+                    <h3>24/7</h3>
+                    <p>Atendimento</p>
+                </div>
+                <div class="stat-item">
+                    <h3>100%</h3>
+                    <p>Digital & Seguro</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Chat Flutuante -->
+    <div class="ai-assistant-fab" id="chatFab">
+        <i class="fas fa-robot"></i>
+    </div>
+
+    <!-- Container do Chat (Oculto inicialmente) -->
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-header">
+            <span>Agente Broker IA</span>
+            <button id="closeChat" style="background:none; border:none; color:white; cursor:pointer;"><i
+                    class="fas fa-times"></i></button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot">Olá! Eu sou a IA da Broker. Como posso ajudar você hoje?</div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chatInput" placeholder="Digite sua mensagem...">
+            <button id="sendMessage"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <!-- Reuso do script principal -->
+    <script src="main.js"></script>
+</body>
+
+</html>
