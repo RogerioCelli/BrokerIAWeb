@@ -53,10 +53,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const policyNum = btn.closest('.policy-card').querySelector('.policy-details').textContent;
 
         if (isDocuments) {
-            alert(`Documentos Disponíveis (${policyNum}):\n\n1. Carteirinha Digital.pdf\n2. Guia de Assistência 24h.pdf\n3. Condições Gerais ${userData.nome.split(' ')[0]}.pdf\n\n(Acesso liberado pelo repositório da Corretora)`);
+            console.log(`Documentos Disponíveis (${policyNum})`);
+            // Aqui podemos abrir um modal no futuro
         } else {
             const safePath = userData.cpf_cnpj.replace(/\D/g, '');
-            alert(`Módulo de Envio:\nSeus arquivos (Fotos de vistoria, CNH, etc) serão salvos na sua pasta exclusiva de cliente:\n/upload_cliente/${safePath}/\n\nA corretora será notificada para conferência.`);
+            console.log(`Módulo de Envio para pasta: /upload_cliente/${safePath}/`);
+            // Aqui podemos abrir um modal no futuro
         }
     });
 

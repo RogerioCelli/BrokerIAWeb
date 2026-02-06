@@ -123,8 +123,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 600);
             }
         } catch (error) {
-            alert(error.message);
-            mainButton.textContent = originalBtnText;
+            mainButton.textContent = 'Erro: ' + error.message;
+            setTimeout(() => {
+                mainButton.textContent = originalBtnText;
+            }, 3000);
         } finally {
             mainButton.disabled = false;
         }
