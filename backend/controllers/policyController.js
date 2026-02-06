@@ -1,8 +1,8 @@
 const db = require('../db');
 
 /**
- * Controller de Apólices - Versão 1.1.24 (SCHEMA DETECTOR)
- * Detecta automaticamente onde a tabela está antes de consultar
+ * Controller de Apólices - Versão 1.1.26 (DIAGNÓSTICO DE REDE)
+ * Focado em identificar se o erro é isolamento de projeto no Easypanel
  */
 const policyController = {
     getMyPolicies: async (req, res) => {
@@ -11,38 +11,24 @@ const policyController = {
             if (!userCpf) return res.status(400).json({ error: 'Sessão sem CPF' });
 
             const cleanCpf = userCpf.replace(/\D/g, '');
-            console.log(`[SCHEMA-DETECT] Iniciando busca para CPF: ${cleanCpf}`);
+            console.log(`[NETWORK-DIAG] Testando conectividade com banco de apólices para CPF: ${cleanCpf}`);
 
-            // 1. DETECTAR SCHEMA
-            let tableName = 'apolices_brokeria'; // Fallback
-            let schemaTable = 'Nenhuma tabela detectada';
-
+            // Teste de conexão simples
             try {
-                const { rows: found } = await db.apolicesQuery(`
-                    SELECT table_schema, table_name 
-                    FROM information_schema.tables 
-                    WHERE table_name = 'apolices_brokeria'
-                `);
-
-                if (found.length > 0) {
-                    const schema = found[0].table_schema;
-                    tableName = `"${schema}"."apolices_brokeria"`;
-                    console.log(`✅ [SCHEMA-DETECT] Tabela localizada em: ${tableName}`);
-                    schemaTable = tableName;
-                } else {
-                    console.log(`❌ [SCHEMA-DETECT] Tabela apolices_brokeria NÃO encontrada no information_schema.`);
-                    // Vamos tentar listar o que existe para debug
-                    const { rows: allTables } = await db.apolicesQuery(`
-                        SELECT table_name FROM information_schema.tables 
-                        WHERE table_schema = 'public' LIMIT 5
-                    `);
-                    schemaTable = 'Não encontrada. Visíveis: ' + (allTables.map(t => t.table_name).join(', ') || 'Nenhuma');
+                // Tenta um SELECT 1 para ver se o banco responde
+                await db.apolicesQuery('SELECT 1');
+                console.log('✅ [NETWORK-DIAG] Conexão com banco APOLICES estabelecida com sucesso.');
+            } catch (connErr) {
+                console.error('❌ [NETWORK-DIAG] Falha de conexão com banco APOLICES:', connErr.message);
+                // Se der erro de nome/host, é isolamento de rede
+                if (connErr.message.includes('getaddrinfo') || connErr.message.includes('ECONNREFUSED')) {
+                    return res.status(500).json({
+                        error: 'Erro de Rede: O Portal (Projeto A) não consegue ver o Banco (Projeto B). Use o IP interno ou URL pública.'
+                    });
                 }
-            } catch (e) {
-                console.error('[SCHEMA-DETECT-ERR]', e.message);
             }
 
-            // 2. CONSULTA BLINDADA
+            // Se conectou, tenta a tabela direta
             const queryText = `
                 SELECT 
                     id_apolice as id,
@@ -54,24 +40,21 @@ const policyController = {
                     status_apolice as status,
                     url_pdf as pdf_url,
                     placa
-                FROM ${tableName}
+                FROM apolices_brokeria
                 WHERE REPLACE(REPLACE(cpf, '.', ''), '-', '') = $1
                 ORDER BY vigencia_fim DESC
             `;
 
             const { rows } = await db.apolicesQuery(queryText, [cleanCpf]);
 
-            // Busca detalhes
+            // Detalhes
             const enrichedRows = await Promise.all(rows.map(async (p) => {
                 try {
                     const { rows: details } = await db.apolicesQuery(
                         `SELECT modelo, marca FROM apolices_detalhes_auto WHERE id_apolice = $1`,
                         [p.id]
                     );
-                    return {
-                        ...p,
-                        detalhes_veiculo: details.length > 0 ? details[0] : { modelo: 'N/A', marca: 'N/A', placa: p.placa }
-                    };
+                    return { ...p, detalhes_veiculo: details[0] || { modelo: 'N/A', marca: 'N/A', placa: p.placa } };
                 } catch (e) {
                     return { ...p, detalhes_veiculo: { modelo: 'N/A', marca: 'N/A', placa: p.placa } };
                 }
@@ -80,8 +63,8 @@ const policyController = {
             res.json(enrichedRows);
 
         } catch (error) {
-            console.error('[POLICIES-CRITICAL]', error.message);
-            res.status(500).json({ error: `Erro Crítico: ${error.message}` });
+            console.error('[CRITICAL-ERROR]', error.message);
+            res.status(500).json({ error: `Erro no Banco: ${error.message}` });
         }
     },
 
