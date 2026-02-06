@@ -28,7 +28,7 @@ const policyController = {
                 }
             }
 
-            // Se conectou, tenta a tabela direta
+            // Se conectou, tenta a tabela direta com COLUNAS VERIFICADAS
             const queryText = `
                 SELECT 
                     id_apolice as id,
