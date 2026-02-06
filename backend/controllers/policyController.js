@@ -17,19 +17,19 @@ const policyController = {
             console.log(`[POLICIES] Buscando apólices para CPF: ${userCpf}...`);
 
             // Consulta no BANCO DE APOLICES (apolicesQuery)
-            // A tabela pode se chamar 'apolices_brokeria' ou 'public.apolices_brokeria'
+            // Tentando primeiro 'apolices' conforme definido no schema.sql
             const query = `
                 SELECT 
-                    id_apolice as id,
+                    id,
                     numero_apolice,
                     seguradora,
                     ramo,
                     data_inicio,
                     data_fim,
-                    status_apolice as status,
+                    status,
                     detalhes_veiculo,
                     pdf_url
-                FROM public.apolices_brokeria
+                FROM public.apolices
                 WHERE REPLACE(REPLACE(cpf_segurado, '.', ''), '-', '') = REPLACE(REPLACE($1, '.', ''), '-', '')
                 ORDER BY data_fim DESC
             `;
@@ -41,7 +41,21 @@ const policyController = {
 
         } catch (error) {
             console.error('[POLICIES-ERROR]', error.message);
-            res.status(500).json({ error: 'Erro ao buscar dados reais de apólices' });
+
+            // Log diagnóstico para ajudar Rogério a identificar o erro
+            if (error.message.includes('relation') && error.message.includes('does not exist')) {
+                try {
+                    const { rows: tables } = await db.apolicesQuery(`
+                        SELECT table_name FROM information_schema.tables 
+                        WHERE table_schema = 'public'
+                    `);
+                    console.log('[POLICIES-DIAGNOSTIC] Tabelas encontradas no banco:', tables.map(t => t.table_name).join(', '));
+                } catch (diagErr) {
+                    console.error('[POLICIES-DIAGNOSTIC-ERR]', diagErr.message);
+                }
+            }
+
+            res.status(500).json({ error: 'Erro ao buscar dados reais de apólices: ' + error.message });
         }
     },
 
@@ -52,8 +66,8 @@ const policyController = {
             const { cpf } = req.user;
 
             const query = `
-                SELECT * FROM public.apolices_brokeria 
-                WHERE id_apolice = $1 AND REPLACE(REPLACE(cpf_segurado, '.', ''), '-', '') = REPLACE(REPLACE($2, '.', ''), '-', '')
+                SELECT * FROM public.apolices 
+                WHERE id = $1 AND REPLACE(REPLACE(cpf_segurado, '.', ''), '-', '') = REPLACE(REPLACE($2, '.', ''), '-', '')
             `;
 
             const { rows } = await db.apolicesQuery(query, [id, cpf]);
@@ -78,8 +92,8 @@ const policyController = {
 
             // Busca contexto real de apólices para a IA
             const { rows: policies } = await db.apolicesQuery(
-                `SELECT numero_apolice, ramo, seguradora, data_fim, detalhes_veiculo, status_apolice as status
-                 FROM public.apolices_brokeria 
+                `SELECT numero_apolice, ramo, seguradora, data_fim, detalhes_veiculo, status
+                 FROM public.apolices 
                  WHERE REPLACE(REPLACE(cpf_segurado, '.', ''), '-', '') = REPLACE(REPLACE($1, '.', ''), '-', '')`,
                 [userCpf]
             );
