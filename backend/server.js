@@ -21,8 +21,8 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
 
-// Servir Arquivos Estáticos (Frontend)
-app.use(express.static(path.join(__dirname, '../frontend')));
+// Servir Arquivos Estáticos (Frontend movido para public)
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Rotas da API
 app.use('/api/auth', authRoutes);
