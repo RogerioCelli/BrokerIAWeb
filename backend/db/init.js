@@ -26,19 +26,13 @@ async function runMigrations() {
             );
         `);
 
-        // 2. Adicionar pdf_url na tabela apolices se não existir
+        // 2. Garantir pdf_url na tabela oficial se não existir
         await db.query(`
             DO $$ 
             BEGIN 
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='apolices' AND column_name='pdf_url') THEN
-                    ALTER TABLE apolices ADD COLUMN pdf_url TEXT;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='organizacoes' AND column_name='endereco') THEN
-                    ALTER TABLE organizacoes ADD COLUMN endereco TEXT;
-                    ALTER TABLE organizacoes ADD COLUMN telefone_fixo VARCHAR(20);
-                    ALTER TABLE organizacoes ADD COLUMN telefone_celular VARCHAR(20);
-                    ALTER TABLE organizacoes ADD COLUMN email_contato VARCHAR(255);
-                    ALTER TABLE organizacoes ADD COLUMN website_url TEXT;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='apolices_brokeria' AND column_name='url_pdf') THEN
+                    -- Se não existe a coluna na tabela oficial, apenas logamos (a tabela é externa)
+                    RAISE NOTICE 'Verifique a existência da coluna url_pdf na tabela apolices_brokeria';
                 END IF;
             END $$;
         `);
