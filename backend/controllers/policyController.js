@@ -7,18 +7,15 @@ const policyController = {
     // Lista todas as apólices do cliente logado (Cruzando com o banco de Apolices)
     getMyPolicies: async (req, res) => {
         try {
-            // O req.user vem do authMiddleware (contendo id, cpf, etc.)
             const { cpf: userCpf } = req.user;
 
             if (!userCpf) {
                 return res.status(400).json({ error: 'CPF do usuário não identificado na sessão' });
             }
 
-            console.log(`[POLICIES] Buscando apólices REAIS para CPF: ${userCpf}...`);
+            console.log(`[POLICIES] Buscando apólices para CPF: ${userCpf}...`);
 
-            // Consulta no BANCO DE APOLICES OFICIAL (apolices_brokeria)
-            // Fazemos um LEFT JOIN com detalhes_auto para pegar modelo/marca se existir
-            const query = `
+            const queryText = `
                 SELECT 
                     a.id_apolice as id,
                     a.numero_apolice,
@@ -33,39 +30,32 @@ const policyController = {
                         'marca', d.marca,
                         'placa', a.placa
                     ) as detalhes_veiculo
-                FROM public.apolices_brokeria a
-                LEFT JOIN public.apolices_detalhes_auto d ON a.id_apolice = d.id_apolice
+                FROM apolices_brokeria a
+                LEFT JOIN apolices_detalhes_auto d ON a.id_apolice = d.id_apolice
                 WHERE REPLACE(REPLACE(a.cpf, '.', ''), '-', '') = REPLACE(REPLACE($1, '.', ''), '-', '')
                 ORDER BY a.vigencia_fim DESC
             `;
 
-            const { rows } = await db.apolicesQuery(query, [userCpf]);
-
-            console.log(`[POLICIES] Encontradas ${rows.length} apólices reais.`);
-            res.json(rows);
-
-        } catch (error) {
-            console.error('[POLICIES-ERROR]', error.message);
-
-            // Log diagnóstico de emergência
-            if (error.message.includes('relation') || error.message.includes('does not exist')) {
-                try {
-                    const { rows: allTables } = await db.apolicesQuery(`
-                        SELECT table_schema, table_name 
-                        FROM information_schema.tables 
-                        WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
-                    `);
-                    const list = allTables.map(t => `${t.table_schema}.${t.table_name}`).join(', ');
-                    console.log('[POLICIES-DIAGNOSTIC] Tabelas que eu REALMENTE vejo aqui:', list || 'NENHUMA (Banco Vazio)');
-
-                    const url = process.env.APOLICES_DATABASE_URL || "";
-                    console.log('[POLICIES-DIAGNOSTIC] URL usada:', url.split('@')[1] || 'URL não configurada');
-                } catch (diagErr) {
-                    console.error('[POLICIES-DIAGNOSTIC-ERR]', diagErr.message);
+            let result;
+            try {
+                // Tenta no banco de apólices dedicado
+                result = await db.apolicesQuery(queryText, [userCpf]);
+            } catch (err) {
+                // Se o erro for "tabela não existe", tenta no banco principal do portal
+                if (err.message.includes('relation') && err.message.includes('does not exist')) {
+                    console.log(`[POLICIES-FALLBACK] Tabela não encontrada no banco dedicado. Tentando no banco principal...`);
+                    result = await db.query(queryText, [userCpf]);
+                } else {
+                    throw err;
                 }
             }
 
-            res.status(500).json({ error: 'Erro ao buscar dados das apólices: ' + error.message });
+            console.log(`[POLICIES] Concluído. Encontradas ${result.rows.length} apólices.`);
+            res.json(result.rows);
+
+        } catch (error) {
+            console.error('[POLICIES-ERROR]', error.message);
+            res.status(500).json({ error: 'Apólices não encontradas: ' + error.message });
         }
     },
 
@@ -79,17 +69,26 @@ const policyController = {
                 SELECT 
                     id_apolice as id,
                     * 
-                FROM public.apolices_brokeria 
+                FROM apolices_brokeria 
                 WHERE id_apolice = $1 AND REPLACE(REPLACE(cpf, '.', ''), '-', '') = REPLACE(REPLACE($2, '.', ''), '-', '')
             `;
 
-            const { rows } = await db.apolicesQuery(query, [id, cpf]);
+            let result;
+            try {
+                result = await db.apolicesQuery(query, [id, cpf]);
+            } catch (err) {
+                if (err.message.includes('relation')) {
+                    result = await db.query(query, [id, cpf]);
+                } else {
+                    throw err;
+                }
+            }
 
-            if (rows.length === 0) {
+            if (result.rows.length === 0) {
                 return res.status(404).json({ error: 'Apólice não encontrada ou acesso negado' });
             }
 
-            res.json(rows[0]);
+            res.json(result.rows[0]);
 
         } catch (error) {
             console.error('[POLICY-DETAIL-ERROR]', error.message);
@@ -103,13 +102,21 @@ const policyController = {
             const { message } = req.body;
             const { cpf: userCpf } = req.user;
 
-            // Busca contexto real de apólices para a IA
-            const { rows: policies } = await db.apolicesQuery(
-                `SELECT numero_apolice, ramo, seguradora, vigencia_fim as data_fim, placa, status_apolice as status
-                 FROM public.apolices_brokeria 
-                 WHERE REPLACE(REPLACE(cpf, '.', ''), '-', '') = REPLACE(REPLACE($1, '.', ''), '-', '')`,
-                [userCpf]
-            );
+            const query = `SELECT numero_apolice, ramo, seguradora, vigencia_fim as data_fim, placa, status_apolice as status
+                 FROM apolices_brokeria 
+                 WHERE REPLACE(REPLACE(cpf, '.', ''), '-', '') = REPLACE(REPLACE($1, '.', ''), '-', '')`;
+
+            let result;
+            try {
+                result = await db.apolicesQuery(query, [userCpf]);
+            } catch (err) {
+                if (err.message.includes('relation')) {
+                    result = await db.query(query, [userCpf]);
+                } else {
+                    throw err;
+                }
+            }
+            const policies = result.rows;
 
             const n8nWebhook = process.env.N8N_WEBHOOK_URL;
 
