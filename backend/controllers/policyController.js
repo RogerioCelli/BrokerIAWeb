@@ -42,14 +42,27 @@ const policyController = {
         } catch (error) {
             console.error('[POLICIES-ERROR]', error.message);
 
-            // Log diagnóstico para ajudar Rogério a identificar o erro
-            if (error.message.includes('relation') && error.message.includes('does not exist')) {
+            // Log diagnóstico SUPER BROAD para Rogério
+            if (error.message.includes('relation') || error.message.includes('does not exist')) {
                 try {
-                    const { rows: tables } = await db.apolicesQuery(`
-                        SELECT table_name FROM information_schema.tables 
-                        WHERE table_schema = 'public'
+                    const { rows: allTables } = await db.apolicesQuery(`
+                        SELECT table_schema, table_name 
+                        FROM information_schema.tables 
+                        WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
                     `);
-                    console.log('[POLICIES-DIAGNOSTIC] Tabelas encontradas no banco:', tables.map(t => t.table_name).join(', '));
+
+                    if (allTables.length === 0) {
+                        console.log('[POLICIES-DIAGNOSTIC] CRÍTICO: O banco de dados conectado está VAZIO (zero tabelas em qualquer schema). Verifique se a APOLICES_DATABASE_URL no Easypanel está apontando para o banco correto.');
+                    } else {
+                        const list = allTables.map(t => `${t.table_schema}.${t.table_name}`).join(', ');
+                        console.log('[POLICIES-DIAGNOSTIC] Tabelas encontradas em outros schemas:', list);
+                    }
+
+                    // Verificar qual a URL (mascarada) que está sendo usada
+                    const url = process.env.APOLICES_DATABASE_URL || "";
+                    const maskedUrl = url.replace(/:([^@]+)@/, ':****@').split('?')[0];
+                    console.log('[POLICIES-DIAGNOSTIC] Conectado em:', maskedUrl);
+
                 } catch (diagErr) {
                     console.error('[POLICIES-DIAGNOSTIC-ERR]', diagErr.message);
                 }
