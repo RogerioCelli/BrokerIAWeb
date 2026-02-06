@@ -4,16 +4,11 @@ const db = require('../db');
  * Controller para buscar apólices reais no banco de apólices
  */
 const policyController = {
-    // Lista todas as apólices do cliente logado (Cruzando com o banco de Apolices)
+    // Lista todas as apólices do cliente logado pesquisando em múltiplos bancos
     getMyPolicies: async (req, res) => {
         try {
             const { cpf: userCpf } = req.user;
-
-            if (!userCpf) {
-                return res.status(400).json({ error: 'CPF do usuário não identificado na sessão' });
-            }
-
-            console.log(`[POLICIES] Buscando apólices para CPF: ${userCpf}...`);
+            if (!userCpf) return res.status(400).json({ error: 'CPF não identificado' });
 
             const queryText = `
                 SELECT 
@@ -36,153 +31,94 @@ const policyController = {
                 ORDER BY a.vigencia_fim DESC
             `;
 
-            let result;
-            try {
-                // Tenta no banco de apólices dedicado
-                result = await db.apolicesQuery(queryText, [userCpf]);
-            } catch (err) {
-                // Se o erro for "tabela não existe", tenta no banco principal do portal
-                if (err.message.includes('relation') && err.message.includes('does not exist')) {
-                    console.log(`[POLICIES-FALLBACK] Tabela não encontrada no banco dedicado. Tentando no banco principal...`);
-                    result = await db.query(queryText, [userCpf]);
-                } else {
-                    throw err;
+            let result = null;
+            const pools = [
+                { name: 'APOLICES_DATABASE_URL', query: db.apolicesQuery },
+                { name: 'MASTER_DATABASE_URL', query: db.masterQuery },
+                { name: 'DATABASE_URL', query: db.query }
+            ];
+
+            for (const pool of pools) {
+                try {
+                    const resSearch = await pool.query(queryText, [userCpf]);
+                    result = resSearch;
+                    console.log(`✅ [POLICIES] Tabela encontrada em ${pool.name}`);
+                    break;
+                } catch (e) {
+                    continue; // Tenta o próximo
                 }
             }
 
-            console.log(`[POLICIES] Concluído. Encontradas ${result.rows.length} apólices.`);
-            res.json(result.rows);
+            if (!result) {
+                return res.status(404).json({ error: 'Tabela apolices_brokeria não encontrada em nenhum banco.' });
+            }
 
+            res.json(result.rows);
         } catch (error) {
             console.error('[POLICIES-ERROR]', error.message);
-            res.status(500).json({ error: 'Apólices não encontradas: ' + error.message });
+            res.status(500).json({ error: error.message });
         }
     },
 
-    // Detalhes de uma apólice específica
+    // Detalhes específicos
     getPolicyDetails: async (req, res) => {
         try {
             const { id } = req.params;
             const { cpf } = req.user;
+            const query = `SELECT id_apolice as id, * FROM apolices_brokeria WHERE id_apolice = $1 AND REPLACE(REPLACE(cpf, '.', ''), '-', '') = REPLACE(REPLACE($2, '.', ''), '-', '')`;
 
-            const query = `
-                SELECT 
-                    id_apolice as id,
-                    * 
-                FROM apolices_brokeria 
-                WHERE id_apolice = $1 AND REPLACE(REPLACE(cpf, '.', ''), '-', '') = REPLACE(REPLACE($2, '.', ''), '-', '')
-            `;
-
-            let result;
-            try {
-                result = await db.apolicesQuery(query, [id, cpf]);
-            } catch (err) {
-                if (err.message.includes('relation')) {
-                    result = await db.query(query, [id, cpf]);
-                } else {
-                    throw err;
-                }
+            let result = null;
+            const pools = [db.apolicesQuery, db.masterQuery, db.query];
+            for (const q of pools) {
+                try {
+                    const r = await q(query, [id, cpf]);
+                    if (r.rows.length > 0) { result = r; break; }
+                } catch (e) { continue; }
             }
 
-            if (result.rows.length === 0) {
-                return res.status(404).json({ error: 'Apólice não encontrada ou acesso negado' });
-            }
-
+            if (!result) return res.status(404).json({ error: 'Não encontrada' });
             res.json(result.rows[0]);
-
         } catch (error) {
-            console.error('[POLICY-DETAIL-ERROR]', error.message);
-            res.status(500).json({ error: 'Erro ao buscar detalhes da apólice' });
+            res.status(500).json({ error: error.message });
         }
     },
 
-    // Integração com Chat IA para usuários logados
+    // Chat IA com Contexto Real
     chatWithAI: async (req, res) => {
         try {
             const { message } = req.body;
             const { cpf: userCpf } = req.user;
 
-            const query = `SELECT numero_apolice, ramo, seguradora, vigencia_fim as data_fim, placa, status_apolice as status
-                 FROM apolices_brokeria 
-                 WHERE REPLACE(REPLACE(cpf, '.', ''), '-', '') = REPLACE(REPLACE($1, '.', ''), '-', '')`;
+            const query = `SELECT numero_apolice, ramo, seguradora, vigencia_fim as data_fim, placa, status_apolice as status FROM apolices_brokeria WHERE REPLACE(REPLACE(cpf, '.', ''), '-', '') = REPLACE(REPLACE($1, '.', ''), '-', '')`;
 
-            let result;
-            try {
-                result = await db.apolicesQuery(query, [userCpf]);
-            } catch (err) {
-                if (err.message.includes('relation')) {
-                    result = await db.query(query, [userCpf]);
-                } else {
-                    throw err;
-                }
+            let result = null;
+            const pools = [db.apolicesQuery, db.masterQuery, db.query];
+            for (const q of pools) {
+                try {
+                    const r = await q(query, [userCpf]);
+                    result = r;
+                    break;
+                } catch (e) { continue; }
             }
-            const policies = result.rows;
 
+            const policies = result ? result.rows : [];
             const n8nWebhook = process.env.N8N_WEBHOOK_URL;
 
-            if (n8nWebhook) {
-                const n8nResponse = await fetch(n8nWebhook, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        pergunta_cliente: message,
-                        contexto: {
-                            nome: req.user.nome,
-                            cpf: userCpf,
-                            token_validado: "SIM",
-                            cadastrado: true,
-                            apolices: policies,
-                            origem: "PORTAL_WEB_LOGADO"
-                        }
-                    })
-                });
+            const response = await fetch(n8nWebhook, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'chat_dashboard',
+                    message,
+                    user_cpf: userCpf,
+                    policies_context: policies
+                })
+            });
 
-                if (n8nResponse.ok) {
-                    const n8nData = await n8nResponse.json();
-                    const aiReply = n8nData.output || n8nData.response || n8nData.text;
-                    if (aiReply) return res.json({ response: aiReply });
-                }
-            }
-
-            res.json({ response: "Estou analisando seus dados de seguro. Em que posso ajudar hoje?" });
+            const data = await response.json();
+            res.json(data);
         } catch (error) {
-            console.error('[CHAT-IA-LOGADO-ERR]', error.message);
-            res.status(500).json({ error: 'Erro ao processar chat' });
-        }
-    },
-
-    // Chat Público para Leads
-    publicChat: async (req, res) => {
-        try {
-            const { message } = req.body;
-            const n8nWebhook = process.env.N8N_WEBHOOK_URL;
-
-            if (n8nWebhook) {
-                const n8nResponse = await fetch(n8nWebhook, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        pergunta_cliente: message,
-                        contexto: {
-                            nome: "Visitante Web",
-                            token_validado: "NÃO",
-                            cadastrado: false,
-                            origem: "PORTAL_WEB_PUBLICO"
-                        }
-                    })
-                });
-
-                if (n8nResponse.ok) {
-                    const n8nData = await n8nResponse.json();
-                    const aiReply = n8nData.output || n8nData.response || n8nData.text;
-                    if (aiReply) return res.json({ response: aiReply });
-                }
-            }
-
-            res.json({ response: "Olá! Como posso ajudar você a proteger o que é importante hoje?" });
-        } catch (error) {
-            console.error('[CHAT-IA-PUBLIC-ERR]', error.message);
-            res.status(500).json({ error: 'Erro ao processar chat' });
+            res.status(500).json({ error: error.message });
         }
     }
 };
