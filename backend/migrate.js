@@ -9,6 +9,9 @@ async function migrate() {
     try {
         console.log('--- [PORTAL] Iniciando Migração de Tabelas Internas ---');
 
+        // 0. Habilitar Extensão de UUID se não existir
+        await db.query(`CREATE EXTENSION IF NOT EXISTS "pgcrypto";`);
+
         // 1. Tabela de Organizações (Cache Local do Portal)
         console.log('[PORTAL] Garantindo tabela de organizações...');
         await db.query(`

@@ -115,8 +115,13 @@ const authController = {
             });
 
         } catch (error) {
-            console.error('Erro RequestAccess:', error);
-            res.status(500).json({ error: 'Erro interno no servidor' });
+            console.error('[AUTH-ERROR-FATAL]', {
+                message: error.message,
+                detail: error.detail,
+                step: 'requestAccess',
+                stack: error.stack
+            });
+            res.status(500).json({ error: `Erro interno: ${error.message}` });
         }
     },
 
