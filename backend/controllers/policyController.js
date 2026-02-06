@@ -14,61 +14,39 @@ const policyController = {
                 return res.status(400).json({ error: 'CPF do usuário não identificado na sessão' });
             }
 
-            console.log(`[POLICIES] Buscando apólices para CPF: ${userCpf}...`);
+            console.log(`[POLICIES] Buscando apólices REAIS para CPF: ${userCpf}...`);
 
-            // Consulta no BANCO DE APOLICES (apolicesQuery)
-            // Tentando primeiro 'apolices' conforme definido no schema.sql
+            // Consulta no BANCO DE APOLICES OFICIAL (apolices_brokeria)
+            // Fazemos um LEFT JOIN com detalhes_auto para pegar modelo/marca se existir
             const query = `
                 SELECT 
-                    id,
-                    numero_apolice,
-                    seguradora,
-                    ramo,
-                    data_inicio,
-                    data_fim,
-                    status,
-                    detalhes_veiculo,
-                    pdf_url
-                FROM public.apolices
-                WHERE REPLACE(REPLACE(cpf_segurado, '.', ''), '-', '') = REPLACE(REPLACE($1, '.', ''), '-', '')
-                ORDER BY data_fim DESC
+                    a.id_apolice as id,
+                    a.numero_apolice,
+                    a.seguradora,
+                    a.ramo,
+                    a.vigencia_inicio as data_inicio,
+                    a.vigencia_fim as data_fim,
+                    a.status_apolice as status,
+                    a.url_pdf as pdf_url,
+                    json_build_object(
+                        'modelo', d.modelo,
+                        'marca', d.marca,
+                        'placa', a.placa
+                    ) as detalhes_veiculo
+                FROM public.apolices_brokeria a
+                LEFT JOIN public.apolices_detalhes_auto d ON a.id_apolice = d.id_apolice
+                WHERE REPLACE(REPLACE(a.cpf, '.', ''), '-', '') = REPLACE(REPLACE($1, '.', ''), '-', '')
+                ORDER BY a.vigencia_fim DESC
             `;
 
             const { rows } = await db.apolicesQuery(query, [userCpf]);
 
-            console.log(`[POLICIES] Encontradas ${rows.length} apólices.`);
+            console.log(`[POLICIES] Encontradas ${rows.length} apólices reais.`);
             res.json(rows);
 
         } catch (error) {
             console.error('[POLICIES-ERROR]', error.message);
-
-            // Log diagnóstico SUPER BROAD para Rogério
-            if (error.message.includes('relation') || error.message.includes('does not exist')) {
-                try {
-                    const { rows: allTables } = await db.apolicesQuery(`
-                        SELECT table_schema, table_name 
-                        FROM information_schema.tables 
-                        WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
-                    `);
-
-                    if (allTables.length === 0) {
-                        console.log('[POLICIES-DIAGNOSTIC] CRÍTICO: O banco de dados conectado está VAZIO (zero tabelas em qualquer schema). Verifique se a APOLICES_DATABASE_URL no Easypanel está apontando para o banco correto.');
-                    } else {
-                        const list = allTables.map(t => `${t.table_schema}.${t.table_name}`).join(', ');
-                        console.log('[POLICIES-DIAGNOSTIC] Tabelas encontradas em outros schemas:', list);
-                    }
-
-                    // Verificar qual a URL (mascarada) que está sendo usada
-                    const url = process.env.APOLICES_DATABASE_URL || "";
-                    const maskedUrl = url.replace(/:([^@]+)@/, ':****@').split('?')[0];
-                    console.log('[POLICIES-DIAGNOSTIC] Conectado em:', maskedUrl);
-
-                } catch (diagErr) {
-                    console.error('[POLICIES-DIAGNOSTIC-ERR]', diagErr.message);
-                }
-            }
-
-            res.status(500).json({ error: 'Erro ao buscar dados reais de apólices: ' + error.message });
+            res.status(500).json({ error: 'Erro ao buscar dados das apólices: ' + error.message });
         }
     },
 
@@ -79,8 +57,11 @@ const policyController = {
             const { cpf } = req.user;
 
             const query = `
-                SELECT * FROM public.apolices 
-                WHERE id = $1 AND REPLACE(REPLACE(cpf_segurado, '.', ''), '-', '') = REPLACE(REPLACE($2, '.', ''), '-', '')
+                SELECT 
+                    id_apolice as id,
+                    * 
+                FROM public.apolices_brokeria 
+                WHERE id_apolice = $1 AND REPLACE(REPLACE(cpf, '.', ''), '-', '') = REPLACE(REPLACE($2, '.', ''), '-', '')
             `;
 
             const { rows } = await db.apolicesQuery(query, [id, cpf]);
@@ -105,9 +86,9 @@ const policyController = {
 
             // Busca contexto real de apólices para a IA
             const { rows: policies } = await db.apolicesQuery(
-                `SELECT numero_apolice, ramo, seguradora, data_fim, detalhes_veiculo, status
-                 FROM public.apolices 
-                 WHERE REPLACE(REPLACE(cpf_segurado, '.', ''), '-', '') = REPLACE(REPLACE($1, '.', ''), '-', '')`,
+                `SELECT numero_apolice, ramo, seguradora, vigencia_fim as data_fim, placa, status_apolice as status
+                 FROM public.apolices_brokeria 
+                 WHERE REPLACE(REPLACE(cpf, '.', ''), '-', '') = REPLACE(REPLACE($1, '.', ''), '-', '')`,
                 [userCpf]
             );
 
