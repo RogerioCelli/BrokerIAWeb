@@ -4,203 +4,234 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Broker IA | Portal do Segurado</title>
+    <title>Broker IA | Home</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="shortcut icon" href="https://img.icons8.com/fluency/48/shield.png" type="image/x-icon">
-</head>
-
-<body>
-    <!-- Decorative background elements -->
-    <div class="blob blob-1"></div>
-    <div class="blob blob-2"></div>
-
-    <main class="main-container">
-        <div class="login-card">
-            <div class="logo-section">
-                <h1>Broker IA</h1>
-                <p>O futuro dos seus seguros agora é inteligente.</p>
-            </div>
-
-            <form id="loginForm">
-                <div class="form-group" id="identifierGroup">
-                    <label for="identifier">Identificação</label>
-                    <div class="input-wrapper">
-                        <input type="text" id="identifier" name="identifier" class="premium-input"
-                            placeholder="CPF ou CNPJ" required>
-                    </div>
-                </div>
-
-                <!-- Nova Etapa: Seleção de Canal -->
-                <div class="form-group" id="channelGroup" style="display: none;">
-                    <label>Como deseja receber o seu código?</label>
-                    <div class="channel-options">
-                        <label class="channel-card">
-                            <input type="radio" name="auth_channel" value="whatsapp" checked>
-                            <i class="fab fa-whatsapp"></i>
-                            <div class="channel-info">
-                                <span class="channel-name">WhatsApp</span>
-                                <span class="channel-detail" id="maskedPhone"></span>
-                            </div>
-                        </label>
-                        <label class="channel-card">
-                            <input type="radio" name="auth_channel" value="email">
-                            <i class="fas fa-envelope"></i>
-                            <div class="channel-info">
-                                <span class="channel-name">E-mail</span>
-                                <span class="channel-detail" id="maskedEmail"></span>
-                            </div>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="form-group" style="display: none;" id="tokenGroup">
-                    <label for="token">Token de Segurança</label>
-                    <div class="input-wrapper">
-                        <input type="text" id="token" name="token" class="premium-input"
-                            placeholder="Digite o código enviado" maxlength="6">
-                    </div>
-                </div>
-
-                <button type="submit" class="btn-login" id="mainButton">Solicitar Acesso</button>
-            </form>
-
-            <div class="footer-links">
-                <a href="#">Ainda não é cliente? <span style="color: var(--primary);">Entre em contato</span></a>
-                <br><br>
-                <a href="admin.html" style="font-size: 0.7rem; opacity: 0.3;">Governança de Agentes IA</a>
-            </div>
-        </div>
-    </main>
-
-    <script src="main.js"></script>
-
-    <!-- Interface do Assistente IA para Novos Clientes -->
     <style>
-        .ai-assistant-fab {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 60px;
-            height: 60px;
-            background: #10b981;
+        /* Estilos específicos para a Home baseados no tema */
+        .home-container {
+            width: 100%;
+            max-width: 1200px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hero-section {
+            text-align: center;
+            margin-bottom: 4rem;
+            animation: fadeInScale 0.8s ease-out;
+        }
+
+        .hero-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #f8fafc, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .hero-subtitle {
+            color: var(--text-dim);
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .service-card {
+            background: var(--bg-surface);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            padding: 2rem;
+            border-radius: var(--radius-xl);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 15px 30px rgba(16, 185, 129, 0.15);
+        }
+
+        .icon-box {
+            width: 70px;
+            height: 70px;
+            background: rgba(16, 185, 129, 0.1);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
-            z-index: 1000;
-            transition: transform 0.3s;
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
+            color: var(--primary);
+            transition: all 0.3s ease;
         }
 
-        .ai-assistant-fab:hover {
+        .service-card:hover .icon-box {
+            background: var(--primary);
+            color: white;
             transform: scale(1.1);
         }
 
-        .chat-container {
-            position: fixed;
-            bottom: 100px;
-            right: 30px;
-            width: 350px;
-            height: 450px;
-            background: #0c1219;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            display: none;
-            flex-direction: column;
-            overflow: hidden;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
-            z-index: 1001;
+        .card-title {
+            color: var(--text-main);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
         }
 
-        .chat-header {
-            background: #10b981;
-            padding: 1rem;
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .card-desc {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            line-height: 1.5;
         }
 
-        .chat-messages {
-            flex: 1;
-            padding: 1rem;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 0.8rem;
-        }
-
-        .message {
-            max-width: 80%;
-            padding: 0.7rem 1rem;
-            border-radius: 15px;
-            font-size: 0.85rem;
-            line-height: 1.4;
-        }
-
-        .message.bot {
-            background: rgba(255, 255, 255, 0.05);
-            color: #eee;
-            align-self: flex-start;
-        }
-
-        .message.user {
-            background: #10b981;
-            color: white;
-            align-self: flex-end;
-        }
-
-        .chat-input-area {
-            padding: 1rem;
-            display: flex;
-            gap: 0.5rem;
+        /* Área institucional */
+        .institutional-section {
+            margin-top: 5rem;
+            text-align: center;
+            padding: 3rem;
             background: rgba(255, 255, 255, 0.02);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--glass-border);
+            width: 100%;
+            max-width: 1000px;
         }
 
-        .chat-input-area input {
-            flex: 1;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 0.6rem;
-            color: white;
-            font-size: 0.85rem;
+        .stats-row {
+            display: flex;
+            justify-content: center;
+            gap: 4rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
         }
 
-        .chat-input-area button {
-            background: #10b981;
-            border: none;
-            color: white;
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            cursor: pointer;
+        .stat-item h3 {
+            font-size: 2.5rem;
+            color: var(--primary);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-item p {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
     </style>
+</head>
 
+<body>
+    <!-- Elementos decorativos -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <main class="home-container">
+        <!-- Hero Section -->
+        <div class="hero-section">
+            <h1 class="hero-title">Broker IA</h1>
+            <p class="hero-subtitle">Seguros inteligentes com atendimento humanizado e tecnologia de ponta. Protegendo o
+                que importa, 24/7.</p>
+        </div>
+
+        <!-- Grid de Serviços -->
+        <div class="services-grid">
+            <!-- Card Cotação -->
+            <!-- Card Cotação -->
+            <a href="cotacao.html" class="service-card">
+                <div class="icon-box">
+                    <i class="fas fa-calculator"></i>
+                </div>
+                <h2 class="card-title">Solicitar Cotação</h2>
+                <p class="card-desc">Solicite aqui cotação de seguro auto, residencial, entre outros, em poucos cliques
+                    e com suporte total da nossa IA.</p>
+            </a>
+
+            <!-- Card Área do Cliente -->
+            <a href="login.html" class="service-card">
+                <div class="icon-box">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <h2 class="card-title">Área do Cliente</h2>
+                <p class="card-desc">Acesse suas apólices, boletos e solicitações em nosso portal seguro.</p>
+            </a>
+
+            <!-- Card Atendimento -->
+            <a href="https://wa.me/5511999999999" target="_blank" class="service-card">
+                <div class="icon-box">
+                    <i class="fab fa-whatsapp"></i>
+                </div>
+                <h2 class="card-title">Falar no WhatsApp</h2>
+                <p class="card-desc">Atendimento instantâneo com nossa Inteligência Artificial ou corretores.</p>
+            </a>
+        </div>
+
+        <!-- Seção Institucional -->
+        <div class="institutional-section">
+            <h2 class="card-title" style="margin-bottom: 1rem;">Por que escolher a Broker IA?</h2>
+            <p class="card-desc" style="max-width: 700px; margin: 0 auto;">
+                Unimos a expertise de corretores experientes com a velocidade da inteligência artificial para oferecer a
+                melhor proteção pelo menor custo.
+            </p>
+
+            <div class="stats-row">
+                <div class="stat-item">
+                    <h3>+5k</h3>
+                    <p>Clientes Protegidos</p>
+                </div>
+                <div class="stat-item">
+                    <h3>24/7</h3>
+                    <p>Atendimento</p>
+                </div>
+                <div class="stat-item">
+                    <h3>100%</h3>
+                    <p>Digital & Seguro</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Chat Flutuante -->
+    <div class="ai-assistant-fab" id="chatFab">
+        <i class="fas fa-robot"></i>
+    </div>
+
+    <!-- Container do Chat (Oculto inicialmente) -->
     <div class="chat-container" id="chatContainer">
         <div class="chat-header">
-            <span>Agente de Vendas Broker IA</span>
+            <span>Agente Broker IA</span>
             <button id="closeChat" style="background:none; border:none; color:white; cursor:pointer;"><i
                     class="fas fa-times"></i></button>
         </div>
         <div class="chat-messages" id="chatMessages">
-            <div class="message bot">Olá! Visitante. Sou o assistente da Broker IA. Como posso te ajudar na escolha do
-                seu seguro hoje?</div>
+            <div class="message bot">Olá! Eu sou a IA da Broker. Como posso ajudar você hoje?</div>
         </div>
         <div class="chat-input-area">
-            <input type="text" id="chatInput" placeholder="Sua pergunta...">
+            <input type="text" id="chatInput" placeholder="Digite sua mensagem...">
             <button id="sendMessage"><i class="fas fa-paper-plane"></i></button>
         </div>
     </div>
 
-    <div class="ai-assistant-fab" id="chatFab">
-        <i class="fas fa-robot"></i>
-    </div>
+    <!-- Reuso do script principal -->
+    <script src="main.js"></script>
 </body>
 
 </html>

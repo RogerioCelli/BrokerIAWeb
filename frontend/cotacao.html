@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broker IA | Solicitar Cotação</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+    <!-- Decorative background elements -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <main class="main-container">
+        <div class="login-card" style="max-width: 600px;"> <!-- Card um pouco mais largo para o formulário -->
+            <div class="logo-section">
+                <h1>Solicitar Cotação</h1>
+                <p>Preencha os dados abaixo para receber uma proposta personalizada.</p>
+            </div>
+
+            <form id="quoteForm">
+                <div class="form-group">
+                    <label for="nome">Nome Completo</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="nome" name="nome" class="premium-input" placeholder="Seu nome" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="telefone">WhatsApp / Telefone</label>
+                    <div class="input-wrapper">
+                        <input type="tel" id="telefone" name="telefone" class="premium-input"
+                            placeholder="(XX) XXXXX-XXXX" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">E-mail</label>
+                    <div class="input-wrapper">
+                        <input type="email" id="email" name="email" class="premium-input" placeholder="seu@email.com"
+                            required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="tipo_seguro">Tipo de Seguro</label>
+                    <div class="input-wrapper">
+                        <select id="tipo_seguro" name="tipo_seguro" class="premium-input" required
+                            style="cursor: pointer;">
+                            <option value="" disabled selected style="color: #333;">Selecione uma opção</option>
+                            <option value="automovel" style="color: #333;">Automóvel 🚗</option>
+                            <option value="residencial" style="color: #333;">Residencial 🏠</option>
+                            <option value="vida" style="color: #333;">Vida ❤️</option>
+                            <option value="empresarial" style="color: #333;">Empresarial 🏢</option>
+                            <option value="outros" style="color: #333;">Outros</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Campos Dinâmicos -->
+                <div id="dynamicFields">
+                    <!-- Auto -->
+                    <div class="dynamic-group" id="fields-automovel" style="display: none;">
+                        <div class="form-group">
+                            <label for="modelo_veiculo">Modelo do Veículo</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="modelo_veiculo" name="modelo_veiculo" class="premium-input"
+                                    placeholder="Ex: Onix 1.0 Turbo 2023">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="uso_veiculo">Uso do Veículo</label>
+                            <div class="input-wrapper">
+                                <select id="uso_veiculo" name="uso_veiculo" class="premium-input">
+                                    <option value="lazer" style="color: #333;">Lazer / Particular</option>
+                                    <option value="trabalho" style="color: #333;">Trabalho / Comercial</option>
+                                    <option value="app" style="color: #333;">Motorista de App (Uber/99)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Residencial -->
+                    <div class="dynamic-group" id="fields-residencial" style="display: none;">
+                        <div class="form-group">
+                            <label for="tipo_imovel">Tipo de Imóvel</label>
+                            <div class="input-wrapper">
+                                <select id="tipo_imovel" name="tipo_imovel" class="premium-input">
+                                    <option value="casa" style="color: #333;">Casa</option>
+                                    <option value="apartamento" style="color: #333;">Apartamento</option>
+                                    <option value="condominio" style="color: #333;">Casa em Condomínio</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="cep_imovel">CEP do Imóvel</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="cep_imovel" name="cep_imovel" class="premium-input"
+                                    placeholder="00000-000">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vida -->
+                    <div class="dynamic-group" id="fields-vida" style="display: none;">
+                        <div class="form-group">
+                            <label for="idade">Sua Idade</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="idade" name="idade" class="premium-input" placeholder="Anos">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="profissao">Profissão</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="profissao" name="profissao" class="premium-input"
+                                    placeholder="Sua ocupação principal">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="observacoes">Observações (Opcional)</label>
+                    <div class="input-wrapper">
+                        <textarea id="observacoes" name="observacoes" class="premium-input" rows="4"
+                            placeholder="Ex: Detalhes, dúvidas ou melhor horário para contato..."></textarea>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-login" id="submitBtn">Enviar Solicitação</button>
+            </form>
+
+            <div class="footer-links">
+                <a href="index.html"><i class="fas fa-arrow-left"></i> Voltar para Home</a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Lógica de Campos Dinâmicos
+        const tipoSeguroSelect = document.getElementById('tipo_seguro');
+        const dynamicGroups = document.querySelectorAll('.dynamic-group');
+
+        tipoSeguroSelect.addEventListener('change', function () {
+            // Esconde todos
+            dynamicGroups.forEach(group => {
+                group.style.display = 'none';
+                // Remove required dos inputs escondidos
+                group.querySelectorAll('input, select').forEach(input => input.required = false);
+            });
+
+            // Mostra o selecionado
+            const selected = this.value;
+            const targetGroup = document.getElementById(`fields-${selected}`);
+
+            if (targetGroup) {
+                targetGroup.style.display = 'block';
+                // Adiciona required nos inputs visíveis
+                targetGroup.querySelectorAll('input, select').forEach(input => input.required = true);
+            }
+        });
+
+        // Script simples para lidar com o envio (por enquanto apenas visual)
+        document.getElementById('quoteForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const btn = document.getElementById('submitBtn');
+            const originalText = btn.innerText;
+
+            // Simula processamento
+            btn.innerText = 'Enviando...';
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+
+            // Coleta dados
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+
+            // TODO: Aqui você integrará com o backend ou n8n webhook
+            console.log('Dados da cotação:', data);
+
+            setTimeout(() => {
+                alert('✅ Solicitação recebida com sucesso! Em breve um de nossos especialistas entrará em contato via WhatsApp/E-mail.');
+                btn.innerText = originalText;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                e.target.reset(); // Limpa o formulário
+                window.location.href = 'index.html'; // Volta para home
+            }, 1500);
+        });
+    </script>
+</body>
+
+</html>
