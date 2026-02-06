@@ -64,7 +64,24 @@ const policyController = {
 
         } catch (error) {
             console.error('[CRITICAL-ERROR]', error.message);
-            res.status(500).json({ error: `Erro no Banco: ${error.message}` });
+
+            // RAIO-X: Se a tabela não existe, me mostre o que existe!
+            let tablesFound = 'Nenhuma tabela';
+            if (error.message.includes('does not exist')) {
+                try {
+                    const { rows } = await db.apolicesQuery(`
+                        SELECT table_name 
+                        FROM information_schema.tables 
+                        WHERE table_schema = 'public'
+                    `);
+                    tablesFound = rows.map(r => r.table_name).join(', ') || 'Nenhuma (Banco Vazio?)';
+                    console.error('[RAIO-X] Tabelas encontradas no banco:', tablesFound);
+                } catch (scanErr) {
+                    console.error('[RAIO-X] Falha ao escanear:', scanErr.message);
+                }
+            }
+
+            res.status(500).json({ error: `Erro no Banco: ${error.message}. (O que existe lá: ${tablesFound})` });
         }
     },
 
