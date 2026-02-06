@@ -117,11 +117,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('broker_ia_token', data.token);
                 localStorage.setItem('broker_ia_user', JSON.stringify(data.user));
 
-                mainButton.textContent = 'Sucesso!';
+                mainButton.textContent = 'Sucesso! Entrando...';
                 setTimeout(() => {
-                    alert(`Bem-vindo, ${data.user.nome}! Redirecionando...`);
                     window.location.href = 'dashboard.html';
-                }, 500);
+                }, 600);
             }
         } catch (error) {
             alert(error.message);
@@ -140,46 +139,78 @@ const chatMessages = document.getElementById('chatMessages');
 const chatInput = document.getElementById('chatInput');
 const sendMessage = document.getElementById('sendMessage');
 
-if (chatFab) {
-    chatFab.addEventListener('click', () => {
-        chatContainer.style.display = chatContainer.style.display === 'flex' ? 'none' : 'flex';
-        chatInput.focus();
-    });
+// Abre/Fecha Chat
+chatFab.addEventListener('click', () => {
+    chatContainer.style.display = 'flex';
+    chatFab.style.display = 'none';
+    chatInput.focus();
+});
 
-    closeChat.addEventListener('click', () => {
-        chatContainer.style.display = 'none';
-    });
+closeChat.addEventListener('click', () => {
+    chatContainer.style.display = 'none';
+    chatFab.style.display = 'flex';
+});
 
-    const addMessage = (text, sender) => {
-        const div = document.createElement('div');
-        div.className = `message ${sender}`;
-        div.textContent = text;
-        chatMessages.appendChild(div);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    };
+const addMessage = (type, text) => {
+    const div = document.createElement('div');
+    div.className = `message ${type}`;
+    div.textContent = text;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return div;
+};
 
-    const handleSend = async () => {
-        const text = chatInput.value.trim();
-        if (!text) return;
+const showAgentStatus = (html) => {
+    const div = document.createElement('div');
+    div.className = 'agent-status';
+    div.innerHTML = html;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return div;
+};
 
-        addMessage(text, 'user');
-        chatInput.value = '';
+const handleSend = async () => {
+    const text = chatInput.value.trim();
+    if (!text) return;
 
-        try {
-            const response = await fetch('https://brokeriaweb-api-brokeriaweb.cx0m9g.easypanel.host/api/policies/public-chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: text })
-            });
-            const data = await response.json();
-            addMessage(data.response, 'bot');
-        } catch (error) {
-            addMessage('Ops, tive um probleminha. Tente novamente mais tarde.', 'bot');
+    addMessage('user', text);
+    chatInput.value = '';
+
+    try {
+        // --- Orquestração de Agentes dinâmica (Auditiva/Visual) ---
+        let statusText = '<i class="fas fa-search"></i> Agente Local buscando informações gerais...';
+        if (text.toLowerCase().includes('apólice') || text.toLowerCase().includes('seguro') || text.toLowerCase().includes('meu')) {
+            statusText = '<i class="fas fa-user-lock"></i> Identificando intenção de acesso privado...';
         }
-    };
 
-    sendMessage.addEventListener('click', handleSend);
-    chatInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleSend();
-    });
-}
+        const agentStatus = showAgentStatus(statusText);
+        const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        await delay(1000);
+        agentStatus.innerHTML = '<i class="fas fa-brain"></i> IA processando resposta personalizada...';
+        await delay(1200);
+        agentStatus.remove();
+
+        const response = await fetch(`${API_URL}/policies/public-chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text })
+        });
+        const data = await response.json();
+
+        // Especial: Se a IA sugerir login ou falar de apólice, dar um destaque
+        if (text.toLowerCase().includes('apólice') || text.toLowerCase().includes('meu seguro')) {
+            addMessage('bot', data.response + " Para ver detalhes agora, basta informar seu CPF ou E-mail acima no portal.");
+        } else {
+            addMessage('bot', data.response);
+        }
+
+    } catch (error) {
+        addMessage('bot', 'Ops, tive um probleminha. Tente novamente mais tarde.');
+    }
+};
+
+sendMessage.addEventListener('click', handleSend);
+chatInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleSend();
+});

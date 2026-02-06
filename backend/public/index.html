@@ -209,25 +209,31 @@
         </div>
     </main>
 
-    <!-- Chat Flutuante -->
-    <div class="ai-assistant-fab" id="chatFab">
-        <i class="fas fa-robot"></i>
-    </div>
-
-    <!-- Container do Chat (Oculto inicialmente) -->
+    <!-- Interface do Assistente IA (Padronizado) -->
     <div class="chat-container" id="chatContainer">
         <div class="chat-header">
-            <span>Agente Broker IA</span>
-            <button id="closeChat" style="background:none; border:none; color:white; cursor:pointer;"><i
-                    class="fas fa-times"></i></button>
+            <div class="chat-header-info">
+                <i class="fas fa-robot"></i>
+                <div>
+                    <span class="chat-bot-name">Broker IA</span>
+                    <span class="chat-bot-status">Online e pronto para ajudar</span>
+                </div>
+            </div>
+            <button class="chat-close" id="closeChat"><i class="fas fa-times"></i></button>
         </div>
         <div class="chat-messages" id="chatMessages">
-            <div class="message bot">Olá! Eu sou a IA da Broker. Como posso ajudar você hoje?</div>
+            <div class="message bot">
+                Olá! Sou o seu assistente inteligente. Como posso ajudar você a proteger o que é importante hoje?
+            </div>
         </div>
         <div class="chat-input-area">
-            <input type="text" id="chatInput" placeholder="Digite sua mensagem...">
+            <input type="text" id="chatInput" placeholder="Como posso ajudar?" autocomplete="off">
             <button id="sendMessage"><i class="fas fa-paper-plane"></i></button>
         </div>
+    </div>
+
+    <div class="ai-assistant-fab" id="chatFab" title="Falar com IA">
+        <i class="fas fa-robot"></i>
     </div>
 
     <!-- Reuso do script principal -->
