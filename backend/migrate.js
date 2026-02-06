@@ -114,4 +114,5 @@ async function migrate() {
     }
 }
 
-migrate();
+// Exporta a função para ser usada no startup do servidor
+module.exports = { migrate };

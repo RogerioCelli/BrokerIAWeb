@@ -1,4 +1,5 @@
 const db = require('./index');
+const { migrate } = require('../migrate'); // Importa a migração de estrutura
 
 /**
  * Função para garantir que o banco de dados esteja com o schema atualizado.
@@ -7,6 +8,9 @@ const db = require('./index');
 async function runMigrations() {
     try {
         console.log('[DB] Verificando integridade das tabelas...');
+
+        // 0. Rodar Migração de Estrutura de Seguros/Veículos (Automático)
+        await migrate();
 
         // 1. Criar Tabela de Seguradoras se não existir
         await db.query(`
