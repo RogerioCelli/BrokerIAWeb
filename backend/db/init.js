@@ -103,7 +103,72 @@ async function runMigrations() {
             }
         }
 
-        // 5. Verificação final
+        // 5. Garantir Tabela de Apólices (AUTO-FIX para banco vazio)
+        try {
+            console.log('[DB-AUTOFIX] Verificando existência de apolices_brokeria...');
+            const { rows: tableExists } = await db.apolicesQuery(`
+                SELECT 1 FROM information_schema.tables WHERE table_name = 'apolices_brokeria'
+            `);
+
+            if (tableExists.length === 0) {
+                console.log('⚠️ [DB-AUTOFIX] Tabela apolices_brokeria não encontrada no container atual. CRIANDO AGORA...');
+
+                await db.apolicesQuery(`
+                    CREATE TABLE IF NOT EXISTS public.apolices_brokeria (
+                        id_apolice SERIAL PRIMARY KEY,
+                        numero_apolice VARCHAR(100) NOT NULL UNIQUE,
+                        seguradora VARCHAR(100) NOT NULL,
+                        ramo VARCHAR(100) NOT NULL,
+                        vigencia_inicio DATE NOT NULL,
+                        vigencia_fim DATE NOT NULL,
+                        status_apolice VARCHAR(50) DEFAULT 'ATIVA',
+                        url_pdf TEXT,
+                        placa VARCHAR(20),
+                        cpf VARCHAR(20) NOT NULL,
+                        cliente_nome VARCHAR(255),
+                        created_at TIMESTAMP DEFAULT NOW()
+                    );
+                `);
+
+                await db.apolicesQuery(`
+                    CREATE TABLE IF NOT EXISTS public.apolices_detalhes_auto (
+                        id_detalhe SERIAL PRIMARY KEY,
+                        id_apolice INTEGER REFERENCES public.apolices_brokeria(id_apolice) ON DELETE CASCADE,
+                        modelo VARCHAR(150),
+                        marca VARCHAR(100),
+                        ano_modelo VARCHAR(4),
+                        chassi VARCHAR(50)
+                    );
+                `);
+
+                // Inserir dados de exemplo para o CPF do Rogério (se não existir)
+                console.log('[DB-AUTOFIX] Inserindo dados de exemplo para teste...');
+                await db.apolicesQuery(`
+                    INSERT INTO public.apolices_brokeria 
+                    (numero_apolice, seguradora, ramo, vigencia_inicio, vigencia_fim, status_apolice, cpf, placa, cliente_nome, url_pdf)
+                    VALUES 
+                    ('AUTO-DEMO-2026', 'Porto Seguro', 'Automóvel', '2025-01-01', '2026-01-01', 'ATIVA', '11806562280', 'ABC-1234', 'Rogério Celli', 'https://exemplo.com/doc.pdf')
+                    ON CONFLICT (numero_apolice) DO NOTHING;
+                `);
+
+                // Inserir segundo exemplo para confirmar CPF sem formatação
+                await db.apolicesQuery(`
+                    INSERT INTO public.apolices_brokeria 
+                    (numero_apolice, seguradora, ramo, vigencia_inicio, vigencia_fim, status_apolice, cpf, placa, cliente_nome)
+                    VALUES 
+                    ('RESID-DEMO-2026', 'Allianz', 'Residencial', '2025-02-01', '2026-02-01', 'ATIVA', '11806562280', NULL, 'Rogério Celli')
+                    ON CONFLICT (numero_apolice) DO NOTHING;
+                `);
+
+                console.log('✅ [DB-AUTOFIX] Tabela criada e populada com sucesso!');
+            } else {
+                console.log('✅ [DB] Tabela apolices_brokeria já existe.');
+            }
+        } catch (errAutoFix) {
+            console.error('❌ [DB-AUTOFIX-ERROR] Falha ao tentar criar tabela:', errAutoFix.message);
+        }
+
+        // 6. Verificação final
         console.log('✅ Banco de dados sincronizado e pronto.');
     } catch (error) {
         console.error('❌ Falha ao sincronizar banco de dados:', error);
