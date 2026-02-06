@@ -1,10 +1,11 @@
 const db = require('../db');
 
 /**
- * Controller para buscar apólices reais no banco de apólices
+ * Controller para buscar apólices REAIS exclusivamente no banco de apólices
+ * Conforme instrução: Consultar apenas em APOLICES_DATABASE_URL
  */
 const policyController = {
-    // Lista todas as apólices do cliente logado pesquisando em múltiplos bancos
+    // Lista todas as apólices do cliente logado no banco de apólices dedicado
     getMyPolicies: async (req, res) => {
         try {
             const { cpf: userCpf } = req.user;
@@ -31,80 +32,51 @@ const policyController = {
                 ORDER BY a.vigencia_fim DESC
             `;
 
-            let result = null;
-            const pools = [
-                { name: 'APOLICES_DATABASE_URL', query: db.apolicesQuery },
-                { name: 'MASTER_DATABASE_URL', query: db.masterQuery },
-                { name: 'DATABASE_URL', query: db.query }
-            ];
+            console.log(`[POLICIES] Consultando banco dedicado APOLICES para CPF: ${userCpf}`);
+            const { rows } = await db.apolicesQuery(queryText, [userCpf]);
 
-            for (const pool of pools) {
-                try {
-                    const resSearch = await pool.query(queryText, [userCpf]);
-                    result = resSearch;
-                    console.log(`✅ [POLICIES] Tabela encontrada em ${pool.name}`);
-                    break;
-                } catch (e) {
-                    continue; // Tenta o próximo
-                }
-            }
-
-            if (!result) {
-                return res.status(404).json({ error: 'Tabela apolices_brokeria não encontrada em nenhum banco.' });
-            }
-
-            res.json(result.rows);
+            res.json(rows);
         } catch (error) {
             console.error('[POLICIES-ERROR]', error.message);
-            res.status(500).json({ error: error.message });
+            res.status(500).json({ error: 'Erro no banco de apólices: ' + error.message });
         }
     },
 
-    // Detalhes específicos
+    // Detalhes de uma apólice específica
     getPolicyDetails: async (req, res) => {
         try {
             const { id } = req.params;
             const { cpf } = req.user;
-            const query = `SELECT id_apolice as id, * FROM apolices_brokeria WHERE id_apolice = $1 AND REPLACE(REPLACE(cpf, '.', ''), '-', '') = REPLACE(REPLACE($2, '.', ''), '-', '')`;
-
-            let result = null;
-            const pools = [db.apolicesQuery, db.masterQuery, db.query];
-            for (const q of pools) {
-                try {
-                    const r = await q(query, [id, cpf]);
-                    if (r.rows.length > 0) { result = r; break; }
-                } catch (e) { continue; }
-            }
-
-            if (!result) return res.status(404).json({ error: 'Não encontrada' });
-            res.json(result.rows[0]);
+            const query = `
+                SELECT 
+                    id_apolice as id,
+                    * 
+                FROM apolices_brokeria 
+                WHERE id_apolice = $1 AND REPLACE(REPLACE(cpf, '.', ''), '-', '') = REPLACE(REPLACE($2, '.', ''), '-', '')
+            `;
+            const { rows } = await db.apolicesQuery(query, [id, cpf]);
+            if (rows.length === 0) return res.status(404).json({ error: 'Apólice não encontrada' });
+            res.json(rows[0]);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
     },
 
-    // Chat IA com Contexto Real
+    // Chat com IA usando contexto do banco de apólices
     chatWithAI: async (req, res) => {
         try {
             const { message } = req.body;
             const { cpf: userCpf } = req.user;
 
-            const query = `SELECT numero_apolice, ramo, seguradora, vigencia_fim as data_fim, placa, status_apolice as status FROM apolices_brokeria WHERE REPLACE(REPLACE(cpf, '.', ''), '-', '') = REPLACE(REPLACE($1, '.', ''), '-', '')`;
+            const query = `
+                SELECT numero_apolice, ramo, seguradora, vigencia_fim as data_fim, placa, status_apolice as status 
+                FROM apolices_brokeria 
+                WHERE REPLACE(REPLACE(cpf, '.', ''), '-', '') = REPLACE(REPLACE($1, '.', ''), '-', '')
+            `;
 
-            let result = null;
-            const pools = [db.apolicesQuery, db.masterQuery, db.query];
-            for (const q of pools) {
-                try {
-                    const r = await q(query, [userCpf]);
-                    result = r;
-                    break;
-                } catch (e) { continue; }
-            }
+            const { rows: policies } = await db.apolicesQuery(query, [userCpf]);
 
-            const policies = result ? result.rows : [];
-            const n8nWebhook = process.env.N8N_WEBHOOK_URL;
-
-            const response = await fetch(n8nWebhook, {
+            const response = await fetch(process.env.N8N_WEBHOOK_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
