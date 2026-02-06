@@ -62,7 +62,22 @@ const policyController = {
 
         } catch (error) {
             console.error('[DIRECT-ERROR]', error.message);
-            res.status(500).json({ error: 'Falha no Acesso Direto: ' + error.message });
+
+            // Tenta listar tabelas para retornar no erro
+            let tableListStr = 'Nenhuma tabela encontrada';
+            try {
+                const { rows: tableList } = await db.apolicesQuery(`
+                    SELECT table_name FROM information_schema.tables 
+                    WHERE table_schema = 'public'
+                `);
+                if (tableList.length > 0) {
+                    tableListStr = tableList.map(t => t.table_name).join(', ');
+                }
+            } catch (e) {
+                tableListStr = 'Erro ao listar: ' + e.message;
+            }
+
+            res.status(500).json({ error: `Erro no banco: ${error.message}. (Tabelas visíveis: ${tableListStr})` });
         }
     },
 
