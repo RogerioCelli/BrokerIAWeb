@@ -28,11 +28,9 @@ const policyController = {
                 }
             }
 
-            // Se a conexão funcionar mas não achar a tabela, vamos investigar ONDE estamos conectados
-            const { rows: currentDb } = await db.apolicesQuery('SELECT current_database() as db_name, current_user as user_name');
-            console.log(`[CONEXAO-REAL] Conectado no banco: ${currentDb[0].db_name} como usuário: ${currentDb[0].user_name}`);
+            // [FIX-FINAL] O N8N provou que as apólices estão no banco de CLIENTES.
+            // Redirecionando a busca para a conexão de Clientes.
 
-            // Se conectou, tenta a tabela direta com COLUNAS VERIFICADAS
             const queryText = `
                 SELECT 
                     id_apolice as id,
@@ -49,12 +47,13 @@ const policyController = {
                 ORDER BY vigencia_fim DESC
             `;
 
-            const { rows } = await db.apolicesQuery(queryText, [cleanCpf]);
+            // USANDO clientesQuery (Mesmo banco do N8N)
+            const { rows } = await db.clientesQuery(queryText, [cleanCpf]);
 
             // Detalhes
             const enrichedRows = await Promise.all(rows.map(async (p) => {
                 try {
-                    const { rows: details } = await db.apolicesQuery(
+                    const { rows: details } = await db.clientesQuery(
                         `SELECT modelo, marca FROM apolices_detalhes_auto WHERE id_apolice = $1`,
                         [p.id]
                     );
@@ -75,10 +74,10 @@ const policyController = {
 
             if (error.message.includes('does not exist')) {
                 try {
-                    const { rows: dbInfo } = await db.apolicesQuery('SELECT current_database() as db_name');
+                    const { rows: dbInfo } = await db.clientesQuery('SELECT current_database() as db_name');
                     currentDbName = dbInfo[0].db_name;
 
-                    const { rows } = await db.apolicesQuery(`
+                    const { rows } = await db.clientesQuery(`
                         SELECT table_name 
                         FROM information_schema.tables 
                         WHERE table_schema = 'public'

@@ -1,6 +1,6 @@
 {
   "name": "broker-ia-web-backend",
-  "version": "1.1.32",
+  "version": "1.1.33",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
