@@ -1,75 +1,62 @@
 const { Pool } = require('pg');
-const path = require('path');
-require('dotenv').config(); // Prefira o ambiente real do contêiner
+require('dotenv').config();
 
-// Debug de Inicialização (Mascarado)
-console.log('--- [DB-CHECK] Verificando Configurações de Banco ---');
-const checkVar = (name) => {
-    const val = process.env[name];
-    if (!val || val.trim() === "") {
-        console.warn(`⚠️ ALERTA: Variável ${name} NÃO LOCALIZADA ou VAZIA!`);
-        return null;
+/**
+ * Função para garantir que a URL do banco existe antes de tentar a query.
+ * Se não existir, lança um erro amigável que aparecerá no login.
+ */
+function validateDbConfig(name) {
+    const url = process.env[name];
+    if (!url || url.trim() === "" || url.includes('localhost')) {
+        throw new Error(`[CONFIG-ERRO] A variável '${name}' não foi configurada corretamente no Easypanel. Verifique se o nome da Key está correto.`);
     }
-    // Mostra o Host para conferirmos o destino
-    const host = val.split('@')[1]?.split(':')[0] || 'host-desconhecido';
-    console.log(`✅ ${name}: Configurada (Destino: ${host})`);
-    return val;
-};
+    return url;
+}
 
-const portalUrl = checkVar('DATABASE_URL');
-const masterUrl = checkVar('MASTER_DATABASE_URL');
-const clientesUrl = checkVar('CLIENTES_DATABASE_URL');
-const registrosUrl = checkVar('REGISTROS_DATABASE_URL');
+// Inicializa os pools (eles não conectam até a primeira query)
+const poolPortal = new Pool({ connectionString: process.env.DATABASE_URL || 'postgres://localhost/missing_portal' });
+const poolMaster = new Pool({ connectionString: process.env.MASTER_DATABASE_URL || 'postgres://localhost/missing_master' });
+const poolClientes = new Pool({ connectionString: process.env.CLIENTES_DATABASE_URL || 'postgres://localhost/missing_clientes' });
+const poolRegistros = new Pool({ connectionString: process.env.REGISTROS_DATABASE_URL || 'postgres://localhost/missing_registros' });
 
-/**
- * CONEXÃO 1: Banco do Portal (db-brokeriaweb)
- */
-const poolPortal = new Pool({ connectionString: portalUrl });
-
-/**
- * CONEXÃO 2: Banco Master (brokeria-seguros)
- */
-const poolMaster = new Pool({ connectionString: masterUrl });
-
-/**
- * CONEXÃO 3: Banco de Clientes (cliente-brokeria)
- */
-const poolClientes = new Pool({ connectionString: clientesUrl });
-
-/**
- * CONEXÃO 4: Banco de Registros (registros-brokeria)
- */
-const poolRegistros = new Pool({ connectionString: registrosUrl });
-
-// Helper para tratar SSL em conexões internas
-const disableSSL = (pool) => {
+// Ajuste automático de SSL
+const setupSSL = (pool) => {
     const connStr = pool.options.connectionString;
-    if (!connStr) return;
+    if (!connStr || connStr.includes('missing_') || connStr.includes('localhost')) {
+        pool.options.ssl = false;
+        return;
+    }
 
-    // Desabilitar SSL para hosts internos ou se explicitamente solicitado
-    if (connStr.includes('brokeria_') || connStr.includes('sslmode=disable') || connStr.includes('127.0.0.1')) {
+    if (connStr.includes('brokeria_') || connStr.includes('sslmode=disable')) {
         pool.options.ssl = false;
     } else {
         pool.options.ssl = { rejectUnauthorized: false };
     }
 };
 
-disableSSL(poolPortal);
-disableSSL(poolMaster);
-disableSSL(poolClientes);
-disableSSL(poolRegistros);
+[poolPortal, poolMaster, poolClientes, poolRegistros].forEach(setupSSL);
 
 module.exports = {
-    // Padrão (Portal)
-    query: (text, params) => poolPortal.query(text, params),
+    // Queries Protegidas
+    query: (text, params) => {
+        validateDbConfig('DATABASE_URL');
+        return poolPortal.query(text, params);
+    },
+    masterQuery: (text, params) => {
+        validateDbConfig('MASTER_DATABASE_URL');
+        return poolMaster.query(text, params);
+    },
+    clientesQuery: (text, params) => {
+        validateDbConfig('CLIENTES_DATABASE_URL');
+        return poolClientes.query(text, params);
+    },
+    registrosQuery: (text, params) => {
+        validateDbConfig('REGISTROS_DATABASE_URL');
+        return poolRegistros.query(text, params);
+    },
+    // Exportar pools para migrações
     poolPortal,
-    // Master (Seguros)
-    masterQuery: (text, params) => poolMaster.query(text, params),
     poolMaster,
-    // Clientes (Identidade)
-    clientesQuery: (text, params) => poolClientes.query(text, params),
     poolClientes,
-    // Registros (Central)
-    registrosQuery: (text, params) => poolRegistros.query(text, params),
     poolRegistros
 };
