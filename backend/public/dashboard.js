@@ -73,7 +73,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         if (!response.ok) {
-            throw new Error('Erro ao carregar apólices');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Erro ao carregar apólices');
         }
 
         const policies = await response.json();
@@ -82,7 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error(error);
         policiesGrid.innerHTML = `
             <div class="policy-card" style="border-color: #ff3b30">
-                <p style="color: #ff3b30">Não foi possível carregar suas apólices. Tente novamente mais tarde.</p>
+                <p style="color: #ff3b30">Erro: ${error.message}</p>
             </div>
         `;
     }
