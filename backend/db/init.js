@@ -147,7 +147,7 @@ async function runMigrations() {
                     INSERT INTO public.apolices_brokeria 
                     (numero_apolice, seguradora, ramo, vigencia_inicio, vigencia_fim, status_apolice, cpf, placa, cliente_nome, url_pdf)
                     VALUES 
-                    ('AUTO-DEMO-2026', 'Porto Seguro', 'Automóvel', '2025-01-01', '2026-01-01', 'ATIVA', '11806562280', 'ABC-1234', 'Rogério Celli', 'https://exemplo.com/doc.pdf')
+                    ('8026111111111', 'Porto Seguro', 'Automóvel', '2025-01-01', '2026-01-01', 'ATIVA', '11806562280', 'ABC-1234', 'Rogério Celli', 'https://exemplo.com/doc.pdf')
                     ON CONFLICT (numero_apolice) DO NOTHING;
                 `);
 
@@ -156,7 +156,7 @@ async function runMigrations() {
                     INSERT INTO public.apolices_brokeria 
                     (numero_apolice, seguradora, ramo, vigencia_inicio, vigencia_fim, status_apolice, cpf, placa, cliente_nome)
                     VALUES 
-                    ('RESID-DEMO-2026', 'Allianz', 'Residencial', '2025-02-01', '2026-02-01', 'ATIVA', '11806562280', NULL, 'Rogério Celli')
+                    ('8026222222222', 'Allianz', 'Residencial', '2025-02-01', '2026-02-01', 'ATIVA', '11806562280', NULL, 'Rogério Celli')
                     ON CONFLICT (numero_apolice) DO NOTHING;
                 `);
 
