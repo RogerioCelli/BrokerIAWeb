@@ -12,9 +12,10 @@ const adminController = {
                     email, 
                     celular,
                     telefone,
-                    cpf
+                    cpf,
+                    data_cadastro
                 FROM clientes_brokeria 
-                ORDER BY id_cliente DESC
+                ORDER BY data_cadastro DESC NULLS LAST
                 LIMIT 50
             `;
             const { rows } = await db.clientesQuery(query);
@@ -39,9 +40,10 @@ const adminController = {
                     vigencia_fim as data_fim,
                     status_apolice as status,
                     placa,
-                    cpf
+                    cpf,
+                    data_criacao
                 FROM apolices_brokeria
-                ORDER BY id_apolice DESC
+                ORDER BY data_criacao DESC NULLS LAST
                 LIMIT 50
             `;
             const { rows } = await db.apolicesQuery(query);

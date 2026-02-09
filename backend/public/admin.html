@@ -214,6 +214,7 @@
                                 <th>Email</th>
                                 <th>Celular</th>
                                 <th>Telefone</th>
+                                <th>Data Cadastro</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -228,6 +229,7 @@
                             <td>${client.email}</td>
                             <td>${client.celular || '-'}</td>
                             <td>${client.telefone || '-'}</td>
+                            <td>${client.data_cadastro ? new Date(client.data_cadastro).toLocaleDateString('pt-BR') : '-'}</td>
                         </tr>
                     `;
                 });
