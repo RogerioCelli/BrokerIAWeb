@@ -213,7 +213,30 @@
         const API_URL = '/api/admin';
 
         async function loadAllData() {
-            await Promise.all([loadClients(), loadPolicies()]);
+            const btn = document.querySelector('.refresh-btn');
+            const originalText = btn.innerText;
+
+            try {
+                btn.innerText = '⏳ Atualizando...';
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+
+                // Mostrar indicadores de loading nos containers
+                document.getElementById('clients-container').innerHTML = '<div class="load-indicator">Atualizando clientes...</div>';
+                document.getElementById('policies-container').innerHTML = '<div class="load-indicator">Atualizando apólices...</div>';
+
+                await Promise.all([loadClients(), loadPolicies()]);
+
+                console.log('✅ Dados atualizados com sucesso');
+            } catch (err) {
+                console.error('❌ Erro na atualização:', err);
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+            }
         }
 
         async function loadClients() {

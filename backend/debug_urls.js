@@ -6,8 +6,8 @@ const pool = new Pool({
 
 async function check() {
     try {
-        const { rows } = await pool.query("SELECT id_apolice, cpf, url_pdf FROM apolices_brokeria WHERE url_pdf IS NOT NULL LIMIT 10");
-        console.log("POLICIES WITH URL:");
+        console.log("--- INSPEÇÃO PROFUNDA DE CPFS ---");
+        const { rows } = await pool.query("SELECT id_apolice, cpf, LENGTH(cpf) as len, url_pdf FROM apolices_brokeria LIMIT 30");
         console.table(rows);
     } catch (err) {
         console.error(err);
