@@ -11,10 +11,8 @@ const adminController = {
                     nome_completo as nome, 
                     email, 
                     celular as telefone, 
-                    cpf,
-                    created_at 
+                    cpf
                 FROM clientes_brokeria 
-                ORDER BY created_at DESC 
                 LIMIT 50
             `;
             const { rows } = await db.clientesQuery(query);

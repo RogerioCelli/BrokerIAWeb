@@ -213,7 +213,6 @@
                                 <th>CPF</th>
                                 <th>Email</th>
                                 <th>Telefone</th>
-                                <th>Data Cadastro</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -227,7 +226,6 @@
                             <td>${client.cpf}</td>
                             <td>${client.email}</td>
                             <td>${client.telefone}</td>
-                            <td>${new Date(client.created_at).toLocaleDateString('pt-BR')}</td>
                         </tr>
                     `;
                 });
