@@ -40,8 +40,8 @@ const adminController = {
                     vigencia_fim as data_fim,
                     status_apolice as status,
                     placa,
-                    cpf,
                     url_pdf,
+                    link_url_apolice,
                     data_criacao
                 FROM apolices_brokeria
                 ORDER BY data_criacao DESC NULLS LAST

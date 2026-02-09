@@ -116,8 +116,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <button onclick="showPolicyDetails(${policy.id})" style="flex: 1; padding: 12px; background: rgba(16, 185, 129, 0.1); color: var(--primary); border: 1px solid var(--primary-glow); border-radius: 12px; cursor: pointer; font-weight: 600;">
                                 <i class="fas fa-search-plus"></i> Detalhes
                             </button>
-                            ${policy.url_pdf && policy.url_pdf !== 'undefined' ? `
-                                <a href="${policy.url_pdf}" target="_blank" style="width: 50px; display: flex; align-items: center; justify-content: center; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px;">
+                            ${(policy.link_url_apolice || policy.url_pdf) && (policy.link_url_apolice !== 'undefined' && policy.url_pdf !== 'undefined') ? `
+                                <a href="${policy.link_url_apolice || policy.url_pdf}" target="_blank" style="width: 50px; display: flex; align-items: center; justify-content: center; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px;">
                                     <i class="fas fa-file-pdf"></i>
                                 </a>
                             ` : ''}
@@ -163,8 +163,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                             </button>
                         </td>
                         <td style="padding: 1.2rem; text-align: center;">
-                            ${policy.url_pdf && policy.url_pdf !== 'undefined' ? `
-                                <a href="${policy.url_pdf}" target="_blank" style="color: #ef4444; font-size: 1.3rem; transition: transform 0.2s; display: inline-block;" title="Baixar PDF" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
+                            ${(policy.link_url_apolice || policy.url_pdf) && (policy.link_url_apolice !== 'undefined' && policy.url_pdf !== 'undefined') ? `
+                                <a href="${policy.link_url_apolice || policy.url_pdf}" target="_blank" style="color: #ef4444; font-size: 1.3rem; transition: transform 0.2s; display: inline-block;" title="Baixar PDF" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
                                     <i class="fas fa-file-pdf"></i>
                                 </a>
                             ` : `
@@ -251,11 +251,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         detailsHtml += `</div>`;
 
-        if (policy.url_pdf && policy.url_pdf !== 'undefined') {
+        const currentPdfLink = policy.link_url_apolice || policy.url_pdf;
+        if (currentPdfLink && currentPdfLink !== 'undefined') {
             detailsHtml += `
             <div style="margin-top: 2rem; padding: 1rem; background: rgba(59, 130, 246, 0.05); border-radius: 12px; border: 1px border-style: dashed; border-color: #3b82f6; text-align: center;">
                 <p style="margin-bottom: 1rem; font-size: 0.9rem; color: #3b82f6;">Documento PDF disponível para visualização oficial.</p>
-                <a href="${policy.url_pdf}" target="_blank" class="btn-login" style="max-width: 300px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none;">
+                <a href="${currentPdfLink}" target="_blank" class="btn-login" style="max-width: 300px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none;">
                     <i class="fas fa-file-pdf"></i> Abrir Apólice Digital
                 </a>
             </div>

@@ -40,6 +40,7 @@ const policyController = {
                     status_apolice as status,
                     placa,
                     url_pdf,
+                    link_url_apolice,
                     data_criacao
                 FROM apolices_brokeria
                 WHERE REPLACE(REPLACE(cpf, '.', ''), '-', '') = $1
