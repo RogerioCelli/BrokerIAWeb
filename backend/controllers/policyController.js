@@ -30,19 +30,21 @@ const policyController = {
 
             // Consulta principal na tabela apolices_brokeria
             const queryText = `
-                SELECT
-                    id_apolice as id,
-                    numero_apolice,
-                    seguradora,
-                    ramo,
-                    vigencia_inicio as data_inicio,
-                    vigencia_fim as data_fim,
-                    status_apolice as status,
-                    placa
+            const queryText = `
+            SELECT
+            id_apolice as id,
+                numero_apolice,
+                seguradora,
+                ramo,
+                vigencia_inicio as data_inicio,
+                vigencia_fim as data_fim,
+                status_apolice as status,
+                placa,
+                url_pdf
                 FROM apolices_brokeria
                 WHERE REPLACE(REPLACE(cpf, '.', ''), '-', '') = $1
                 ORDER BY vigencia_fim DESC
-            `;
+                `;
 
             // Executa a query no banco de APOLICES (Correto)
             const { rows } = await db.apolicesQuery(queryText, [cleanCpf]);
@@ -74,7 +76,7 @@ const policyController = {
                 }
             }
 
-            res.status(500).json({ error: `Erro no Banco(${currentDbName}): ${error.message}. (O que existe lá: ${tablesFound})` });
+            res.status(500).json({ error: `Erro no Banco(${ currentDbName }): ${ error.message }. (O que existe lá: ${ tablesFound })` });
         }
     },
 
