@@ -126,19 +126,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 `;
             }).join('');
         } else {
-            // Layout de TABELA para Desktop
+            // Layout de TABELA DARK (Conforme aprovado na imagem)
             policiesGrid.style.display = 'block';
             policiesGrid.style.overflowX = 'auto';
             let html = `
-                <table class="admin-table" style="width: 100%; border-collapse: collapse; background: rgba(255,255,255,0.02); border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05);">
+                <table style="width: 100%; border-collapse: collapse; background: rgba(13, 20, 31, 0.6); border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px);">
                     <thead>
-                        <tr style="background: rgba(255,255,255,0.03); border-bottom: 2px solid rgba(255,255,255,0.05); text-align: left;">
-                            <th style="padding: 1.2rem;">RAMO</th>
-                            <th style="padding: 1.2rem;">APÓLICE</th>
-                            <th style="padding: 1.2rem;">SEGURADORA</th>
-                            <th style="padding: 1.2rem;">VIGÊNCIA</th>
-                            <th style="padding: 1.2rem;">PLACA</th>
-                            <th style="padding: 1.2rem; text-align: center;">AÇÕES</th>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.08); text-align: left;">
+                            <th style="padding: 1.5rem; color: #fff; font-family: 'Outfit'; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase;">RAMO</th>
+                            <th style="padding: 1.5rem; color: #fff; font-family: 'Outfit'; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase;">APÓLICE</th>
+                            <th style="padding: 1.5rem; color: #fff; font-family: 'Outfit'; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase;">SEGURADORA</th>
+                            <th style="padding: 1.5rem; color: #fff; font-family: 'Outfit'; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase;">VIGÊNCIA</th>
+                            <th style="padding: 1.5rem; color: #fff; font-family: 'Outfit'; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: center;">DETALHES</th>
+                            <th style="padding: 1.5rem; color: #fff; font-family: 'Outfit'; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: center;">DOWNLOAD</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -146,27 +146,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             policies.forEach(policy => {
                 const icon = getIcon(policy.ramo);
-                const vigencia = `${new Date(policy.data_inicio).toLocaleDateString('pt-BR')} - ${new Date(policy.data_fim).toLocaleDateString('pt-BR')}`;
+                const vigencia = `${new Date(policy.data_inicio).toLocaleDateString('pt-BR')}<br><span style="color: #555;">-</span><br>${new Date(policy.data_fim).toLocaleDateString('pt-BR')}`;
 
                 html += `
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
-                        <td style="padding: 1.2rem; display: flex; align-items: center; gap: 12px;">
-                            <i class="${icon}" style="color: var(--primary); font-size: 1.1rem; width: 24px; text-align: center;"></i>
-                            <span style="font-weight: 500;">${policy.ramo}</span>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+                        <td style="padding: 1.2rem; display: flex; align-items: center; gap: 15px;">
+                            <i class="${icon}" style="color: var(--primary); font-size: 1.2rem; width: 24px;"></i>
+                            <span style="font-weight: 500; color: #fff;">${policy.ramo}</span>
                         </td>
-                        <td style="padding: 1.2rem; color: #94a3b8; font-family: monospace;">${policy.numero_apolice}</td>
-                        <td style="padding: 1.2rem;">${policy.seguradora}</td>
-                        <td style="padding: 1.2rem; font-size: 0.9rem; color: #94a3b8;">${vigencia}</td>
-                        <td style="padding: 1.2rem;">${policy.placa || '-'}</td>
-                        <td style="padding: 1.2rem; text-align: center; display: flex; justify-content: center; gap: 15px;">
-                            <button onclick="showPolicyDetails(${policy.id})" style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 1.2rem;" title="Ver Detalhes">
+                        <td style="padding: 1.2rem; color: #888; font-family: monospace; font-size: 0.9rem;">${policy.numero_apolice}</td>
+                        <td style="padding: 1.2rem; color: #ccc;">${policy.seguradora || '-'}</td>
+                        <td style="padding: 1.2rem; font-size: 0.85rem; color: #ccc; line-height: 1.2;">${vigencia}</td>
+                        <td style="padding: 1.2rem; text-align: center;">
+                            <button onclick="showPolicyDetails(${policy.id})" style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 1.3rem; transition: transform 0.2s;" title="Ver Detalhes" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
                                 <i class="fas fa-search-plus"></i>
                             </button>
+                        </td>
+                        <td style="padding: 1.2rem; text-align: center;">
                             ${policy.url_pdf ? `
-                                <a href="${policy.url_pdf}" target="_blank" style="color: #ef4444; font-size: 1.2rem;" title="Abrir PDF">
+                                <a href="${policy.url_pdf}" target="_blank" style="color: #ef4444; font-size: 1.3rem; transition: transform 0.2s; display: inline-block;" title="Baixar PDF" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
                                     <i class="fas fa-file-pdf"></i>
                                 </a>
-                            ` : ''}
+                            ` : `
+                                <i class="fas fa-clock" style="color: #333; font-size: 1.1rem;" title="Aguardando Sincronização"></i>
+                            `}
                         </td>
                     </tr>
                 `;
@@ -178,6 +181,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function getIcon(ramo) {
+        if (!ramo) return 'fas fa-file-contract';
         switch (ramo.toUpperCase()) {
             case 'AUTOMOVEL': return 'fas fa-car';
             case 'RESIDENCIAL': return 'fas fa-home';

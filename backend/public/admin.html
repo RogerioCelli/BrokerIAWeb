@@ -36,7 +36,7 @@
 
         .header {
             display: flex;
-            justify_content: space-between;
+            justify-content: space-between;
             align-items: center;
             margin-bottom: 2rem;
             border-bottom: 1px solid var(--border);
@@ -145,6 +145,31 @@
 
         .refresh-btn:hover {
             background: rgba(59, 130, 246, 0.1);
+        }
+
+        .download-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #10b981;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.875rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            background: rgba(16, 185, 129, 0.1);
+            transition: all 0.2s;
+        }
+
+        .download-link:hover {
+            background: rgba(16, 185, 129, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .no-download {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-style: italic;
         }
     </style>
 </head>
@@ -267,6 +292,7 @@
                                 <th>Vigência</th>
                                 <th>Placa</th>
                                 <th>Status</th>
+                                <th>Arquivo</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -284,6 +310,14 @@
                             <td>${new Date(pol.data_inicio).toLocaleDateString('pt-BR')} - ${new Date(pol.data_fim).toLocaleDateString('pt-BR')}</td>
                             <td>${pol.placa || '-'}</td>
                             <td><span class="status-badge ${statusClass}">${pol.status}</span></td>
+                            <td>
+                                ${pol.url_pdf
+                            ? `<a href="${pol.url_pdf}" target="_blank" class="download-link">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                        PDF
+                                       </a>`
+                            : '<span class="no-download">Pendente</span>'}
+                            </td>
                         </tr>
                     `;
                 });

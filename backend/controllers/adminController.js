@@ -41,6 +41,7 @@ const adminController = {
                     status_apolice as status,
                     placa,
                     cpf,
+                    url_pdf,
                     data_criacao
                 FROM apolices_brokeria
                 ORDER BY data_criacao DESC NULLS LAST
