@@ -4,245 +4,312 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Governança & Orquestração | Broker IA</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <title>Painel de Dados - Admin Broker IA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent: #3b82f6;
+            --border: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
         body {
-            background-color: #050a10;
-            display: block;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
             padding: 2rem;
-            align-items: flex-start;
         }
 
-        .admin-grid {
-            display: grid;
-            grid-template-columns: 1fr 350px;
-            gap: 2rem;
-            margin-top: 2rem;
-        }
-
-        .admin-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 16px;
-            padding: 1.5rem;
-            backdrop-filter: blur(10px);
-        }
-
-        .stat-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.05) 100%);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-            padding: 1.5rem;
-            border-radius: 12px;
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 800;
-            color: #10b981;
-            display: block;
-        }
-
-        .stat-label {
-            color: #94a3b8;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .live-feed {
-            height: 500px;
-            overflow-y: auto;
-            padding-right: 1rem;
-        }
-
-        .feed-item {
-            padding: 1rem;
-            border-left: 2px solid #10b981;
-            background: rgba(255, 255, 255, 0.02);
+        h1,
+        h2 {
             margin-bottom: 1rem;
-            border-radius: 0 8px 8px 0;
-            animation: fadeIn 0.5s ease-out;
         }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateX(-10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
+        .header {
+            display: flex;
+            justify_content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
         }
 
-        .feed-time {
-            font-size: 0.75rem;
-            color: #10b981;
-            font-weight: 600;
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
         }
 
-        .feed-msg {
+        .tab-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .tab-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .data-panel {
+            display: none;
+        }
+
+        .data-panel.active {
             display: block;
-            margin-top: 0.3rem;
-            font-size: 0.9rem;
         }
 
-        .agent-badge {
-            font-size: 0.65rem;
-            background: rgba(59, 130, 246, 0.2);
-            color: #3b82f6;
-            padding: 2px 6px;
+        .db-badge {
+            font-size: 0.75rem;
+            background: #334155;
+            padding: 0.25rem 0.5rem;
             border-radius: 4px;
             margin-left: 0.5rem;
-        }
-
-        .table-container {
-            width: 100%;
-            overflow-x: auto;
+            color: #fbbf24;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            color: #e2e8f0;
+            background: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
         }
 
         th {
-            text-align: left;
-            padding: 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            color: #94a3b8;
-            font-size: 0.85rem;
+            background: #0f172a;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
         }
 
-        td {
-            padding: 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        tr:hover {
+            background: rgba(255, 255, 255, 0.02);
         }
 
-        .header-admin {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-ativa {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .status-cancelada {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .load-indicator {
+            color: var(--text-secondary);
+            font-style: italic;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .refresh-btn {
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(59, 130, 246, 0.1);
         }
     </style>
 </head>
 
 <body>
-    <div class="header-admin">
+
+    <div class="header">
         <div>
-            <h1 style="font-family: 'Outfit'; font-size: 2rem;">Painel de Governança</h1>
-            <p style="color: #94a3b8;">Monitoramento em Tempo Real de Agentes IA</p>
+            <h1>Painel de Dados - Multi-Database</h1>
+            <p style="color: var(--text-secondary)">Visualização direta das tabelas Mestre</p>
         </div>
-        <a href="dashboard.html" class="btn-login" style="width: auto; padding: 0.8rem 1.5rem; text-decoration: none;">
-            <i class="fas fa-arrow-left"></i> Voltar ao Portal
-        </a>
+        <button class="refresh-btn" onclick="loadAllData()">Atualizar Dados</button>
     </div>
 
-    <div class="stat-grid">
-        <div class="stat-card">
-            <span class="stat-value">124</span>
-            <span class="stat-label">Interações IA (24h)</span>
-        </div>
-        <div class="stat-card">
-            <span class="stat-value">98.2%</span>
-            <span class="stat-label">Precisão dos Agentes</span>
-        </div>
-        <div class="stat-card">
-            <span class="stat-value">14</span>
-            <span class="stat-label">Apólices Ativas</span>
-        </div>
-        <div class="stat-card" style="border-color: #3b82f6;">
-            <span class="stat-value" style="color: #3b82f6;">02</span>
-            <span class="stat-label">Intervenções Humanas</span>
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('clients')">
+            Clientes
+            <span class="db-badge">HOST: brokeria_clientes-postgres</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('policies')">
+            Apólices
+            <span class="db-badge">HOST: brokeria_apolices</span>
+        </button>
+    </div>
+
+    <!-- CLIENTES -->
+    <div id="clients-panel" class="data-panel active">
+        <div id="clients-container">
+            <div class="load-indicator">Carregando dados de clientes...</div>
         </div>
     </div>
 
-    <div class="admin-grid">
-        <div class="admin-card">
-            <h3 style="margin-bottom: 1.5rem;"><i class="fas fa-users"></i> Últimos Clientes Atendidos</h3>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Cliente</th>
-                            <th>Última Pergunta</th>
-                            <th>Agente Responsável</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Rogerio Celli</td>
-                            <td>"Qual o vencimento da apólice?"</td>
-                            <td><span class="agent-badge">Agente de Busca</span></td>
-                            <td><span style="color: #10b981;"><i class="fas fa-circle" style="font-size: 0.6rem;"></i>
-                                    Resolvido</span></td>
-                        </tr>
-                        <tr>
-                            <td>Maria Silva</td>
-                            <td>"Como acionar o guincho?"</td>
-                            <td><span class="agent-badge">Agente de Assistência</span></td>
-                            <td><span style="color: #fbbf24;"><i class="fas fa-circle" style="font-size: 0.6rem;"></i>
-                                    Em progresso</span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="admin-card">
-            <h3 style="margin-bottom: 1.5rem;"><i class="fas fa-satellite-dish"></i> Live Agent Feed</h3>
-            <div class="live-feed" id="liveFeed">
-                <div class="feed-item">
-                    <span class="feed-time">17:42:05</span>
-                    <span class="feed-msg">Agente de Busca localizou apólice para cliente: 123.456.XXX-XX</span>
-                </div>
-                <div class="feed-item">
-                    <span class="feed-time">17:41:50</span>
-                    <span class="feed-msg">Agente de Análise validou cobertura residencial Liberty.</span>
-                </div>
-            </div>
+    <!-- APOLICES -->
+    <div id="policies-panel" class="data-panel">
+        <div id="policies-container">
+            <div class="load-indicator">Carregando dados de apólices...</div>
         </div>
     </div>
 
     <script>
-        // Simulação de Feed em tempo real focado em chamados reais
-        const feed = document.getElementById('liveFeed');
-        const tasks = [
-            "Agente de Suporte informou telefone 0800 da Porto Seguro.",
-            "Agente de Documentos enviou link da carteirinha digital.",
-            "Agente de Sinistro orientou cliente sobre B.O. em batida.",
-            "Agente de Busca localizou número da apólice AP-2026.",
-            "Agente de Vendas gerando cotação de Renovação Automática...",
-            "Cliente enviou Foto de Vistoria (Salvo em: /upload_cliente/123.456.../)",
-            "Agente de Suporte explicou cobertura de Vidros e Granizo."
-        ];
+        const API_URL = '/api/admin';
 
-        setInterval(() => {
-            const time = new Date().toLocaleTimeString('pt-BR');
-            const msg = tasks[Math.floor(Math.random() * tasks.length)];
-            const div = document.createElement('div');
-            div.className = 'feed-item';
-            div.innerHTML = `
-                <span class="feed-time">${time}</span>
-                <span class="feed-msg">${msg}</span>
-            `;
-            feed.prepend(div);
-            if (feed.children.length > 10) feed.lastChild.remove();
-        }, 5000);
+        async function loadAllData() {
+            await Promise.all([loadClients(), loadPolicies()]);
+        }
+
+        async function loadClients() {
+            const container = document.getElementById('clients-container');
+            try {
+                const res = await fetch(`${API_URL}/clients`);
+                const data = await res.json();
+
+                if (data.error) throw new Error(data.error);
+
+                if (data.length === 0) {
+                    container.innerHTML = '<p style="padding: 1rem">Nenhum cliente encontrado.</p>';
+                    return;
+                }
+
+                let html = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome Completo</th>
+                                <th>CPF</th>
+                                <th>Email</th>
+                                <th>Telefone</th>
+                                <th>Data Cadastro</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                data.forEach(client => {
+                    html += `
+                        <tr>
+                            <td style="font-family: monospace; color: #64748b">${client.id}</td>
+                            <td style="font-weight: 500">${client.nome}</td>
+                            <td>${client.cpf}</td>
+                            <td>${client.email}</td>
+                            <td>${client.telefone}</td>
+                            <td>${new Date(client.created_at).toLocaleDateString('pt-BR')}</td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+
+            } catch (error) {
+                container.innerHTML = `<p style="color: #ef4444; padding: 1rem">Erro ao carregar clientes: ${error.message}</p>`;
+            }
+        }
+
+        async function loadPolicies() {
+            const container = document.getElementById('policies-container');
+            try {
+                const res = await fetch(`${API_URL}/policies`);
+                const data = await res.json();
+
+                if (data.error) throw new Error(data.error);
+
+                if (data.length === 0) {
+                    container.innerHTML = '<p style="padding: 1rem">Nenhuma apólice encontrada.</p>';
+                    return;
+                }
+
+                let html = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Apólice</th>
+                                <th>Seguradora</th>
+                                <th>Ramo</th>
+                                <th>CPF Titular</th>
+                                <th>Vigência</th>
+                                <th>Placa</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                data.forEach(pol => {
+                    const statusClass = pol.status === 'ATIVA' ? 'status-ativa' : 'status-cancelada';
+                    html += `
+                        <tr>
+                            <td style="font-family: monospace; color: #64748b">${pol.id}</td>
+                            <td style="font-weight: 500">${pol.numero_apolice}</td>
+                            <td>${pol.seguradora}</td>
+                            <td>${pol.ramo}</td>
+                            <td>${pol.cpf}</td>
+                            <td>${new Date(pol.data_inicio).toLocaleDateString('pt-BR')} - ${new Date(pol.data_fim).toLocaleDateString('pt-BR')}</td>
+                            <td>${pol.placa || '-'}</td>
+                            <td><span class="status-badge ${statusClass}">${pol.status}</span></td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+
+            } catch (error) {
+                container.innerHTML = `<p style="color: #ef4444; padding: 1rem">Erro ao carregar apólices: ${error.message}</p>`;
+            }
+        }
+
+        function switchTab(tab) {
+            // UI Switch
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.data-panel').forEach(p => p.classList.remove('active'));
+
+            if (tab === 'clients') {
+                document.querySelector('button[onclick="switchTab(\'clients\')"]').classList.add('active');
+                document.getElementById('clients-panel').classList.add('active');
+            } else {
+                document.querySelector('button[onclick="switchTab(\'policies\')"]').classList.add('active');
+                document.getElementById('policies-panel').classList.add('active');
+            }
+        }
+
+        // Init
+        loadAllData();
     </script>
 </body>
 

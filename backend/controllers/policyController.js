@@ -1,8 +1,8 @@
 const db = require('../db');
 
 /**
- * Controller de Apólices - Versão 1.1.26 (DIAGNÓSTICO DE REDE)
- * Focado em identificar se o erro é isolamento de projeto no Easypanel
+ * Controller de Apólices - Versão 1.2.0 (PRODUÇÃO - MULTI-V10)
+ * Conectado ao banco 'apolices-brokeria' conforme ambiente de produção.
  */
 const policyController = {
     getMyPolicies: async (req, res) => {
@@ -28,42 +28,26 @@ const policyController = {
                 }
             }
 
-            // [FIX-FINAL] O N8N provou que as apólices estão no banco de CLIENTES.
-            // Redirecionando a busca para a conexão de Clientes.
-
+            // Consulta principal na tabela apolices_brokeria
             const queryText = `
-                SELECT 
-                    id_apolice as id,
-                    numero_apolice,
-                    seguradora,
-                    ramo,
-                    vigencia_inicio as data_inicio,
-                    vigencia_fim as data_fim,
-                    status_apolice as status,
-                    url_pdf as pdf_url,
-                    placa
+            id_apolice as id,
+                numero_apolice,
+                seguradora,
+                ramo,
+                vigencia_inicio as data_inicio,
+                vigencia_fim as data_fim,
+                status_apolice as status,
+                placa
                 FROM apolices_brokeria
                 WHERE REPLACE(REPLACE(cpf, '.', ''), '-', '') = $1
                 ORDER BY vigencia_fim DESC
-            `;
+                `;
 
-            // USANDO clientesQuery (Mesmo banco do N8N)
-            const { rows } = await db.clientesQuery(queryText, [cleanCpf]);
+            // Executa a query no banco de APOLICES (Correto)
+            const { rows } = await db.apolicesQuery(queryText, [cleanCpf]);
 
-            // Detalhes
-            const enrichedRows = await Promise.all(rows.map(async (p) => {
-                try {
-                    const { rows: details } = await db.clientesQuery(
-                        `SELECT modelo, marca FROM apolices_detalhes_auto WHERE id_apolice = $1`,
-                        [p.id]
-                    );
-                    return { ...p, detalhes_veiculo: details[0] || { modelo: 'N/A', marca: 'N/A', placa: p.placa } };
-                } catch (e) {
-                    return { ...p, detalhes_veiculo: { modelo: 'N/A', marca: 'N/A', placa: p.placa } };
-                }
-            }));
-
-            res.json(enrichedRows);
+            // Retorna apenas os dados da tabela apolices_brokeria, sem enriquecimento externo
+            res.json(rows);
 
         } catch (error) {
             console.error('[CRITICAL-ERROR]', error.message);
@@ -74,14 +58,14 @@ const policyController = {
 
             if (error.message.includes('does not exist')) {
                 try {
-                    const { rows: dbInfo } = await db.clientesQuery('SELECT current_database() as db_name');
+                    const { rows: dbInfo } = await db.apolicesQuery('SELECT current_database() as db_name');
                     currentDbName = dbInfo[0].db_name;
 
-                    const { rows } = await db.clientesQuery(`
+                    const { rows } = await db.apolicesQuery(`
                         SELECT table_name 
                         FROM information_schema.tables 
                         WHERE table_schema = 'public'
-                    `);
+                `);
                     tablesFound = rows.map(r => r.table_name).join(', ') || 'Nenhuma (Banco Vazio?)';
                     console.error('[RAIO-X] Tabelas encontradas no banco:', tablesFound);
                 } catch (scanErr) {
@@ -89,7 +73,7 @@ const policyController = {
                 }
             }
 
-            res.status(500).json({ error: `Erro no Banco (${currentDbName}): ${error.message}. (O que existe lá: ${tablesFound})` });
+            res.status(500).json({ error: `Erro no Banco(${currentDbName}): ${error.message}. (O que existe lá: ${tablesFound})` });
         }
     },
 

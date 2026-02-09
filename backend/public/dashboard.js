@@ -96,63 +96,51 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         policiesGrid.innerHTML = policies.map(policy => {
             const icon = getIcon(policy.ramo);
-            const detailLabel = policy.ramo === 'AUTOMOVEL' ? 'Veículo' : 'Imóvel';
-            const detailValue = policy.ramo === 'AUTOMOVEL'
-                ? `${policy.detalhes_veiculo?.modelo} (${policy.detalhes_veiculo?.placa})`
-                : 'Residencial';
 
-            const tel0800 = policy.telefone_0800 || 'Assitência 24h';
-            const telCap = policy.telefone_capital ? `${policy.telefone_capital} / ` : '';
-            const telFull = `${telCap}${tel0800}`;
-            const siteUrl = policy.site_url || '#';
-            const email = policy.email || '';
+            // Lógica Simplificada conforme solicitado (Apenas dados da tabela Mestra)
+            const detailLabel = 'Ramo'; // Antes detalhe do veiculo
+            const detailValue = policy.ramo;
+
+            // Se não temos mais detalhes do veiculo, mostramos apenas a placa se existir na tabela principal
+            const placaInfo = policy.placa ? `(Placa: ${policy.placa})` : '';
+
+            // Falback simples para contatos se não vier no objeto (pois vinha de join as vezes)
+            const tel0800 = 'Central 24h';
 
             return `
                 <div class="policy-card">
                     <div class="policy-header">
                         <div class="seguradora-container">
                             <span class="seguradora-tag">${policy.seguradora}</span>
-                            <div class="support-links">
-                                <a href="tel:${tel0800.replace(/\D/g, '')}" class="support-item">
-                                    <i class="fas fa-phone-alt"></i> ${telFull}
-                                </a>
-                                ${policy.site_url ? `
-                                <a href="${siteUrl}" target="_blank" class="support-item">
-                                    <i class="fas fa-globe"></i> Website Oficial
-                                </a>` : ''}
-                                ${policy.email ? `
-                                <a href="mailto:${email}" class="support-item">
-                                    <i class="fas fa-envelope"></i> ${email}
-                                </a>` : ''}
-                            </div>
                         </div>
                         <i class="${icon} ramo-icon"></i>
                     </div>
-                    <div class="policy-title">${policy.ramo}</div>
-                    <div class="policy-details">Nº ${policy.numero_apolice}</div>
+                    
+                    <div class="policy-title">${policy.ramo} ${placaInfo}</div>
+                    <div class="policy-details">Apólice: ${policy.numero_apolice}</div>
                     
                     <div class="policy-info-item">
-                        <span class="policy-info-label">${detailLabel}</span>
-                        <span class="policy-info-value">${detailValue}</span>
+                        <span class="policy-info-label">Vigência Início</span>
+                        <span class="policy-info-value">${new Date(policy.data_inicio).toLocaleDateString('pt-BR')}</span>
                     </div>
                     <div class="policy-info-item">
                         <span class="policy-info-label">Vencimento</span>
                         <span class="policy-info-value">${new Date(policy.data_fim).toLocaleDateString('pt-BR')}</span>
                     </div>
 
-                    <div class="pdf-status ${policy.pdf_url ? 'ready' : ''}" style="margin-top: 1rem; font-size: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-                        <i class="fas ${policy.pdf_url ? 'fa-file-medical' : 'fa-file-circle-exclamation'}" style="color: ${policy.pdf_url ? '#10b981' : '#94a3b8'}"></i>
-                        <span>${policy.pdf_url ? 'Carteirinha Digital Disponível' : 'Aguardando Documento Oficial'}</span>
+                    <div class="policy-info-item">
+                        <span class="policy-info-label">Status</span>
+                        <span class="policy-info-value" style="color: ${policy.status === 'ATIVA' ? '#10b981' : '#f59e0b'}">
+                            ${policy.status}
+                        </span>
                     </div>
 
                     <div class="policy-actions" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
                         <button class="btn-action btn-documents" style="flex: 1; padding: 0.5rem; border-radius: 8px; font-size: 0.75rem; cursor: pointer; background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2);">
-                            <i class="fas fa-folder-open"></i> Documentos
-                        </button>
-                        <button class="btn-action btn-upload-pdf" style="flex: 1; padding: 0.5rem; border-radius: 8px; font-size: 0.75rem; cursor: pointer; background: rgba(255, 255, 255, 0.05); color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.1);" title="Envio de fotos de vistoria, CNH, etc.">
-                            <i class="fas fa-camera"></i> Enviar Docs
+                            <i class="fas fa-eye"></i> Visualizar Detalhes
                         </button>
                     </div>
+                </div>
                 </div>
             `;
         }).join('');
@@ -220,10 +208,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             await delay(500);
             agentStatus.remove();
 
-            const response = await fetch(`${API_URL}/policies/chat`, {
+            const response = await fetch(`${API_URL} /policies/chat`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
+                    'Authorization': `Bearer ${token} `,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ message: text })
@@ -247,7 +235,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function addMessage(type, text) {
         const div = document.createElement('div');
-        div.className = `message ${type}`;
+        div.className = `message ${type} `;
         div.textContent = text;
         chatMessages.appendChild(div);
         chatMessages.scrollTop = chatMessages.scrollHeight;

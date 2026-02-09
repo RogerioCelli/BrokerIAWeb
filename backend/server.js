@@ -34,6 +34,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Rotas da API
 app.use('/api/auth', authRoutes);
 app.use('/api/policies', policyRoutes);
+app.use('/api/admin', require('./routes/adminRoutes')); // Novo Painel Admin
 app.use('/api/seguros', segurosRoutes); // Endpoint Público de Seguros
 
 // Rotas Base
