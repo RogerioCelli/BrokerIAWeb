@@ -159,6 +159,82 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // --- Lógica do Modal de Detalhes ---
+    const policyModal = document.getElementById('policyModal');
+    const closeModal = document.getElementById('closeModal');
+    const modalBody = document.getElementById('modalBody');
+
+    closeModal.onclick = () => policyModal.style.display = 'none';
+    window.onclick = (event) => { if (event.target == policyModal) policyModal.style.display = 'none'; }
+
+    window.showPolicyDetails = (policyId) => {
+        const policy = window.allPolicies.find(p => p.id == policyId);
+        if (!policy) return;
+
+        // Mapeamento de Labels Amigáveis para os campos técnicos do banco
+        const labels = {
+            numero_apolice: 'Número da Apólice',
+            seguradora: 'Seguradora',
+            ramo: 'Ramo de Seguro',
+            produto: 'Produto / Descrição',
+            placa: 'Placa do Veículo',
+            chassi: 'Chassi',
+            vigencia_inicio: 'Início da Vigência',
+            vigencia_fim: 'Fim da Vigência',
+            premio_total: 'Prêmio Total',
+            forma_pagamento: 'Forma de Pagamento',
+            status_apolice: 'Status Atual',
+            endereco_apolice: 'Localização/Endereço',
+            cidade_apolice: 'Cidade',
+            uf_apolice: 'Estado (UF)',
+            cep_apolice: 'CEP',
+            data_criacao: 'Data do Registro'
+        };
+
+        let detailsHtml = `
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
+                <h2 style="margin: 0; font-family: 'Outfit'; font-size: 1.8rem;">Detalhes da Apólice</h2>
+                 <span style="background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold;">
+                    ${policy.status}
+                </span>
+            </div>
+            <div class="details-grid">
+        `;
+
+        // Itera por todos os campos que queremos mostrar
+        Object.keys(labels).forEach(key => {
+            let value = policy[key] || policy[key.replace('status_apolice', 'status')] || '-';
+
+            // Tratamento especial para datas
+            if (key.includes('data') || key.includes('vigencia')) {
+                value = value !== '-' ? new Date(value).toLocaleDateString('pt-BR') : '-';
+            }
+
+            detailsHtml += `
+                <div class="detail-box">
+                    <span class="detail-label">${labels[key]}</span>
+                    <span class="detail-value">${value}</span>
+                </div>
+            `;
+        });
+
+        detailsHtml += `</div>`;
+
+        if (policy.url_pdf) {
+            detailsHtml += `
+            <div style="margin-top: 2rem; padding: 1rem; background: rgba(59, 130, 246, 0.05); border-radius: 12px; border: 1px border-style: dashed; border-color: #3b82f6; text-align: center;">
+                <p style="margin-bottom: 1rem; font-size: 0.9rem; color: #3b82f6;">Documento PDF disponível para visualização oficial.</p>
+                <a href="${policy.url_pdf}" target="_blank" class="btn-login" style="max-width: 300px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none;">
+                    <i class="fas fa-file-pdf"></i> Abrir Apólice Digital
+                </a>
+            </div>
+            `;
+        }
+
+        modalBody.innerHTML = detailsHtml;
+        policyModal.style.display = 'flex';
+    };
+
     // --- Lógica do Chat ---
     const chatFab = document.getElementById('chatFab');
     const chatContainer = document.getElementById('chatContainer');
