@@ -334,12 +334,15 @@
                             <td>${pol.placa || '-'}</td>
                             <td><span class="status-badge ${statusClass}">${pol.status}</span></td>
                             <td>
-                                ${(pol.link_url_apolice || pol.url_pdf) && (pol.link_url_apolice !== 'undefined' || pol.url_pdf !== 'undefined')
-                            ? `<a href="${pol.link_url_apolice || pol.url_pdf}" target="_blank" class="download-link">
-                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                         PDF
-                                       </a>`
-                            : '<span class="no-download">Pendente</span>'}
+                                ${(() => {
+                            const finalUrl = (pol.link_url_apolice && pol.link_url_apolice !== 'undefined') ? pol.link_url_apolice : (pol.url_pdf && pol.url_pdf !== 'undefined' ? pol.url_pdf : null);
+                            return finalUrl
+                                ? `<a href="${finalUrl}" target="_blank" class="download-link">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                            PDF
+                                           </a>`
+                                : '<span class="no-download">Pendente</span>';
+                        })()}
                             </td>
                         </tr>
                     `;

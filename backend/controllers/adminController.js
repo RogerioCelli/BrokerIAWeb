@@ -40,6 +40,7 @@ const adminController = {
                     vigencia_fim as data_fim,
                     status_apolice as status,
                     placa,
+                    cpf,
                     url_pdf,
                     link_url_apolice,
                     data_criacao
@@ -60,11 +61,11 @@ const adminController = {
             console.log("[ADMIN] Executando limpeza de links inválidos no banco de apólices...");
             const query = `
                 UPDATE apolices_brokeria 
-                SET url_pdf = NULL 
-                WHERE url_pdf LIKE '%demo.brokeria.com.br%' 
-                   OR url_pdf LIKE '%exemplo.com%'
-                   OR url_pdf = 'undefined'
-                   OR url_pdf = ''
+                SET url_pdf = NULL, link_url_apolice = NULL
+                WHERE 
+                   (url_pdf LIKE '%demo.brokeria.com.br%' OR url_pdf LIKE '%exemplo.com%' OR url_pdf = 'undefined' OR url_pdf = '')
+                   OR
+                   (link_url_apolice LIKE '%demo.brokeria.com.br%' OR link_url_apolice LIKE '%exemplo.com%' OR link_url_apolice = 'undefined' OR link_url_apolice = '')
             `;
             const result = await db.apolicesQuery(query);
             res.json({
