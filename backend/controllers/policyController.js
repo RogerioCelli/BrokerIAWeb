@@ -30,18 +30,19 @@ const policyController = {
 
             // Consulta principal na tabela apolices_brokeria
             const queryText = `
-            id_apolice as id,
-                numero_apolice,
-                seguradora,
-                ramo,
-                vigencia_inicio as data_inicio,
-                vigencia_fim as data_fim,
-                status_apolice as status,
-                placa
+                SELECT
+                    id_apolice as id,
+                    numero_apolice,
+                    seguradora,
+                    ramo,
+                    vigencia_inicio as data_inicio,
+                    vigencia_fim as data_fim,
+                    status_apolice as status,
+                    placa
                 FROM apolices_brokeria
                 WHERE REPLACE(REPLACE(cpf, '.', ''), '-', '') = $1
                 ORDER BY vigencia_fim DESC
-                `;
+            `;
 
             // Executa a query no banco de APOLICES (Correto)
             const { rows } = await db.apolicesQuery(queryText, [cleanCpf]);
