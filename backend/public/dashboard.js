@@ -78,6 +78,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const policies = await response.json();
+        window.allPolicies = policies; // Salva para o modal
         renderPolicies(policies);
     } catch (error) {
         console.error(error);
@@ -94,60 +95,86 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Estilo para a tabela (garantindo que o container aceite scroll horizontal se necessário)
-        policiesGrid.style.overflowX = 'auto';
+        const isMobile = window.innerWidth < 768;
 
-        let html = `
-            <table class="admin-table" style="width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
-                <thead>
-                    <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; text-align: left;">
-                        <th style="padding: 1rem;">RAMO</th>
-                        <th style="padding: 1rem;">APÓLICE</th>
-                        <th style="padding: 1rem;">SEGURADORA</th>
-                        <th style="padding: 1rem;">VIGÊNCIA</th>
-                        <th style="padding: 1rem;">PLACA</th>
-                        <th style="padding: 1rem;">STATUS</th>
-                        <th style="padding: 1rem; text-align: center;">PDF</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-
-        policies.forEach(policy => {
-            const icon = getIcon(policy.ramo);
-            const vigencia = `${new Date(policy.data_inicio).toLocaleDateString('pt-BR')} - ${new Date(policy.data_fim).toLocaleDateString('pt-BR')}`;
-            const statusClass = policy.status === 'ATIVA' ? 'status-active' : 'status-pending';
-
-            html += `
-                <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
-                    <td style="padding: 1rem; display: flex; align-items: center; gap: 10px;">
-                        <i class="${icon}" style="color: #3b82f6; width: 20px; text-align: center;"></i>
-                        <span style="font-weight: 500;">${policy.ramo}</span>
-                    </td>
-                    <td style="padding: 1rem; color: #64748b; font-family: monospace;">${policy.numero_apolice}</td>
-                    <td style="padding: 1rem;">${policy.seguradora}</td>
-                    <td style="padding: 1rem; font-size: 0.85rem; color: #475569;">${vigencia}</td>
-                    <td style="padding: 1rem;">${policy.placa || '-'}</td>
-                    <td style="padding: 1rem;">
-                        <span class="${statusClass}" style="padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">
-                            ${policy.status}
-                        </span>
-                    </td>
-                    <td style="padding: 1rem; text-align: center;">
-                        ${policy.url_pdf ? `
-                            <a href="${policy.url_pdf}" target="_blank" title="Baixar PDF" style="color: #ef4444; font-size: 1.2rem; transition: transform 0.2s; display: inline-block;">
-                                <i class="fas fa-file-pdf"></i>
-                            </a>
-                        ` : `
-                            <i class="fas fa-file-pdf" style="color: #cbd5e1; font-size: 1.2rem;" title="PDF não disponível"></i>
-                        `}
-                    </td>
-                </tr>
+        if (isMobile) {
+            // Layout de CARDS para Celular (Mobile First)
+            policiesGrid.style.display = 'block';
+            policiesGrid.innerHTML = policies.map(policy => {
+                const icon = getIcon(policy.ramo);
+                return `
+                    <div class="policy-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 1.5rem; margin-bottom: 1rem; position: relative;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <span class="seguradora-tag">${policy.seguradora}</span>
+                            <i class="${icon}" style="color: var(--primary); font-size: 1.2rem;"></i>
+                        </div>
+                        
+                        <h3 style="margin: 0.5rem 0; font-size: 1.1rem;">${policy.ramo} ${policy.placa ? `(${policy.placa})` : ''}</h3>
+                        <p style="color: #888; font-size: 0.8rem; margin-bottom: 1.5rem;">Apólice: ${policy.numero_apolice}</p>
+                        
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="showPolicyDetails(${policy.id})" style="flex: 1; padding: 12px; background: rgba(16, 185, 129, 0.1); color: var(--primary); border: 1px solid var(--primary-glow); border-radius: 12px; cursor: pointer; font-weight: 600;">
+                                <i class="fas fa-search-plus"></i> Detalhes
+                            </button>
+                            ${policy.url_pdf ? `
+                                <a href="${policy.url_pdf}" target="_blank" style="width: 50px; display: flex; align-items: center; justify-content: center; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px;">
+                                    <i class="fas fa-file-pdf"></i>
+                                </a>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            // Layout de TABELA para Desktop
+            policiesGrid.style.display = 'block';
+            policiesGrid.style.overflowX = 'auto';
+            let html = `
+                <table class="admin-table" style="width: 100%; border-collapse: collapse; background: rgba(255,255,255,0.02); border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05);">
+                    <thead>
+                        <tr style="background: rgba(255,255,255,0.03); border-bottom: 2px solid rgba(255,255,255,0.05); text-align: left;">
+                            <th style="padding: 1.2rem;">RAMO</th>
+                            <th style="padding: 1.2rem;">APÓLICE</th>
+                            <th style="padding: 1.2rem;">SEGURADORA</th>
+                            <th style="padding: 1.2rem;">VIGÊNCIA</th>
+                            <th style="padding: 1.2rem;">PLACA</th>
+                            <th style="padding: 1.2rem; text-align: center;">AÇÕES</th>
+                        </tr>
+                    </thead>
+                    <tbody>
             `;
-        });
 
-        html += `</tbody></table>`;
-        policiesGrid.innerHTML = html;
+            policies.forEach(policy => {
+                const icon = getIcon(policy.ramo);
+                const vigencia = `${new Date(policy.data_inicio).toLocaleDateString('pt-BR')} - ${new Date(policy.data_fim).toLocaleDateString('pt-BR')}`;
+
+                html += `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
+                        <td style="padding: 1.2rem; display: flex; align-items: center; gap: 12px;">
+                            <i class="${icon}" style="color: var(--primary); font-size: 1.1rem; width: 24px; text-align: center;"></i>
+                            <span style="font-weight: 500;">${policy.ramo}</span>
+                        </td>
+                        <td style="padding: 1.2rem; color: #94a3b8; font-family: monospace;">${policy.numero_apolice}</td>
+                        <td style="padding: 1.2rem;">${policy.seguradora}</td>
+                        <td style="padding: 1.2rem; font-size: 0.9rem; color: #94a3b8;">${vigencia}</td>
+                        <td style="padding: 1.2rem;">${policy.placa || '-'}</td>
+                        <td style="padding: 1.2rem; text-align: center; display: flex; justify-content: center; gap: 15px;">
+                            <button onclick="showPolicyDetails(${policy.id})" style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 1.2rem;" title="Ver Detalhes">
+                                <i class="fas fa-search-plus"></i>
+                            </button>
+                            ${policy.url_pdf ? `
+                                <a href="${policy.url_pdf}" target="_blank" style="color: #ef4444; font-size: 1.2rem;" title="Abrir PDF">
+                                    <i class="fas fa-file-pdf"></i>
+                                </a>
+                            ` : ''}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            policiesGrid.innerHTML = html;
+        }
     }
 
     function getIcon(ramo) {
