@@ -53,6 +53,29 @@ const adminController = {
             console.error("[ADMIN] Erro ao buscar apólices:", error);
             res.status(500).json({ error: error.message, database: 'apolices-brokeria' });
         }
+    },
+
+    cleanupInvalidLinks: async (req, res) => {
+        try {
+            console.log("[ADMIN] Executando limpeza de links inválidos no banco de apólices...");
+            const query = `
+                UPDATE apolices_brokeria 
+                SET url_pdf = NULL 
+                WHERE url_pdf LIKE '%demo.brokeria.com.br%' 
+                   OR url_pdf LIKE '%exemplo.com%'
+                   OR url_pdf = 'undefined'
+                   OR url_pdf = ''
+            `;
+            const result = await db.apolicesQuery(query);
+            res.json({
+                success: true,
+                message: `Limpeza concluída! ${result.rowCount} registros resetados para 'Pendente'.`,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error("[ADMIN] Erro na limpeza de links:", error);
+            res.status(500).json({ error: error.message });
+        }
     }
 };
 
