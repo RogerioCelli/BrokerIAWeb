@@ -40,10 +40,9 @@ const adminController = {
                     vigencia_fim as data_fim,
                     status_apolice as status,
                     placa,
-                    cpf,
-                    data_criacao
+                    cpf
                 FROM apolices_brokeria
-                ORDER BY data_criacao DESC NULLS LAST
+                ORDER BY id_apolice DESC
                 LIMIT 50
             `;
             const { rows } = await db.apolicesQuery(query);
