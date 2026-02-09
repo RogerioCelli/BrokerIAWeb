@@ -212,7 +212,9 @@
                                 <th>Nome Completo</th>
                                 <th>CPF</th>
                                 <th>Email</th>
+                                <th>Celular</th>
                                 <th>Telefone</th>
+                                <th>Data Cadastro</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -225,7 +227,9 @@
                             <td style="font-weight: 500">${client.nome}</td>
                             <td>${client.cpf}</td>
                             <td>${client.email}</td>
-                            <td>${client.telefone}</td>
+                            <td>${client.celular || '-'}</td>
+                            <td>${client.telefone || '-'}</td>
+                            <td>${client.data_cadastro ? new Date(client.data_cadastro).toLocaleDateString('pt-BR') : '-'}</td>
                         </tr>
                     `;
                 });
