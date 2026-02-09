@@ -90,60 +90,64 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderPolicies(policies) {
         if (policies.length === 0) {
-            policiesGrid.innerHTML = '<p>Você ainda não possui apólices cadastradas.</p>';
+            policiesGrid.innerHTML = '<p style="text-align: center; color: #64748b; padding: 2rem;">Você ainda não possui apólices cadastradas.</p>';
             return;
         }
 
-        policiesGrid.innerHTML = policies.map(policy => {
+        // Estilo para a tabela (garantindo que o container aceite scroll horizontal se necessário)
+        policiesGrid.style.overflowX = 'auto';
+
+        let html = `
+            <table class="admin-table" style="width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                <thead>
+                    <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; text-align: left;">
+                        <th style="padding: 1rem;">RAMO</th>
+                        <th style="padding: 1rem;">APÓLICE</th>
+                        <th style="padding: 1rem;">SEGURADORA</th>
+                        <th style="padding: 1rem;">VIGÊNCIA</th>
+                        <th style="padding: 1rem;">PLACA</th>
+                        <th style="padding: 1rem;">STATUS</th>
+                        <th style="padding: 1rem; text-align: center;">PDF</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        policies.forEach(policy => {
             const icon = getIcon(policy.ramo);
+            const vigencia = `${new Date(policy.data_inicio).toLocaleDateString('pt-BR')} - ${new Date(policy.data_fim).toLocaleDateString('pt-BR')}`;
+            const statusClass = policy.status === 'ATIVA' ? 'status-active' : 'status-pending';
 
-            // Lógica Simplificada conforme solicitado (Apenas dados da tabela Mestra)
-            const detailLabel = 'Ramo'; // Antes detalhe do veiculo
-            const detailValue = policy.ramo;
-
-            // Se não temos mais detalhes do veiculo, mostramos apenas a placa se existir na tabela principal
-            const placaInfo = policy.placa ? `(Placa: ${policy.placa})` : '';
-
-            // Falback simples para contatos se não vier no objeto (pois vinha de join as vezes)
-            const tel0800 = 'Central 24h';
-
-            return `
-                <div class="policy-card">
-                    <div class="policy-header">
-                        <div class="seguradora-container">
-                            <span class="seguradora-tag">${policy.seguradora}</span>
-                        </div>
-                        <i class="${icon} ramo-icon"></i>
-                    </div>
-                    
-                    <div class="policy-title">${policy.ramo} ${placaInfo}</div>
-                    <div class="policy-details">Apólice: ${policy.numero_apolice}</div>
-                    
-                    <div class="policy-info-item">
-                        <span class="policy-info-label">Vigência Início</span>
-                        <span class="policy-info-value">${new Date(policy.data_inicio).toLocaleDateString('pt-BR')}</span>
-                    </div>
-                    <div class="policy-info-item">
-                        <span class="policy-info-label">Vencimento</span>
-                        <span class="policy-info-value">${new Date(policy.data_fim).toLocaleDateString('pt-BR')}</span>
-                    </div>
-
-                    <div class="policy-info-item">
-                        <span class="policy-info-label">Status</span>
-                        <span class="policy-info-value" style="color: ${policy.status === 'ATIVA' ? '#10b981' : '#f59e0b'}">
+            html += `
+                <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+                    <td style="padding: 1rem; display: flex; align-items: center; gap: 10px;">
+                        <i class="${icon}" style="color: #3b82f6; width: 20px; text-align: center;"></i>
+                        <span style="font-weight: 500;">${policy.ramo}</span>
+                    </td>
+                    <td style="padding: 1rem; color: #64748b; font-family: monospace;">${policy.numero_apolice}</td>
+                    <td style="padding: 1rem;">${policy.seguradora}</td>
+                    <td style="padding: 1rem; font-size: 0.85rem; color: #475569;">${vigencia}</td>
+                    <td style="padding: 1rem;">${policy.placa || '-'}</td>
+                    <td style="padding: 1rem;">
+                        <span class="${statusClass}" style="padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">
                             ${policy.status}
                         </span>
-                    </div>
-
-                    <div class="policy-actions" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                        <button class="btn-action btn-documents" style="flex: 1; padding: 0.5rem; border-radius: 8px; font-size: 0.75rem; cursor: pointer; background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2);">
-                            <i class="fas fa-eye"></i> Visualizar Detalhes
-                        </button>
-                    </div>
-                </div>
-                </div>
+                    </td>
+                    <td style="padding: 1rem; text-align: center;">
+                        ${policy.url_pdf ? `
+                            <a href="${policy.url_pdf}" target="_blank" title="Baixar PDF" style="color: #ef4444; font-size: 1.2rem; transition: transform 0.2s; display: inline-block;">
+                                <i class="fas fa-file-pdf"></i>
+                            </a>
+                        ` : `
+                            <i class="fas fa-file-pdf" style="color: #cbd5e1; font-size: 1.2rem;" title="PDF não disponível"></i>
+                        `}
+                    </td>
+                </tr>
             `;
-        }).join('');
+        });
+
+        html += `</tbody></table>`;
+        policiesGrid.innerHTML = html;
     }
 
     function getIcon(ramo) {
