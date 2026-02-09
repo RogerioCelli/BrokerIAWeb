@@ -39,7 +39,8 @@ const policyController = {
                     vigencia_fim as data_fim,
                     status_apolice as status,
                     placa,
-                    url_pdf
+                    url_pdf,
+                    data_criacao
                 FROM apolices_brokeria
                 WHERE REPLACE(REPLACE(cpf, '.', ''), '-', '') = $1
                 ORDER BY vigencia_fim DESC
