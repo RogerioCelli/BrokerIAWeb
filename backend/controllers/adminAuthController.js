@@ -26,7 +26,7 @@ const adminAuthController = {
 
             // Buscar na tabela portal_users
             const userResult = await db.query(
-                `SELECT id, nome, email, role, cpf, celular FROM portal_users WHERE cpf = $1 OR email = $2`,
+                `SELECT id, nome, email, role, cpf FROM portal_users WHERE cpf = $1 OR email = $2`,
                 [cleanId, cleanId]
             );
 
