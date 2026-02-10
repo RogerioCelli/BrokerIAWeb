@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Broker IA</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @media (max-width: 480px) {
+            .chat-container {
+                width: 100%;
+                height: 100%;
+                bottom: 0;
+                right: 0;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <header class="header">
+            <div class="user-info">
+                <h1 id="welcomeName">Olá, Carregando...</h1>
+                <p id="orgName">Corretora Parceira</p>
+            </div>
+            <button class="logout-btn" id="logoutBtn">
+                <i class="fas fa-sign-out-alt"></i> Sair
+            </button>
+        </header>
+
+        <section>
+            <h2 class="section-title">
+                <i class="fas fa-shield-halved"></i>
+                Minhas Apólices
+            </h2>
+            <div class="policies-grid" id="policiesGrid">
+                <!-- Apólices serão carregadas aqui via JS -->
+                <div class="policy-card" style="opacity: 0.5; animation: pulse 1.5s infinite;">
+                    <p>Carregando seguros ativos...</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Rodapé da Corretora Full Width -->
+    <footer class="institutional-footer" id="institutionalFooter">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <h3 id="footerOrgName">Broker IA</h3>
+                <p id="footerAddress">Carregando endereço comercial...</p>
+            </div>
+            <div class="footer-contacts" id="footerContacts">
+                <!-- Contatos serão injetados via JS -->
+            </div>
+        </div>
+    </footer>
+
+    <!-- Interface do Assistente IA -->
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-header">
+            <div class="chat-header-info">
+                <i class="fas fa-robot"></i>
+                <div>
+                    <span class="chat-bot-name">Broker IA</span>
+                    <span class="chat-bot-status">Online e pronto para ajudar</span>
+                </div>
+            </div>
+            <button class="chat-close" id="closeChat"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot">
+                Olá! Sou o seu assistente inteligente. Como posso ajudar com seus seguros hoje?
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chatInput" placeholder="Pergunte sobre sua apólice..." autocomplete="off">
+            <button id="sendMessage"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <div class="ai-assistant-fab" id="chatFab" title="Falar com IA">
+        <i class="fas fa-robot"></i>
+    </div>
+
+    <!-- Modal de Detalhes da Apólice -->
+    <div class="modal-overlay" id="policyModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeModal"><i class="fas fa-times"></i></button>
+            <div id="modalBody">
+                <!-- Conteúdo injetado via JS -->
+            </div>
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+
+</html>

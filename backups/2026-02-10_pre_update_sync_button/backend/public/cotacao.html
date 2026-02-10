@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broker IA | Solicitar Cotação</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+    <!-- Decorative background elements -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <main class="main-container">
+        <div class="login-card" style="max-width: 600px;"> <!-- Card um pouco mais largo para o formulário -->
+            <div class="logo-section">
+                <h1>Solicitar Cotação</h1>
+                <p>Preencha os dados abaixo para receber uma proposta personalizada.</p>
+            </div>
+
+            <form id="quoteForm">
+                <div class="form-group">
+                    <label for="nome">Nome Completo</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="nome" name="nome" class="premium-input" placeholder="Seu nome" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="telefone">WhatsApp / Telefone</label>
+                    <div class="input-wrapper">
+                        <input type="tel" id="telefone" name="telefone" class="premium-input"
+                            placeholder="(XX) XXXXX-XXXX" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">E-mail</label>
+                    <div class="input-wrapper">
+                        <input type="email" id="email" name="email" class="premium-input" placeholder="seu@email.com"
+                            required>
+                    </div>
+                </div>
+
+                <!-- Categoria Principal -->
+                <div class="form-group">
+                    <label for="categoria_seguro">Categoria</label>
+                    <div class="input-wrapper">
+                        <select id="categoria_seguro" name="categoria_seguro" class="premium-input" required
+                            style="cursor: pointer;">
+                            <option value="" disabled selected style="color: #333;">Carregando categorias...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Subcategoria (Tipo) -->
+                <div class="form-group" id="group-tipo" style="display: none;">
+                    <label for="tipo_seguro">Tipo de Seguro</label>
+                    <div class="input-wrapper">
+                        <select id="tipo_seguro" name="tipo_seguro" class="premium-input" required
+                            style="cursor: pointer;">
+                            <option value="" disabled selected style="color: #333;">Selecione uma categoria primeiro
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Campos Dinâmicos -->
+                <div id="dynamicFields">
+                    <!-- Auto -->
+                    <div class="dynamic-group" id="fields-auto" style="display: none;">
+                        <div class="form-group">
+                            <label for="veiculo_marca">Marca do Veículo</label>
+                            <div class="input-wrapper">
+                                <select id="veiculo_marca" name="veiculo_marca" class="premium-input">
+                                    <option value="" disabled selected style="color: #333;">Selecione a Marca</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="veiculo_modelo">Modelo</label>
+                            <div class="input-wrapper">
+                                <select id="veiculo_modelo" name="veiculo_modelo" class="premium-input" disabled>
+                                    <option value="" disabled selected style="color: #333;">Selecione a Marca primeiro
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="uso_veiculo">Uso do Veículo</label>
+                            <div class="input-wrapper">
+                                <select id="uso_veiculo" name="uso_veiculo" class="premium-input">
+                                    <option value="lazer" style="color: #333;">Lazer / Particular</option>
+                                    <option value="trabalho" style="color: #333;">Trabalho / Comercial</option>
+                                    <option value="app" style="color: #333;">Motorista de App (Uber/99)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Residencial -->
+                    <div class="dynamic-group" id="fields-residencial" style="display: none;">
+                        <div class="form-group">
+                            <label for="tipo_imovel">Tipo de Imóvel</label>
+                            <div class="input-wrapper">
+                                <select id="tipo_imovel" name="tipo_imovel" class="premium-input">
+                                    <option value="casa" style="color: #333;">Casa</option>
+                                    <option value="apartamento" style="color: #333;">Apartamento</option>
+                                    <option value="condominio" style="color: #333;">Casa em Condomínio</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="cep_imovel">CEP do Imóvel</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="cep_imovel" name="cep_imovel" class="premium-input"
+                                    placeholder="00000-000">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vida -->
+                    <div class="dynamic-group" id="fields-vida" style="display: none;">
+                        <div class="form-group">
+                            <label for="idade">Sua Idade</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="idade" name="idade" class="premium-input" placeholder="Anos">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="profissao">Profissão</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="profissao" name="profissao" class="premium-input"
+                                    placeholder="Sua ocupação principal">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="observacoes">Observações (Opcional)</label>
+                    <div class="input-wrapper">
+                        <textarea id="observacoes" name="observacoes" class="premium-input" rows="4"
+                            placeholder="Ex: Detalhes, dúvidas ou melhor horário para contato..."></textarea>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-login" id="submitBtn">Enviar Solicitação</button>
+            </form>
+
+            <div class="footer-links">
+                <a href="index.html"><i class="fas fa-arrow-left"></i> Voltar para Home</a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- Elementos DOM ---
+        const categoriaSelect = document.getElementById('categoria_seguro');
+        const tipoSelect = document.getElementById('tipo_seguro');
+        const groupTipo = document.getElementById('group-tipo');
+        const dynamicGroups = document.querySelectorAll('.dynamic-group');
+        const veiculoMarcaSelect = document.getElementById('veiculo_marca');
+        const veiculoModeloSelect = document.getElementById('veiculo_modelo');
+
+        // --- Estado Global ---
+        let insuranceStructure = [];
+
+        // --- Inicialização ---
+        document.addEventListener('DOMContentLoaded', loadInsuranceData);
+
+        async function loadInsuranceData() {
+            try {
+                const res = await fetch('/api/seguros/estrutura');
+                insuranceStructure = await res.json();
+
+                // Popula Categorias
+                categoriaSelect.innerHTML = '<option value="" disabled selected style="color: #333;">Selecione uma categoria</option>';
+                insuranceStructure.forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat.categoria_id;
+                    opt.textContent = cat.categoria_nome;
+                    opt.style.color = '#333';
+                    categoriaSelect.appendChild(opt);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar seguros:', error);
+                categoriaSelect.innerHTML = '<option value="" disabled selected style="color: #333;">Falha ao carregar</option>';
+            }
+        }
+
+        // --- Evento: Mudança de Categoria ---
+        categoriaSelect.addEventListener('change', function () {
+            const catId = this.value;
+            const category = insuranceStructure.find(c => c.categoria_id == catId);
+
+            if (!category) return;
+
+            // 1. Popula Subcategorias (Tipos)
+            tipoSelect.innerHTML = '<option value="" disabled selected style="color: #333;">Selecione o tipo</option>';
+            if (category.tipos && category.tipos.length > 0) {
+                category.tipos.forEach(tipo => {
+                    // Verifica se o objeto "tipo" é válido (o json_agg no postgres pode retornar null se não houver tipos)
+                    if (tipo.id) {
+                        const opt = document.createElement('option');
+                        opt.value = tipo.nome;
+                        opt.textContent = tipo.nome;
+                        opt.style.color = '#333';
+                        tipoSelect.appendChild(opt);
+                    }
+                });
+                groupTipo.style.display = 'block';
+                tipoSelect.required = true;
+            } else {
+                // Se categoria não tiver sub-tipos, esconde o select secundário
+                groupTipo.style.display = 'none';
+                tipoSelect.required = false;
+            }
+
+            // 2. Lógica de Campos Dinâmicos (Baseado no Nome da Categoria)
+            hideAllDynamicFields();
+
+            const catName = category.categoria_nome.toLowerCase();
+
+            if (catName.includes('mobilidade') || catName.includes('veículo') || catName.includes('transporte')) {
+                showDynamicGroup('fields-auto');
+                // Carrega marcas apenas se for "Mobilidade"
+                loadVeiculoMarcas('CARRO');
+            } else if (catName.includes('patrimoniais') || catName.includes('residencial')) {
+                showDynamicGroup('fields-residencial');
+            } else if (catName.includes('pessoas') || catName.includes('vida')) {
+                showDynamicGroup('fields-vida');
+            }
+        });
+
+        // --- Evento: Mudança de Marca (Veículo) ---
+        if (veiculoMarcaSelect) {
+            veiculoMarcaSelect.addEventListener('change', function () {
+                const marcaId = this.value;
+                if (marcaId) loadVeiculoModelos(marcaId);
+            });
+        }
+
+        // --- Funções Auxiliares de Veículos ---
+        async function loadVeiculoMarcas(tipo = 'CARRO') {
+            try {
+                // Se já estiver populado (length > 1), não recarrega para não piscar, a menos que mude a categoria de veículo
+                if (veiculoMarcaSelect.options.length > 1) return;
+
+                veiculoMarcaSelect.innerHTML = '<option value="" disabled selected>Carregando...</option>';
+                const res = await fetch(`/api/seguros/veiculos/marcas?categoria=${tipo}`);
+                const marcas = await res.json();
+
+                veiculoMarcaSelect.innerHTML = '<option value="" disabled selected style="color: #333;">Selecione a Marca</option>';
+                marcas.forEach(marca => {
+                    const opt = document.createElement('option');
+                    opt.value = marca.id;
+                    opt.textContent = marca.nome;
+                    opt.style.color = '#333';
+                    veiculoMarcaSelect.appendChild(opt);
+                });
+            } catch (error) {
+                console.error('Erro marcas:', error);
+            }
+        }
+
+        async function loadVeiculoModelos(parentId) {
+            try {
+                veiculoModeloSelect.disabled = true;
+                veiculoModeloSelect.innerHTML = '<option value="" disabled selected>Carregando modelos...</option>';
+
+                const res = await fetch(`/api/seguros/veiculos/modelos/${parentId}`);
+                const modelos = await res.json();
+
+                veiculoModeloSelect.innerHTML = '<option value="" disabled selected style="color: #333;">Selecione o Modelo</option>';
+                modelos.forEach(mod => {
+                    const opt = document.createElement('option');
+                    opt.value = mod.nome;
+                    opt.textContent = mod.nome;
+                    opt.style.color = '#333';
+                    veiculoModeloSelect.appendChild(opt);
+                });
+                veiculoModeloSelect.disabled = false;
+            } catch (error) {
+                console.error('Erro modelos:', error);
+            }
+        }
+
+        function hideAllDynamicFields() {
+            dynamicGroups.forEach(group => {
+                group.style.display = 'none';
+                group.querySelectorAll('input, select').forEach(input => input.required = false);
+            });
+        }
+
+        function showDynamicGroup(id) {
+            const group = document.getElementById(id);
+            if (group) {
+                group.style.display = 'block';
+                group.querySelectorAll('input, select').forEach(input => input.required = true);
+            }
+        }
+
+        // Script simples para lidar com o envio
+        document.getElementById('quoteForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const btn = document.getElementById('submitBtn');
+            const originalText = btn.innerText;
+
+            // Simula processamento
+            btn.innerText = 'Enviando...';
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+
+            // Coleta dados
+            const formData = new FormData(e.target);
+
+            // Adiciona labels de texto para selects que enviam IDs
+            if (categoriaSelect.value && categoriaSelect.selectedOptions[0]) {
+                formData.append('categoria_nome', categoriaSelect.selectedOptions[0].text);
+            }
+            if (veiculoMarcaSelect && veiculoMarcaSelect.value && veiculoMarcaSelect.selectedOptions[0]) {
+                formData.append('veiculo_marca_nome', veiculoMarcaSelect.selectedOptions[0].text);
+            }
+
+            const data = Object.fromEntries(formData.entries());
+
+            console.log('Dados da cotação:', data);
+
+            setTimeout(() => {
+                alert('✅ Solicitação recebida com sucesso! Em breve um de nossos especialistas entrará em contato.');
+                btn.innerText = originalText;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                // e.target.reset(); 
+                window.location.href = 'index.html';
+            }, 1500);
+        });
+    </script>
+</body>
+
+</html>

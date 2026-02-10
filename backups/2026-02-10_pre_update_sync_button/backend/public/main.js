@@ -1,0 +1,219 @@
+document.addEventListener('DOMContentLoaded', () => {
+    const loginForm = document.getElementById('loginForm');
+    const identifierGroup = document.getElementById('identifierGroup');
+    const channelGroup = document.getElementById('channelGroup');
+    const tokenGroup = document.getElementById('tokenGroup');
+    const mainButton = document.getElementById('mainButton');
+
+    const identifierInput = document.getElementById('identifier');
+    const tokenInput = document.getElementById('token');
+    const maskedPhone = document.getElementById('maskedPhone');
+    const maskedEmail = document.getElementById('maskedEmail');
+
+    // Máscara Dinâmica para CPF (11) ou CNPJ (14)
+    identifierInput.addEventListener('input', (e) => {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length <= 11) {
+            // CPF: 000.000.000-00
+            value = value.replace(/(\d{3})(\d)/, '$1.$2');
+            value = value.replace(/(\d{3})(\d)/, '$1.$2');
+            value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+        } else {
+            // CNPJ: 00.000.000/0000-00
+            value = value.slice(0, 14);
+            value = value.replace(/^(\d{2})(\d)/, '$1.$2');
+            value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+            value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
+            value = value.replace(/(\d{4})(\d)/, '$1-$2');
+        }
+        e.target.value = value;
+    });
+
+    const ORG_SLUG = 'corretora-demo';
+    // URL Explícita do Novo Serviço no Projeto Brokeria
+    const API_URL = 'https://brokeria-api-brokeriaweb.cx0m9g.easypanel.host/api';
+
+    let currentStep = 'IDENTIFICATION'; // IDENTIFICATION, CHANNEL, TOKEN
+    let clientId = null;
+
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        if (mainButton.disabled) return;
+        mainButton.disabled = true;
+        const originalBtnText = mainButton.textContent;
+
+        try {
+            if (currentStep === 'IDENTIFICATION') {
+                const val = identifierInput.value;
+                const onlyNums = val.replace(/\D/g, '');
+
+                // Validação estrita: apenas CPF (11) ou CNPJ (14)
+                if (onlyNums.length !== 11 && onlyNums.length !== 14) {
+                    throw new Error('Por favor, insira um CPF (11 dígitos) ou CNPJ (14 dígitos) válido.');
+                }
+
+                mainButton.textContent = 'Verificando...';
+
+                const response = await fetch(`${API_URL}/auth/request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        identifier: identifierInput.value,
+                        org_slug: ORG_SLUG
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Erro na identificação');
+
+                // Prepara próxima etapa (Seleção de Canal)
+                clientId = data.client_id;
+                maskedPhone.textContent = data.masked_phone || 'Não cadastrado';
+                maskedEmail.textContent = data.masked_email || 'Não cadastrado';
+
+                identifierGroup.style.display = 'none';
+                channelGroup.style.display = 'block';
+                mainButton.textContent = 'Enviar Código';
+                currentStep = 'CHANNEL';
+
+            } else if (currentStep === 'CHANNEL') {
+                const selectedChannel = document.querySelector('input[name="auth_channel"]:checked').value;
+                mainButton.textContent = 'Enviando...';
+
+                // Simula re-envio especificando o canal
+                const response = await fetch(`${API_URL}/auth/request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        identifier: identifierInput.value,
+                        org_slug: ORG_SLUG,
+                        channel: selectedChannel
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Erro ao enviar código');
+
+                channelGroup.style.display = 'none';
+                tokenGroup.style.display = 'block';
+                mainButton.textContent = 'Validar Acesso';
+                currentStep = 'TOKEN';
+
+            } else if (currentStep === 'TOKEN') {
+                mainButton.textContent = 'Validando...';
+
+                const response = await fetch(`${API_URL}/auth/validate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        client_id: clientId,
+                        token: tokenInput.value
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Token inválido');
+
+                localStorage.setItem('broker_ia_token', data.token);
+                localStorage.setItem('broker_ia_user', JSON.stringify(data.user));
+
+                mainButton.textContent = 'Sucesso! Entrando...';
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 600);
+            }
+        } catch (error) {
+            mainButton.textContent = 'Erro: ' + error.message;
+            setTimeout(() => {
+                mainButton.textContent = originalBtnText;
+            }, 3000);
+        } finally {
+            mainButton.disabled = false;
+        }
+    });
+});
+
+// --- Lógica do Chat Público (Novo Cliente / Lead) ---
+const chatFab = document.getElementById('chatFab');
+const chatContainer = document.getElementById('chatContainer');
+const closeChat = document.getElementById('closeChat');
+const chatMessages = document.getElementById('chatMessages');
+const chatInput = document.getElementById('chatInput');
+const sendMessage = document.getElementById('sendMessage');
+
+// Abre/Fecha Chat
+chatFab.addEventListener('click', () => {
+    chatContainer.style.display = 'flex';
+    chatFab.style.display = 'none';
+    chatInput.focus();
+});
+
+closeChat.addEventListener('click', () => {
+    chatContainer.style.display = 'none';
+    chatFab.style.display = 'flex';
+});
+
+const addMessage = (type, text) => {
+    const div = document.createElement('div');
+    div.className = `message ${type}`;
+    div.textContent = text;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return div;
+};
+
+const showAgentStatus = (html) => {
+    const div = document.createElement('div');
+    div.className = 'agent-status';
+    div.innerHTML = html;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return div;
+};
+
+const handleSend = async () => {
+    const text = chatInput.value.trim();
+    if (!text) return;
+
+    addMessage('user', text);
+    chatInput.value = '';
+
+    try {
+        // --- Orquestração de Agentes dinâmica (Auditiva/Visual) ---
+        let statusText = '<i class="fas fa-search"></i> Agente Local buscando informações gerais...';
+        if (text.toLowerCase().includes('apólice') || text.toLowerCase().includes('seguro') || text.toLowerCase().includes('meu')) {
+            statusText = '<i class="fas fa-user-lock"></i> Identificando intenção de acesso privado...';
+        }
+
+        const agentStatus = showAgentStatus(statusText);
+        const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        await delay(1000);
+        agentStatus.innerHTML = '<i class="fas fa-brain"></i> IA processando resposta personalizada...';
+        await delay(1200);
+        agentStatus.remove();
+
+        const response = await fetch(`${API_URL}/policies/public-chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text })
+        });
+        const data = await response.json();
+
+        // Especial: Se a IA sugerir login ou falar de apólice, dar um destaque
+        if (text.toLowerCase().includes('apólice') || text.toLowerCase().includes('meu seguro')) {
+            addMessage('bot', data.response + " Para ver detalhes agora, basta informar seu CPF ou E-mail acima no portal.");
+        } else {
+            addMessage('bot', data.response);
+        }
+
+    } catch (error) {
+        addMessage('bot', 'Ops, tive um probleminha. Tente novamente mais tarde.');
+    }
+};
+
+sendMessage.addEventListener('click', handleSend);
+chatInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleSend();
+});

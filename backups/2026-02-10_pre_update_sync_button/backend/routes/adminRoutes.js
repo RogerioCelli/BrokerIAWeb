@@ -6,6 +6,5 @@ const adminController = require('../controllers/adminController');
 router.get('/clients', adminController.getAllClients);
 router.get('/policies', adminController.getAllPolicies);
 router.get('/cleanup-links', adminController.cleanupInvalidLinks);
-router.post('/sync-drive', adminController.syncDriveWithN8N);
 
 module.exports = router;
