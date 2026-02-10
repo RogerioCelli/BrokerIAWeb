@@ -70,12 +70,18 @@ async function runMigrations() {
             );
         `).catch(err => console.error('[DB] Erro ao criar tokens_acesso:', err));
 
-        // 1.4 Adicionar coluna tipo_usuario se não existir (Migração manual segura)
+        // 1.4 Adicionar coluna tipo_usuario se não existir e remover constraint única de cliente_id
         await db.query(`
             DO $$ 
             BEGIN 
+                -- Adicionar coluna tipo_usuario
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tokens_acesso' AND column_name='tipo_usuario') THEN
                     ALTER TABLE tokens_acesso ADD COLUMN tipo_usuario VARCHAR(20) DEFAULT 'customer';
+                END IF;
+
+                -- Remover constraint unique que está bloqueando múltiplos tokens
+                IF EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name='tokens_acesso_cliente_id_key') THEN
+                    ALTER TABLE tokens_acesso DROP CONSTRAINT tokens_acesso_cliente_id_key;
                 END IF;
             END $$;
         `);
