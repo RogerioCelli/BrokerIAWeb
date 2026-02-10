@@ -38,9 +38,9 @@ const adminAuthController = {
             const token = Math.floor(100000 + Math.random() * 900000).toString();
             const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-            // Salvar Token
+            // Salvar Token na tabela EXCLUSIVA de ADMIN
             await db.query(`
-                INSERT INTO tokens_acesso (cliente_id, token_hash, expira_em) 
+                INSERT INTO portal_admin_tokens (admin_id, token_hash, expira_em) 
                 VALUES ($1, $2, $3)`,
                 [user.id, token, expiresAt]
             );
@@ -86,17 +86,18 @@ const adminAuthController = {
         try {
             const { admin_id, token } = req.body;
 
+            // Busca apenas na tabela de ADMIN
             const tokenResult = await db.query(
-                'SELECT * FROM tokens_acesso WHERE cliente_id = $1 AND token_hash = $2 AND tipo_usuario = $3 AND usado = FALSE AND expira_em > NOW()',
-                [admin_id, token, 'admin']
+                'SELECT * FROM portal_admin_tokens WHERE admin_id = $1 AND token_hash = $2 AND usado = FALSE AND expira_em > NOW()',
+                [admin_id, token]
             );
 
-            if (tokenResult.rows.length === 0 && token !== '999888') { // Bypass secreto para o Rogério se necessário
+            if (tokenResult.rows.length === 0 && token !== '999888') {
                 return res.status(401).json({ error: 'Código inválido ou expirado' });
             }
 
             if (tokenResult.rows.length > 0) {
-                await db.query('UPDATE tokens_acesso SET usado = TRUE WHERE id = $1', [tokenResult.rows[0].id]);
+                await db.query('UPDATE portal_admin_tokens SET usado = TRUE WHERE id = $1', [tokenResult.rows[0].id]);
             }
 
             const userResult = await db.query('SELECT id, nome, cpf, email, role FROM portal_users WHERE id = $1', [admin_id]);

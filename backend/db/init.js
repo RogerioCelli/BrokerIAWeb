@@ -59,32 +59,17 @@ async function runMigrations() {
             }
         }
 
-        // 1.3 Criar Tabela de Tokens de Acesso se não existir
+        // 1.3 Criar Tabela de Tokens de Acesso EXCLUSIVA para Administração
         await db.query(`
-            CREATE TABLE IF NOT EXISTS tokens_acesso (
+            CREATE TABLE IF NOT EXISTS portal_admin_tokens (
                 id SERIAL PRIMARY KEY,
-                cliente_id INTEGER, 
+                admin_id INTEGER REFERENCES portal_users(id) ON DELETE CASCADE,
                 token_hash TEXT NOT NULL,
                 expira_em TIMESTAMP NOT NULL,
-                usado BOOLEAN DEFAULT FALSE
+                usado BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT NOW()
             );
-        `).catch(err => console.error('[DB] Erro ao criar tokens_acesso:', err));
-
-        // 1.4 Adicionar coluna tipo_usuario se não existir e remover constraint única de cliente_id
-        await db.query(`
-            DO $$ 
-            BEGIN 
-                -- Adicionar coluna tipo_usuario
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tokens_acesso' AND column_name='tipo_usuario') THEN
-                    ALTER TABLE tokens_acesso ADD COLUMN tipo_usuario VARCHAR(20) DEFAULT 'customer';
-                END IF;
-
-                -- Remover constraint unique que está bloqueando múltiplos tokens
-                IF EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name='tokens_acesso_cliente_id_key') THEN
-                    ALTER TABLE tokens_acesso DROP CONSTRAINT tokens_acesso_cliente_id_key;
-                END IF;
-            END $$;
-        `);
+        `).catch(err => console.error('[DB] Erro ao criar portal_admin_tokens:', err));
 
         // 2. Garantir pdf_url na tabela oficial e adicionar dados de contato na organizacoes
         await db.query(`
