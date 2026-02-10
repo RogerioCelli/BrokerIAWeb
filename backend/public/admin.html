@@ -222,10 +222,10 @@
             const btn = document.getElementById('sync-btn');
             const originalText = btn.innerHTML;
 
-            if (!confirm('Deseja iniciar a sincronização de arquivos do Google Drive agora? Isso pode levar alguns segundos.')) return;
+            if (!confirm('Deseja iniciar a sincronização de arquivos do Google Drive agora? O processo rodará em segundo plano no n8n.')) return;
 
             try {
-                btn.innerHTML = '⏳ Sincronizando...';
+                btn.innerHTML = '⏳ Sincronização Iniciada...';
                 btn.disabled = true;
                 btn.style.opacity = '0.5';
 
@@ -237,8 +237,7 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    alert('🚀 Sincronização iniciada com sucesso via n8n!');
-                    loadAllData(); // Recarrega os dados para ver as mudanças
+                    alert('🚀 Sincronização disparada com sucesso! O n8n está processando os arquivos em segundo plano. Você receberá uma notificação quando terminar.');
                 } else {
                     throw new Error(data.error || 'Erro ao iniciar sincronização');
                 }
@@ -246,9 +245,13 @@
                 console.error('❌ Erro no sync:', err);
                 alert('Erro ao sincronizar: ' + err.message);
             } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-                btn.style.opacity = '1';
+                // Destrava o botão após 3 segundos para não ficar preso
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    loadAllData(); // Recarrega a tabela para ver se algo já foi atualizado
+                }, 3000);
             }
         }
 
