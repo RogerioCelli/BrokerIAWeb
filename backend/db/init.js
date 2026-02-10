@@ -80,6 +80,14 @@ async function runMigrations() {
                     RAISE NOTICE 'Aguardando criação da coluna data_sincronizacao via apolicesQuery';
                 END IF;
 
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='organizacoes' AND column_name='slug') THEN
+                    ALTER TABLE organizacoes ADD COLUMN slug VARCHAR(100) UNIQUE;
+                END IF;
+
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='organizacoes' AND column_name='dominio') THEN
+                    ALTER TABLE organizacoes ADD COLUMN dominio VARCHAR(255) UNIQUE;
+                END IF;
+
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='organizacoes' AND column_name='endereco') THEN
                     ALTER TABLE organizacoes ADD COLUMN endereco TEXT;
                     ALTER TABLE organizacoes ADD COLUMN telefone_fixo VARCHAR(20);
@@ -118,13 +126,14 @@ async function runMigrations() {
         // 3. Atualizar Org Demo com dados de contato
         await db.query(`
             UPDATE organizacoes SET 
-        endereco = 'Av. Paulista, 1000 - São Paulo/SP',
-            telefone_fixo = '(11) 4004-0000',
-            telefone_celular = '(11) 99999-9999',
-            email_contato = 'contato@brokeriaweb.com.br',
-            website_url = 'https://brokeriaweb.com.br'
-            WHERE slug = 'corretora-demo'
-            `);
+                slug = COALESCE(slug, 'corretora-demo'),
+                endereco = 'Av. Paulista, 1000 - São Paulo/SP',
+                telefone_fixo = '(11) 4004-0000',
+                telefone_celular = '(11) 99999-9999',
+                email_contato = 'contato@brokeriaweb.com.br',
+                website_url = 'https://brokeriaweb.com.br'
+            WHERE slug = 'corretora-demo' OR id = (SELECT id FROM organizacoes LIMIT 1)
+        `);
 
         // 4. Popular Seguradoras (Se tabela estiver vazia)
         const check = await db.query('SELECT COUNT(*) FROM seguradoras');

@@ -18,12 +18,14 @@ async function migrate() {
             CREATE TABLE IF NOT EXISTS organizacoes (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 nome VARCHAR(255) NOT NULL,
-                slug VARCHAR(100) UNIQUE NOT NULL,
                 logo_url TEXT,
                 ativo BOOLEAN DEFAULT TRUE,
                 config_json JSONB,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
+            
+            -- Garantir coluna slug caso a tabela tenha sido criada manualmente sem ela
+            ALTER TABLE organizacoes ADD COLUMN IF NOT EXISTS slug VARCHAR(100) UNIQUE;
         `);
 
         // 2. Inserir Corretora Padrão se não existir (Demo)
