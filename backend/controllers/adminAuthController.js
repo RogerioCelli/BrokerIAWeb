@@ -40,9 +40,9 @@ const adminAuthController = {
 
             // Salvar Token
             await db.query(`
-                INSERT INTO tokens_acesso (cliente_id, token_hash, expira_em, tipo_usuario) 
-                VALUES ($1, $2, $3, 'admin')`,
-                [user.id, token, expiresAt, 'admin']
+                INSERT INTO tokens_acesso (cliente_id, token_hash, expira_em) 
+                VALUES ($1, $2, $3)`,
+                [user.id, token, expiresAt]
             );
 
             console.log(`[ADMIN-AUTH] Token para ${user.nome}: ${token}`);

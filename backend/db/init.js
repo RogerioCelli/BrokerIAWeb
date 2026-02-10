@@ -59,17 +59,26 @@ async function runMigrations() {
             }
         }
 
-        // 1.3 Criar Tabela de Tokens de Acesso (para redefinição de senha, etc.)
+        // 1.3 Criar Tabela de Tokens de Acesso se não existir
         await db.query(`
             CREATE TABLE IF NOT EXISTS tokens_acesso (
                 id SERIAL PRIMARY KEY,
-                cliente_id INTEGER, -- Pode ser ID de cliente ou ID de admin
+                cliente_id INTEGER, 
                 token_hash TEXT NOT NULL,
                 expira_em TIMESTAMP NOT NULL,
-                usado BOOLEAN DEFAULT FALSE,
-                tipo_usuario VARCHAR(20) DEFAULT 'customer' -- 'customer' ou 'admin'
+                usado BOOLEAN DEFAULT FALSE
             );
         `).catch(err => console.error('[DB] Erro ao criar tokens_acesso:', err));
+
+        // 1.4 Adicionar coluna tipo_usuario se não existir (Migração manual segura)
+        await db.query(`
+            DO $$ 
+            BEGIN 
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tokens_acesso' AND column_name='tipo_usuario') THEN
+                    ALTER TABLE tokens_acesso ADD COLUMN tipo_usuario VARCHAR(20) DEFAULT 'customer';
+                END IF;
+            END $$;
+        `);
 
         // 2. Garantir pdf_url na tabela oficial e adicionar dados de contato na organizacoes
         await db.query(`
