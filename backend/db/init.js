@@ -94,9 +94,10 @@ async function runMigrations() {
             END $$;
         `);
 
-        // Garantir a coluna no banco de apólices (DB Externo)
+        // Garantir as colunas no banco de apólices (DB Externo)
         await db.apolicesQuery(`
             ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS data_sincronizacao TIMESTAMP WITH TIME ZONE;
+            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS link_url_apolice TEXT;
         `);
 
         // 3. Atualizar Org Demo com dados de contato
@@ -177,6 +178,7 @@ async function runMigrations() {
                 vigencia_fim DATE NOT NULL,
                 status_apolice VARCHAR(50) DEFAULT 'ATIVA',
                 url_pdf TEXT,
+                link_url_apolice TEXT, -- Coluna para link consolidado
                 placa VARCHAR(20),
                 cpf VARCHAR(20) NOT NULL,
                 cliente_nome VARCHAR(255),

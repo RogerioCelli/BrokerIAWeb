@@ -67,7 +67,7 @@ const adminController = {
                     vigencia_fim as data_fim,
                     status_apolice as status,
                     placa,
-                    link_url_apolice,
+                    COALESCE(link_url_apolice, url_pdf) as link_url_apolice,
                     data_sincronizacao
                 FROM apolices_brokeria
                 WHERE cpf = $1
@@ -97,7 +97,7 @@ const adminController = {
                     placa,
                     cpf,
                     url_pdf,
-                    link_url_apolice,
+                    COALESCE(link_url_apolice, url_pdf) as link_url_apolice,
                     data_criacao,
                     data_sincronizacao
                 FROM apolices_brokeria
