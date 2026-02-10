@@ -98,6 +98,7 @@ async function runMigrations() {
         await db.apolicesQuery(`
             ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS data_sincronizacao TIMESTAMP WITH TIME ZONE;
             ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS link_url_apolice TEXT;
+            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
         `);
 
         // 3. Atualizar Org Demo com dados de contato
