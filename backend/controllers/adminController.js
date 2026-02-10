@@ -98,10 +98,10 @@ const adminController = {
                     cpf,
                     url_pdf,
                     COALESCE(link_url_apolice, url_pdf) as link_url_apolice,
-                    created_at as data_criacao,
+                    data_criacao,
                     data_sincronizacao
                 FROM apolices_brokeria
-                ORDER BY data_sincronizacao DESC NULLS LAST, created_at DESC NULLS LAST
+                ORDER BY data_sincronizacao DESC NULLS LAST, data_criacao DESC NULLS LAST
                 LIMIT 100
             `;
             const { rows } = await db.apolicesQuery(query);

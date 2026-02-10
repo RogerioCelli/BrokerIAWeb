@@ -94,11 +94,11 @@ async function runMigrations() {
             END $$;
         `);
 
-        // Garantir as colunas no banco de apólices (DB Externo)
+        // Garantir as colunas no banco de apólices (DB Externo) conforme CSV
         await db.apolicesQuery(`
             ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS data_sincronizacao TIMESTAMP WITH TIME ZONE;
             ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS link_url_apolice TEXT;
-            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
+            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS data_criacao TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW();
         `);
 
         // 3. Atualizar Org Demo com dados de contato
