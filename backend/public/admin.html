@@ -179,9 +179,17 @@
     <div class="header">
         <div>
             <h1>Painel de Dados - Multi-Database</h1>
-            <p style="color: var(--text-secondary)">Visualização direta das tabelas Mestre</p>
+            <p style="color: var(--text-secondary)">Visualização direta das tabelas Mestre
+                <span id="last-sync-header"
+                    style="margin-left: 15px; font-size: 0.85rem; color: #10b981; font-weight: 500;"></span>
+            </p>
         </div>
-        <div style="display: flex; gap: 10px;">
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <div id="sync-summary" style="text-align: right; margin-right: 10px; display: none;">
+                <div style="font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase;">Última
+                    Sincronização</div>
+                <div id="sync-time-val" style="font-size: 0.9rem; font-weight: 600; color: #10b981;">-</div>
+            </div>
             <button id="sync-btn" class="refresh-btn" style="border-color: #10b981; color: #10b981;"
                 onclick="triggerSync()">
                 <i class="fas fa-sync"></i> Sincronizar Arquivos do Drive
@@ -301,7 +309,7 @@
                                 <th>CPF</th>
                                 <th>Email</th>
                                 <th>Celular</th>
-                                <th>Telefone</th>
+                                <th style="text-align: center;">Qtd. Apólices</th>
                                 <th>Data Cadastro</th>
                             </tr>
                         </thead>
@@ -309,15 +317,30 @@
                 `;
 
                 data.forEach(client => {
+                    const badgeColor = client.total_apolices > 0 ? '#10b981' : '#64748b';
                     html += `
-                        <tr>
+                        <tr onclick="toggleClientDetails('${client.cpf}', this)" style="cursor: pointer;">
                             <td style="font-family: monospace; color: #64748b">${client.id}</td>
-                            <td style="font-weight: 500">${client.nome}</td>
+                            <td style="font-weight: 500">
+                                <span style="margin-right: 8px; color: var(--accent)">▶</span>
+                                ${client.nome}
+                            </td>
                             <td>${client.cpf}</td>
                             <td>${client.email}</td>
                             <td>${client.celular || '-'}</td>
-                            <td>${client.telefone || '-'}</td>
+                            <td style="text-align: center;">
+                                <span class="status-badge" style="background: ${badgeColor}20; color: ${badgeColor}; width: 30px; display: inline-block;">
+                                    ${client.total_apolices}
+                                </span>
+                            </td>
                             <td>${client.data_cadastro ? new Date(client.data_cadastro).toLocaleDateString('pt-BR') : '-'}</td>
+                        </tr>
+                        <tr id="details-${client.cpf}" style="display: none; background: rgba(0,0,0,0.2)">
+                            <td colspan="7" style="padding: 1.5rem; border-bottom: 2px solid var(--accent)">
+                                <div id="container-${client.cpf}">
+                                    <div class="load-indicator">Buscando apólices detalhadas...</div>
+                                </div>
+                            </td>
                         </tr>
                     `;
                 });
@@ -328,6 +351,89 @@
             } catch (error) {
                 container.innerHTML = `<p style="color: #ef4444; padding: 1rem">Erro ao carregar clientes: ${error.message}</p>`;
             }
+        }
+
+        async function toggleClientDetails(cpf, row) {
+            const detailsRow = document.getElementById(`details-${cpf}`);
+            const container = document.getElementById(`container-${cpf}`);
+            const arrow = row.querySelector('span');
+
+            if (detailsRow.style.display === 'none') {
+                // Fechar outros abertos (opcional, mas limpo)
+                // Abrir este
+                detailsRow.style.display = 'table-row';
+                arrow.style.transform = 'rotate(90deg)';
+                arrow.style.display = 'inline-block';
+                arrow.style.transition = 'transform 0.2s';
+
+                // Carregar dados se ainda não carregados
+                if (container.innerHTML.includes('Buscando')) {
+                    try {
+                        const res = await fetch(`${API_URL}/clients/${cpf}/policies`);
+                        const policies = await res.json();
+
+                        if (policies.length === 0) {
+                            container.innerHTML = '<p style="color: var(--text-secondary)">Nenhuma apólice encontrada para este CPF.</p>';
+                            return;
+                        }
+
+                        let pTable = `
+                            <h4 style="margin-bottom: 15px; color: var(--accent); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">
+                                Detalhes das Apólices de ${cpf}
+                            </h4>
+                            <table style="background: #0f172a; border: 1px solid var(--border);">
+                                <thead>
+                                    <tr>
+                                        <th>Nº Apólice</th>
+                                        <th>Seguradora</th>
+                                        <th>Ramo</th>
+                                        <th>Vigência</th>
+                                        <th>Status</th>
+                                        <th>Upload</th>
+                                        <th>Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                        `;
+
+                        policies.forEach(p => {
+                            const statusCls = p.status === 'ATIVA' ? 'status-ativa' : 'status-cancelada';
+                            const syncDate = p.data_sincronizacao ? new Date(p.data_sincronizacao).toLocaleString('pt-BR') : 'Pendente';
+                            const syncColor = p.data_sincronizacao ? '#10b981' : '#f59e0b';
+
+                            pTable += `
+                                <tr>
+                                    <td style="font-weight: 500">${p.numero_apolice}</td>
+                                    <td>${p.seguradora}</td>
+                                    <td>${p.ramo}</td>
+                                    <td>${formatDate(p.data_inicio)} - ${formatDate(p.data_fim)}</td>
+                                    <td><span class="status-badge ${statusCls}">${p.status}</span></td>
+                                    <td style="color: ${syncColor}; font-size: 0.8rem">${syncDate}</td>
+                                    <td>
+                                        ${p.link_url_apolice ? `<a href="${p.link_url_apolice}" target="_blank" class="download-link">Abrir PDF</a>` : '-'}
+                                    </td>
+                                </tr>
+                            `;
+                        });
+
+                        pTable += '</tbody></table>';
+                        container.innerHTML = pTable;
+
+                    } catch (err) {
+                        container.innerHTML = `<p style="color: #ef4444">Erro ao carregar detalhes: ${err.message}</p>`;
+                    }
+                }
+            } else {
+                detailsRow.style.display = 'none';
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime()) || date.getFullYear() < 2000) return '-';
+            return date.toLocaleDateString('pt-BR');
         }
 
         async function loadPolicies() {
@@ -343,6 +449,13 @@
                     return;
                 }
 
+                // Atualizar última sincronização no header
+                const lastSync = data.filter(p => p.data_sincronizacao).sort((a, b) => new Date(b.data_sincronizacao) - new Date(a.data_sincronizacao))[0];
+                if (lastSync) {
+                    document.getElementById('sync-summary').style.display = 'block';
+                    document.getElementById('sync-time-val').innerText = new Date(lastSync.data_sincronizacao).toLocaleString('pt-BR');
+                }
+
                 let html = `
                     <table>
                         <thead>
@@ -355,7 +468,7 @@
                                 <th>Vigência</th>
                                 <th>Placa</th>
                                 <th>Status</th>
-                                <th>Data Upload</th>
+                                <th>Data e Hora Upload</th>
                                 <th>Arquivo</th>
                             </tr>
                         </thead>
@@ -364,6 +477,9 @@
 
                 data.forEach(pol => {
                     const statusClass = pol.status === 'ATIVA' ? 'status-ativa' : 'status-cancelada';
+                    const syncDate = pol.data_sincronizacao ? new Date(pol.data_sincronizacao).toLocaleString('pt-BR') : 'Pendente';
+                    const syncColor = pol.data_sincronizacao ? '#10b981' : '#f59e0b';
+
                     html += `
                         <tr>
                             <td style="font-family: monospace; color: #64748b">${pol.id}</td>
@@ -371,19 +487,19 @@
                             <td>${pol.seguradora}</td>
                             <td>${pol.ramo}</td>
                             <td>${pol.cpf}</td>
-                            <td>${new Date(pol.data_inicio).toLocaleDateString('pt-BR')} - ${new Date(pol.data_fim).toLocaleDateString('pt-BR')}</td>
+                            <td>${formatDate(pol.data_inicio)} - ${formatDate(pol.data_fim)}</td>
                             <td>${pol.placa || '-'}</td>
                             <td><span class="status-badge ${statusClass}">${pol.status}</span></td>
-                            <td style="font-size: 0.8rem; color: #94a3b8">
-                                ${pol.data_sincronizacao ? new Date(pol.data_sincronizacao).toLocaleString('pt-BR') : '-'}
+                            <td style="font-size: 0.85rem; font-weight: 500; color: ${syncColor}">
+                                ${syncDate}
                             </td>
                             <td>
                                 ${(() => {
                             const finalUrl = (pol.link_url_apolice && pol.link_url_apolice !== 'undefined') ? pol.link_url_apolice : (pol.url_pdf && pol.url_pdf !== 'undefined' ? pol.url_pdf : null);
                             return finalUrl
                                 ? `<a href="${finalUrl}" target="_blank" class="download-link">
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                            PDF
+                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                             PDF
                                            </a>`
                                 : '<span class="no-download">Pendente</span>';
                         })()}
