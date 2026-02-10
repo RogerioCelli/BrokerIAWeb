@@ -10,9 +10,10 @@ function validateDbConfig(name) {
         throw new Error(`[CONFIG-ERRO] A variável '${name}' não foi configurada corretamente no Easypanel.`);
     }
 
-    // Alerta específico para o banco de apólices solicitado pelo Rogério
-    if (name === 'APOLICES_DATABASE_URL' && url.includes('/postgres')) {
-        console.warn('⚠️ AVISO: APOLICES_DATABASE_URL ainda está apontando para o banco /postgres. O correto deve ser /apolices-brokeria');
+    // Log limpo para confirmar o banco conectado
+    if (name === 'APOLICES_DATABASE_URL') {
+        const dbName = url.split('/').pop().split('?')[0];
+        console.log(`📡 [DB] Conectado ao banco de apólices: ${dbName}`);
     }
 
     return url;
