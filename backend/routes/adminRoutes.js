@@ -1,12 +1,22 @@
 const express = require('express');
 const router = express.Router();
-const adminController = require('../controllers/adminController');
+const adminAuthController = require('../controllers/adminAuthController');
+const { isAdmin, isMaster } = require('../middlewares/adminMiddleware');
 
-// Rotas públicas para visualização de dados (Conforme solicitado para novo diagnostico)
-router.get('/clients', adminController.getAllClients);
-router.get('/clients/:cpf/policies', adminController.getClientPolicies);
-router.get('/policies', adminController.getAllPolicies);
-router.get('/cleanup-links', adminController.cleanupInvalidLinks);
-router.post('/sync-drive', adminController.syncDriveWithN8N);
+// --- Rotas de Autenticação Admin ---
+router.post('/auth/request', adminAuthController.requestAdminAccess);
+router.post('/auth/validate', adminAuthController.validateAdminToken);
+
+// --- Rotas de Dados (Protegidas) ---
+router.get('/clients', isAdmin, adminController.getAllClients);
+router.get('/clients/:cpf/policies', isAdmin, adminController.getClientPolicies);
+router.get('/policies', isAdmin, adminController.getAllPolicies);
+router.get('/cleanup-links', isAdmin, adminController.cleanupInvalidLinks);
+router.post('/sync-drive', isAdmin, adminController.syncDriveWithN8N);
+
+// --- Gestão de Usuários (Restrita ao MASTER) ---
+router.get('/users', isMaster, adminController.getPortalUsers);
+router.post('/users', isMaster, adminController.createPortalUser);
+router.delete('/users/:id', isMaster, adminController.deletePortalUser);
 
 module.exports = router;

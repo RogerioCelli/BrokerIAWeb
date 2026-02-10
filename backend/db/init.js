@@ -26,6 +26,51 @@ async function runMigrations() {
             );
         `);
 
+        // 1.1 Criar Tabela de Usuários Administrativos (Portal)
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS portal_users (
+                id SERIAL PRIMARY KEY,
+                nome VARCHAR(255) NOT NULL,
+                cpf VARCHAR(20) UNIQUE NOT NULL,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                role VARCHAR(20) DEFAULT 'admin', -- 'master' ou 'admin'
+                ativo BOOLEAN DEFAULT TRUE,
+                data_criacao TIMESTAMP DEFAULT NOW()
+            );
+        `);
+
+        // 1.2 Popular Usuários Iniciais se a tabela estiver vazia
+        const userCheck = await db.query('SELECT COUNT(*) FROM portal_users');
+        if (parseInt(userCheck.rows[0].count) === 0) {
+            console.log('[DB] Cadastrando usuários administrativos iniciais...');
+            const initialAdmins = [
+                ['Rogério Celli', '11806562880', 'rogerio.celli@gmail.com', 'master'],
+                ['Marcos Nelson', '11111111111', 'marcosnelsonss@gmail.com', 'admin'],
+                ['Washington Oliveira', '22222222222', 'dwfcorretoradeseguros@hotmail.com', 'admin'],
+                ['Magui CS', '17592369850', 'maguics@gmail.com', 'admin']
+            ];
+
+            for (const [nome, cpf, email, role] of initialAdmins) {
+                await db.query(`
+                    INSERT INTO portal_users (nome, cpf, email, role)
+                    VALUES ($1, $2, $3, $4)
+                    ON CONFLICT (cpf) DO NOTHING;
+                `, [nome, cpf, email, role]);
+            }
+        }
+
+        // 1.3 Criar Tabela de Tokens de Acesso (para redefinição de senha, etc.)
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS tokens_acesso (
+                id SERIAL PRIMARY KEY,
+                cliente_id INTEGER, -- Pode ser ID de cliente ou ID de admin
+                token_hash TEXT NOT NULL,
+                expira_em TIMESTAMP NOT NULL,
+                usado BOOLEAN DEFAULT FALSE,
+                tipo_usuario VARCHAR(20) DEFAULT 'customer' -- 'customer' ou 'admin'
+            );
+        `).catch(err => console.error('[DB] Erro ao criar tokens_acesso:', err));
+
         // 2. Garantir pdf_url na tabela oficial e adicionar dados de contato na organizacoes
         await db.query(`
             DO $$ 

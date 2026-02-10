@@ -171,15 +171,120 @@
             font-size: 0.75rem;
             font-style: italic;
         }
+
+        /* [Manter estilos anteriores e adicionar novos] */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-dark);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.5s;
+        }
+
+        .login-box {
+            background: var(--card-bg);
+            padding: 3rem;
+            border-radius: 20px;
+            width: 400px;
+            text-align: center;
+            border: 1px solid var(--border);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .login-input {
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid var(--border);
+            padding: 0.75rem;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .btn-admin {
+            width: 100%;
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-admin:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .user-mgmt-btn {
+            background: rgba(251, 191, 36, 0.1);
+            color: #fbbf24;
+            border: 1px solid #fbbf24;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
     </style>
 </head>
 
 <body>
 
+    <!-- OVERLAY DE LOGIN -->
+    <div id="login-overlay" class="login-overlay">
+        <div class="login-box">
+            <h2 style="margin-bottom: 0.5rem;">🔒 Acesso Admin</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.875rem;">Restrito a usuários
+                autorizados</p>
+
+            <div id="login-step-1">
+                <div class="input-group">
+                    <label>E-mail ou CPF</label>
+                    <input type="text" id="admin-id" class="login-input" placeholder="seu@email.com">
+                </div>
+                <button class="btn-admin" onclick="requestAdminToken()">Receber Código</button>
+            </div>
+
+            <div id="login-step-2" style="display: none;">
+                <p id="masked-email-display" style="font-size: 0.75rem; margin-bottom: 1rem; color: #10b981;"></p>
+                <div class="input-group">
+                    <label>Código de 6 dígitos</label>
+                    <input type="text" id="admin-token" class="login-input" placeholder="000000" maxlength="6"
+                        style="text-align: center; letter-spacing: 5px;">
+                </div>
+                <button class="btn-admin" onclick="validateAdminToken()">Entrar no Painel</button>
+                <p style="margin-top: 1rem; font-size: 0.75rem; color: var(--text-secondary); cursor: pointer;"
+                    onclick="showStep(1)">Voltar</p>
+            </div>
+        </div>
+    </div>
+
     <div class="header">
         <div>
-            <h1>Painel de Dados - Multi-Database</h1>
-            <p style="color: var(--text-secondary)">Visualização direta das tabelas Mestre
+            <h1>Painel de Dados - Multi-Database <span id="master-badge"
+                    style="display:none; background: #fbbf24; color: #000; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; vertical-align: middle; margin-left: 10px;">MASTER</span>
+            </h1>
+            <p style="color: var(--text-secondary)">Bem-vindo, <span id="admin-name"
+                    style="color: var(--accent); font-weight: 600;">-</span>
                 <span id="last-sync-header"
                     style="margin-left: 15px; font-size: 0.85rem; color: #10b981; font-weight: 500;"></span>
             </p>
@@ -195,36 +300,135 @@
                 <i class="fas fa-sync"></i> Sincronizar Arquivos do Drive
             </button>
             <button class="refresh-btn" onclick="loadAllData()">Atualizar Dados</button>
+            <button class="refresh-btn" style="border-color: #ef4444; color: #ef4444;" onclick="logout()">Sair</button>
         </div>
     </div>
 
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('clients')">
             Clientes
-            <span class="db-badge">HOST: brokeria_clientes-postgres</span>
         </button>
         <button class="tab-btn" onclick="switchTab('policies')">
             Apólices
-            <span class="db-badge">HOST: brokeria_apolices</span>
         </button>
+        <button id="users-tab" class="tab-btn" style="display: none;" onclick="switchTab('users')">Gestão de
+            Equipe</button>
     </div>
 
     <!-- CLIENTES -->
     <div id="clients-panel" class="data-panel active">
         <div id="clients-container">
-            <div class="load-indicator">Carregando dados de clientes...</div>
         </div>
     </div>
 
     <!-- APOLICES -->
     <div id="policies-panel" class="data-panel">
         <div id="policies-container">
-            <div class="load-indicator">Carregando dados de apólices...</div>
         </div>
+    </div>
+
+    <!-- USUARIOS (MASTER ONLY) -->
+    <div id="users-panel" class="data-panel">
+        <div
+            style="margin-bottom: 1.5rem; background: var(--card-bg); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border);">
+            <h3 style="margin-bottom: 1rem;">Cadastrar Novo Administrador</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 100px 150px; gap: 10px;">
+                <input type="text" id="new-user-nome" class="login-input" placeholder="Nome Completo">
+                <input type="text" id="new-user-cpf" class="login-input" placeholder="CPF (apenas números)">
+                <input type="text" id="new-user-email" class="login-input" placeholder="E-mail">
+                <select id="new-user-role" class="login-input">
+                    <option value="admin">Admin</option>
+                    <option value="master">Master</option>
+                </select>
+                <button class="btn-admin" onclick="saveUser()">Adicionar</button>
+            </div>
+        </div>
+        <div id="users-container"></div>
     </div>
 
     <script>
         const API_URL = '/api/admin';
+        let currentAdminId = null;
+
+        // --- AUTH LOGIC ---
+
+        function showStep(step) {
+            document.getElementById('login-step-1').style.display = step === 1 ? 'block' : 'none';
+            document.getElementById('login-step-2').style.display = step === 2 ? 'block' : 'none';
+        }
+
+        async function requestAdminToken() {
+            const id = document.getElementById('admin-id').value;
+            if (!id) return alert('Insira seu E-mail ou CPF');
+
+            try {
+                const res = await fetch(`${API_URL}/auth/request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier: id })
+                });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+
+                currentAdminId = data.admin_id;
+                document.getElementById('masked-email-display').innerText = `Código enviado para: ${data.masked_email}`;
+                showStep(2);
+            } catch (err) { alert(err.message); }
+        }
+
+        async function validateAdminToken() {
+            const token = document.getElementById('admin-token').value;
+            try {
+                const res = await fetch(`${API_URL}/auth/validate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ admin_id: currentAdminId, token })
+                });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+
+                localStorage.setItem('admin_token', data.token);
+                localStorage.setItem('admin_user', JSON.stringify(data.user));
+
+                checkAuth();
+            } catch (err) { alert(err.message); }
+        }
+
+        function checkAuth() {
+            const token = localStorage.getItem('admin_token');
+            const user = JSON.parse(localStorage.getItem('admin_user') || '{}');
+
+            if (token && user.id) {
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('admin-name').innerText = user.nome;
+
+                if (user.role === 'master') {
+                    document.getElementById('users-tab').style.display = 'block';
+                    document.getElementById('master-badge').style.display = 'inline-block';
+                }
+                loadAllData();
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            location.reload();
+        }
+
+        // Interceptador para adicionar Token nas chamadas
+        async function fetchWithAuth(url, options = {}) {
+            const token = localStorage.getItem('admin_token');
+            const headers = { ...options.headers, 'Authorization': `Bearer ${token}` };
+            const res = await fetch(url, { ...options, headers });
+
+            if (res.status === 401 || res.status === 403) {
+                alert('Sessão expirada. Faça login novamente.');
+                logout();
+            }
+            return res;
+        }
+
+        // --- DATA LOAD LOGIC ---
 
         async function triggerSync() {
             const btn = document.getElementById('sync-btn');
@@ -237,7 +441,7 @@
                 btn.disabled = true;
                 btn.style.opacity = '0.5';
 
-                const res = await fetch(`${API_URL}/sync-drive`, {
+                const res = await fetchWithAuth(`${API_URL}/sync-drive`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
                 });
@@ -274,7 +478,12 @@
                 document.getElementById('clients-container').innerHTML = '<div class="load-indicator">Atualizando clientes...</div>';
                 document.getElementById('policies-container').innerHTML = '<div class="load-indicator">Atualizando apólices...</div>';
 
-                await Promise.all([loadClients(), loadPolicies()]);
+                const user = JSON.parse(localStorage.getItem('admin_user') || '{}');
+                await Promise.all([
+                    loadClients(),
+                    loadPolicies(),
+                    user.role === 'master' ? loadUsers() : Promise.resolve()
+                ]);
 
                 console.log('✅ Dados atualizados com sucesso');
             } catch (err) {
@@ -290,7 +499,7 @@
         async function loadClients() {
             const container = document.getElementById('clients-container');
             try {
-                const res = await fetch(`${API_URL}/clients`);
+                const res = await fetchWithAuth(`${API_URL}/clients`);
                 const data = await res.json();
 
                 if (data.error) throw new Error(data.error);
@@ -369,7 +578,7 @@
                 // Carregar dados se ainda não carregados
                 if (container.innerHTML.includes('Buscando')) {
                     try {
-                        const res = await fetch(`${API_URL}/clients/${cpf}/policies`);
+                        const res = await fetchWithAuth(`${API_URL}/clients/${cpf}/policies`);
                         const policies = await res.json();
 
                         if (policies.length === 0) {
@@ -439,7 +648,7 @@
         async function loadPolicies() {
             const container = document.getElementById('policies-container');
             try {
-                const res = await fetch(`${API_URL}/policies`);
+                const res = await fetchWithAuth(`${API_URL}/policies`);
                 const data = await res.json();
 
                 if (data.error) throw new Error(data.error);
@@ -516,22 +725,87 @@
             }
         }
 
-        function switchTab(tab) {
-            // UI Switch
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.data-panel').forEach(p => p.classList.remove('active'));
+        // GESTÃO DE USUÁRIOS (MASTER)
+        async function loadUsers() {
+            const container = document.getElementById('users-container');
+            try {
+                const res = await fetchWithAuth(`${API_URL}/users`);
+                const data = await res.json();
 
-            if (tab === 'clients') {
-                document.querySelector('button[onclick="switchTab(\'clients\')"]').classList.add('active');
-                document.getElementById('clients-panel').classList.add('active');
-            } else {
-                document.querySelector('button[onclick="switchTab(\'policies\')"]').classList.add('active');
-                document.getElementById('policies-panel').classList.add('active');
+                if (data.error) throw new Error(data.error);
+
+                if (data.length === 0) {
+                    container.innerHTML = '<p style="padding: 1rem">Nenhum usuário encontrado.</p>';
+                    return;
+                }
+
+                let html = `<table><thead><tr><th>Nome</th><th>E-mail</th><th>Função</th><th>Ações</th></tr></thead><tbody>`;
+                data.forEach(u => {
+                    html += `
+                        <tr>
+                            <td>${u.nome}</td>
+                            <td>${u.email}</td>
+                            <td><span class="db-badge">${u.role.toUpperCase()}</span></td>
+                            <td>
+                                ${u.role !== 'master' ? `<button onclick="deleteUser(${u.id})" style="color:#ef4444; background:none; border:none; cursor:pointer">Excluir</button>` : '-'}
+                            </td>
+                        </tr>
+                    `;
+                });
+                container.innerHTML = html + '</tbody></table>';
+            } catch (error) {
+                container.innerHTML = `<p style="color: #ef4444; padding: 1rem">Erro ao carregar usuários: ${error.message}</p>`;
             }
         }
 
+        async function saveUser() {
+            const userData = {
+                nome: document.getElementById('new-user-nome').value,
+                cpf: document.getElementById('new-user-cpf').value,
+                email: document.getElementById('new-user-email').value,
+                role: document.getElementById('new-user-role').value
+            };
+            try {
+                const res = await fetchWithAuth(`${API_URL}/users`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+                alert('Usuário adicionado com sucesso!');
+                document.getElementById('new-user-nome').value = '';
+                document.getElementById('new-user-cpf').value = '';
+                document.getElementById('new-user-email').value = '';
+                loadUsers();
+            } catch (err) {
+                alert('Erro ao adicionar usuário: ' + err.message);
+            }
+        }
+
+        async function deleteUser(id) {
+            if (!confirm('Excluir este administrador?')) return;
+            try {
+                const res = await fetchWithAuth(`${API_URL}/users/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+                alert('Usuário excluído com sucesso!');
+                loadUsers();
+            } catch (err) {
+                alert('Erro ao excluir usuário: ' + err.message);
+            }
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.data-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById(`${tab}-panel`).classList.add('active');
+            // Add active class to clicked button
+            document.querySelector(`button[onclick="switchTab('${tab}')"]`).classList.add('active');
+        }
+
         // Init
-        loadAllData();
+        checkAuth();
     </script>
 </body>
 

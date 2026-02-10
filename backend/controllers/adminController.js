@@ -169,6 +169,52 @@ const adminController = {
                 error: "Não foi possível disparar o n8n. Verifique se o webhook está ativo."
             });
         }
+    },
+
+    // --- Gestão de Usuários Administrativos ---
+
+    getPortalUsers: async (req, res) => {
+        try {
+            const { rows } = await db.query('SELECT id, nome, cpf, email, role, ativo, data_criacao FROM portal_users ORDER BY role DESC, nome ASC');
+            res.json(rows);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    createPortalUser: async (req, res) => {
+        try {
+            const { nome, cpf, email, role } = req.body;
+            if (!nome || !cpf || !email) return res.status(400).json({ error: 'Dados incompletos' });
+
+            const cleanCpf = cpf.replace(/\D/g, '');
+
+            await db.query(
+                'INSERT INTO portal_users (nome, cpf, email, role) VALUES ($1, $2, $3, $4) ON CONFLICT (cpf) DO UPDATE SET nome = $1, email = $3, role = $4',
+                [nome, cleanCpf, email, role || 'admin']
+            );
+
+            res.json({ success: true, message: 'Usuário administrativo cadastrado/atualizado!' });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    deletePortalUser: async (req, res) => {
+        try {
+            const { id } = req.params;
+
+            // Impedir que o master se delete (opcional, por segurança)
+            const check = await db.query('SELECT role FROM portal_users WHERE id = $1', [id]);
+            if (check.rows[0]?.role === 'master') {
+                return res.status(403).json({ error: 'O usuário MASTER não pode ser removido.' });
+            }
+
+            await db.query('DELETE FROM portal_users WHERE id = $1', [id]);
+            res.json({ success: true, message: 'Usuário removido com sucesso.' });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
 };
 
