@@ -22,21 +22,19 @@ const adminController = {
             const { rows: clients } = await db.clientesQuery(clientQuery);
 
             // 2. Buscar contagem de apólices no outro banco para esses CPFs
-            const cpfs = clients.map(c => c.cpf).filter(cpf => cpf);
+            const cpfs = clients.map(c => c.cpf.replace(/\D/g, '')).filter(cpf => cpf);
             let policyCounts = {};
 
             if (cpfs.length > 0) {
-                const countQuery = `
-                    SELECT cpf, COUNT(*) as total 
+                // Busca simplificada para contagem
+                const { rows: counts } = await db.apolicesQuery(`
+                    SELECT REPLACE(REPLACE(REPLACE(cpf, '.', ''), '-', ''), ' ', '') as cpf_limpo, COUNT(*) as total 
                     FROM apolices_brokeria 
-                    WHERE cpf ANY($1)
-                    GROUP BY cpf
-                `;
-                // Note: Using a slightly different approach for the IN/ANY clause depending on pg driver
-                const { rows: counts } = await db.apolicesQuery('SELECT cpf, COUNT(*) as total FROM apolices_brokeria GROUP BY cpf');
+                    GROUP BY cpf_limpo
+                `);
 
                 counts.forEach(row => {
-                    policyCounts[row.cpf] = parseInt(row.total);
+                    policyCounts[row.cpf_limpo] = parseInt(row.total);
                 });
             }
 
@@ -70,10 +68,11 @@ const adminController = {
                     COALESCE(link_url_apolice, url_pdf) as link_url_apolice,
                     data_sincronizacao
                 FROM apolices_brokeria
-                WHERE cpf = $1
+                WHERE REPLACE(REPLACE(REPLACE(cpf, '.', ''), '-', ''), ' ', '') = $1
                 ORDER BY data_sincronizacao DESC NULLS LAST
             `;
-            const { rows } = await db.apolicesQuery(query, [cpf]);
+            const cleanCpf = cpf.replace(/\D/g, '');
+            const { rows } = await db.apolicesQuery(query, [cleanCpf]);
             res.json(rows);
         } catch (error) {
             console.error("[ADMIN] Erro ao buscar apólices do cliente:", error);

@@ -7,8 +7,14 @@ require('dotenv').config();
 function validateDbConfig(name) {
     const url = process.env[name];
     if (!url || url.trim() === "" || url.includes('localhost')) {
-        throw new Error(`[CONFIG-ERRO] A variável '${name}' não foi configurada corretamente no Easypanel. Verifique se o nome da Key está correto.`);
+        throw new Error(`[CONFIG-ERRO] A variável '${name}' não foi configurada corretamente no Easypanel.`);
     }
+
+    // Alerta específico para o banco de apólices solicitado pelo Rogério
+    if (name === 'APOLICES_DATABASE_URL' && url.includes('/postgres')) {
+        console.warn('⚠️ AVISO: APOLICES_DATABASE_URL ainda está apontando para o banco /postgres. O correto deve ser /apolices-brokeria');
+    }
+
     return url;
 }
 
