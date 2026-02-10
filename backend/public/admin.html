@@ -222,10 +222,10 @@
             const btn = document.getElementById('sync-btn');
             const originalText = btn.innerHTML;
 
-            if (!confirm('Deseja iniciar a sincronização de arquivos do Google Drive agora? O processo rodará em segundo plano no n8n.')) return;
+            if (!confirm('Deseja iniciar a sincronização? Este processo pode levar até 1 minuto para consolidar todos os arquivos.')) return;
 
             try {
-                btn.innerHTML = '⏳ Sincronização Iniciada...';
+                btn.innerHTML = '⏳ Sincronizando Drive...';
                 btn.disabled = true;
                 btn.style.opacity = '0.5';
 
@@ -237,7 +237,7 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    alert('🚀 Sincronização disparada com sucesso! O n8n está processando os arquivos em segundo plano. Você receberá uma notificação quando terminar.');
+                    alert('✅ Processo Finalizado! Todos os arquivos foram verificados e os links atualizados no banco de dados.');
                 } else {
                     throw new Error(data.error || 'Erro ao iniciar sincronização');
                 }
@@ -245,13 +245,10 @@
                 console.error('❌ Erro no sync:', err);
                 alert('Erro ao sincronizar: ' + err.message);
             } finally {
-                // Destrava o botão após 3 segundos para não ficar preso
-                setTimeout(() => {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                    btn.style.opacity = '1';
-                    loadAllData(); // Recarrega a tabela para ver se algo já foi atualizado
-                }, 3000);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                loadAllData(); // Recarrega os dados para ver as datas novas
             }
         }
 
@@ -358,6 +355,7 @@
                                 <th>Vigência</th>
                                 <th>Placa</th>
                                 <th>Status</th>
+                                <th>Data Upload</th>
                                 <th>Arquivo</th>
                             </tr>
                         </thead>
@@ -376,6 +374,9 @@
                             <td>${new Date(pol.data_inicio).toLocaleDateString('pt-BR')} - ${new Date(pol.data_fim).toLocaleDateString('pt-BR')}</td>
                             <td>${pol.placa || '-'}</td>
                             <td><span class="status-badge ${statusClass}">${pol.status}</span></td>
+                            <td style="font-size: 0.8rem; color: #94a3b8">
+                                ${pol.data_sincronizacao ? new Date(pol.data_sincronizacao).toLocaleString('pt-BR') : '-'}
+                            </td>
                             <td>
                                 ${(() => {
                             const finalUrl = (pol.link_url_apolice && pol.link_url_apolice !== 'undefined') ? pol.link_url_apolice : (pol.url_pdf && pol.url_pdf !== 'undefined' ? pol.url_pdf : null);

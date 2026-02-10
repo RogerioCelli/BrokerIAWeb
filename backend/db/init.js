@@ -30,9 +30,9 @@ async function runMigrations() {
         await db.query(`
             DO $$ 
             BEGIN 
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='apolices_brokeria' AND column_name='url_pdf') THEN
-                    -- Se não existe a coluna na tabela oficial, apenas logamos (a tabela é externa)
-                    RAISE NOTICE 'Verifique a existência da coluna url_pdf na tabela apolices_brokeria';
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='apolices_brokeria' AND column_name='data_sincronizacao') THEN
+                    -- Como a tabela de apólices é acessada por db.apolicesQuery
+                    RAISE NOTICE 'Aguardando criação da coluna data_sincronizacao via apolicesQuery';
                 END IF;
 
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='organizacoes' AND column_name='endereco') THEN
@@ -42,19 +42,28 @@ async function runMigrations() {
                     ALTER TABLE organizacoes ADD COLUMN email_contato VARCHAR(255);
                     ALTER TABLE organizacoes ADD COLUMN website_url TEXT;
                 END IF;
+
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='organizacoes' AND column_name='data_sincronizacao') THEN
+                     ALTER TABLE organizacoes ADD COLUMN data_sincronizacao TIMESTAMP WITH TIME ZONE;
+                END IF;
             END $$;
+        `);
+
+        // Garantir a coluna no banco de apólices (DB Externo)
+        await db.apolicesQuery(`
+            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS data_sincronizacao TIMESTAMP WITH TIME ZONE;
         `);
 
         // 3. Atualizar Org Demo com dados de contato
         await db.query(`
             UPDATE organizacoes SET 
-                endereco = 'Av. Paulista, 1000 - São Paulo/SP',
-                telefone_fixo = '(11) 4004-0000',
-                telefone_celular = '(11) 99999-9999',
-                email_contato = 'contato@brokeriaweb.com.br',
-                website_url = 'https://brokeriaweb.com.br'
+        endereco = 'Av. Paulista, 1000 - São Paulo/SP',
+            telefone_fixo = '(11) 4004-0000',
+            telefone_celular = '(11) 99999-9999',
+            email_contato = 'contato@brokeriaweb.com.br',
+            website_url = 'https://brokeriaweb.com.br'
             WHERE slug = 'corretora-demo'
-        `);
+            `);
 
         // 4. Popular Seguradoras (Se tabela estiver vazia)
         const check = await db.query('SELECT COUNT(*) FROM seguradoras');
@@ -91,15 +100,15 @@ async function runMigrations() {
 
             for (const [nome, cap, tel0800, site, email, obs] of seguradoras) {
                 await db.query(`
-                    INSERT INTO seguradoras (nome, telefone_capital, telefone_0800, site_url, email, observacao)
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                    ON CONFLICT (nome) DO UPDATE SET 
-                        telefone_capital = EXCLUDED.telefone_capital,
-                        telefone_0800 = EXCLUDED.telefone_0800,
-                        site_url = EXCLUDED.site_url,
-                        email = EXCLUDED.email,
-                        observacao = EXCLUDED.observacao;
-                `, [nome, cap, tel0800, site, email, obs]);
+                    INSERT INTO seguradoras(nome, telefone_capital, telefone_0800, site_url, email, observacao)
+        VALUES($1, $2, $3, $4, $5, $6)
+                    ON CONFLICT(nome) DO UPDATE SET
+        telefone_capital = EXCLUDED.telefone_capital,
+            telefone_0800 = EXCLUDED.telefone_0800,
+            site_url = EXCLUDED.site_url,
+            email = EXCLUDED.email,
+            observacao = EXCLUDED.observacao;
+        `, [nome, cap, tel0800, site, email, obs]);
             }
         }
 
@@ -114,51 +123,51 @@ async function runMigrations() {
                 console.log('⚠️ [DB-AUTOFIX] Tabela apolices_brokeria não encontrada no container atual. CRIANDO AGORA...');
 
                 await db.apolicesQuery(`
-                    CREATE TABLE IF NOT EXISTS public.apolices_brokeria (
-                        id_apolice SERIAL PRIMARY KEY,
-                        numero_apolice VARCHAR(100) NOT NULL UNIQUE,
-                        seguradora VARCHAR(100) NOT NULL,
-                        ramo VARCHAR(100) NOT NULL,
-                        vigencia_inicio DATE NOT NULL,
-                        vigencia_fim DATE NOT NULL,
-                        status_apolice VARCHAR(50) DEFAULT 'ATIVA',
-                        url_pdf TEXT,
-                        placa VARCHAR(20),
-                        cpf VARCHAR(20) NOT NULL,
-                        cliente_nome VARCHAR(255),
-                        created_at TIMESTAMP DEFAULT NOW()
-                    );
-                `);
+                    CREATE TABLE IF NOT EXISTS public.apolices_brokeria(
+                id_apolice SERIAL PRIMARY KEY,
+                numero_apolice VARCHAR(100) NOT NULL UNIQUE,
+                seguradora VARCHAR(100) NOT NULL,
+                ramo VARCHAR(100) NOT NULL,
+                vigencia_inicio DATE NOT NULL,
+                vigencia_fim DATE NOT NULL,
+                status_apolice VARCHAR(50) DEFAULT 'ATIVA',
+                url_pdf TEXT,
+                placa VARCHAR(20),
+                cpf VARCHAR(20) NOT NULL,
+                cliente_nome VARCHAR(255),
+                created_at TIMESTAMP DEFAULT NOW()
+            );
+        `);
 
                 await db.apolicesQuery(`
-                    CREATE TABLE IF NOT EXISTS public.apolices_detalhes_auto (
-                        id_detalhe SERIAL PRIMARY KEY,
-                        id_apolice INTEGER REFERENCES public.apolices_brokeria(id_apolice) ON DELETE CASCADE,
-                        modelo VARCHAR(150),
-                        marca VARCHAR(100),
-                        ano_modelo VARCHAR(4),
-                        chassi VARCHAR(50)
-                    );
-                `);
+                    CREATE TABLE IF NOT EXISTS public.apolices_detalhes_auto(
+            id_detalhe SERIAL PRIMARY KEY,
+            id_apolice INTEGER REFERENCES public.apolices_brokeria(id_apolice) ON DELETE CASCADE,
+            modelo VARCHAR(150),
+            marca VARCHAR(100),
+            ano_modelo VARCHAR(4),
+            chassi VARCHAR(50)
+        );
+        `);
 
                 // Inserir dados de exemplo para o CPF do Rogério (se não existir)
                 console.log('[DB-AUTOFIX] Inserindo dados de exemplo para teste...');
                 await db.apolicesQuery(`
-                    INSERT INTO public.apolices_brokeria 
-                    (numero_apolice, seguradora, ramo, vigencia_inicio, vigencia_fim, status_apolice, cpf, placa, cliente_nome, url_pdf)
-                    VALUES 
-                    ('8026111111111', 'Porto Seguro', 'Automóvel', '2025-01-01', '2026-01-01', 'ATIVA', '11806562280', 'ABC-1234', 'Rogério Celli', 'https://exemplo.com/doc.pdf')
-                    ON CONFLICT (numero_apolice) DO NOTHING;
-                `);
+                    INSERT INTO public.apolices_brokeria
+            (numero_apolice, seguradora, ramo, vigencia_inicio, vigencia_fim, status_apolice, cpf, placa, cliente_nome, url_pdf)
+        VALUES
+            ('8026111111111', 'Porto Seguro', 'Automóvel', '2025-01-01', '2026-01-01', 'ATIVA', '11806562280', 'ABC-1234', 'Rogério Celli', 'https://exemplo.com/doc.pdf')
+                    ON CONFLICT(numero_apolice) DO NOTHING;
+        `);
 
                 // Inserir segundo exemplo para confirmar CPF sem formatação
                 await db.apolicesQuery(`
-                    INSERT INTO public.apolices_brokeria 
-                    (numero_apolice, seguradora, ramo, vigencia_inicio, vigencia_fim, status_apolice, cpf, placa, cliente_nome)
-                    VALUES 
-                    ('8026222222222', 'Allianz', 'Residencial', '2025-02-01', '2026-02-01', 'ATIVA', '11806562280', NULL, 'Rogério Celli')
-                    ON CONFLICT (numero_apolice) DO NOTHING;
-                `);
+                    INSERT INTO public.apolices_brokeria
+            (numero_apolice, seguradora, ramo, vigencia_inicio, vigencia_fim, status_apolice, cpf, placa, cliente_nome)
+        VALUES
+            ('8026222222222', 'Allianz', 'Residencial', '2025-02-01', '2026-02-01', 'ATIVA', '11806562280', NULL, 'Rogério Celli')
+                    ON CONFLICT(numero_apolice) DO NOTHING;
+        `);
 
                 console.log('✅ [DB-AUTOFIX] Tabela criada e populada com sucesso!');
             } else {

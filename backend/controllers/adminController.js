@@ -43,10 +43,11 @@ const adminController = {
                     cpf,
                     url_pdf,
                     link_url_apolice,
-                    data_criacao
+                    data_criacao,
+                    data_sincronizacao
                 FROM apolices_brokeria
-                ORDER BY data_criacao DESC NULLS LAST
-                LIMIT 50
+                ORDER BY data_sincronizacao DESC NULLS LAST, data_criacao DESC NULLS LAST
+                LIMIT 100
             `;
             const { rows } = await db.apolicesQuery(query);
             res.json(rows);
