@@ -24,8 +24,15 @@ async function migrate() {
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
             
-            -- Garantir coluna slug caso a tabela tenha sido criada manualmente sem ela
+            -- Garantir colunas caso a tabela tenha sido criada manualmente sem elas
             ALTER TABLE organizacoes ADD COLUMN IF NOT EXISTS slug VARCHAR(100) UNIQUE;
+            ALTER TABLE organizacoes ADD COLUMN IF NOT EXISTS endereco TEXT;
+            ALTER TABLE organizacoes ADD COLUMN IF NOT EXISTS telefone_fixo VARCHAR(20);
+            ALTER TABLE organizacoes ADD COLUMN IF NOT EXISTS telefone_celular VARCHAR(20);
+            ALTER TABLE organizacoes ADD COLUMN IF NOT EXISTS email_contato VARCHAR(255);
+            ALTER TABLE organizacoes ADD COLUMN IF NOT EXISTS website_url TEXT;
+            ALTER TABLE organizacoes ADD COLUMN IF NOT EXISTS data_sincronizacao TIMESTAMP WITH TIME ZONE;
+            ALTER TABLE organizacoes ADD COLUMN IF NOT EXISTS dominio VARCHAR(255) UNIQUE;
         `);
 
         // 2. Inserir Corretora Padrão se não existir (Demo)
