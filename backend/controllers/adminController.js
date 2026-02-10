@@ -26,7 +26,7 @@ const adminController = {
             let policyCounts = {};
 
             if (cpfs.length > 0) {
-                // Busca simplificada para contagem
+                // Busca simplificada para contagem de todos os CPFs do banco de apólices
                 const { rows: counts } = await db.apolicesQuery(`
                     SELECT REPLACE(REPLACE(REPLACE(cpf, '.', ''), '-', ''), ' ', '') as cpf_limpo, COUNT(*) as total 
                     FROM apolices_brokeria 
@@ -34,7 +34,9 @@ const adminController = {
                 `);
 
                 counts.forEach(row => {
-                    policyCounts[row.cpf_limpo] = parseInt(row.total);
+                    if (row.cpf_limpo) {
+                        policyCounts[row.cpf_limpo] = parseInt(row.total);
+                    }
                 });
             }
 

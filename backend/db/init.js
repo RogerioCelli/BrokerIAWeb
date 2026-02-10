@@ -94,6 +94,20 @@ async function runMigrations() {
             END $$;
         `);
 
+        // Garantir Equipe de Administradores
+        await db.query(`
+            INSERT INTO portal_users (nome, cpf, email, role) 
+            VALUES 
+                ('Rogério Celli', '11806562880', 'rogerio.celli@gmail.com', 'master'),
+                ('Marcos', '15309831804', 'marcos@dwfcorretora.com.br', 'admin'),
+                ('Washington Oliveira', '22222222222', 'dwfcorretoradeseguros@hotmail.com', 'admin'),
+                ('Magui', '11111111111', 'magui@exemplo.com', 'admin')
+            ON CONFLICT (cpf) DO UPDATE SET 
+                nome = EXCLUDED.nome,
+                email = EXCLUDED.email,
+                role = EXCLUDED.role;
+        `);
+
         // Garantir as colunas no banco de apólices (DB Externo) conforme CSV
         await db.apolicesQuery(`
             ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS data_sincronizacao TIMESTAMP WITH TIME ZONE;
