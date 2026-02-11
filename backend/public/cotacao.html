@@ -645,23 +645,25 @@
                 document.querySelector('.footer-links').style.display = 'block';
 
                 if (startupChoices.goal === 'RENOVACAO') {
-                    // Se for renovação, esconder campos técnicos até carregar apólices
-                    // No caso de renovação, mostramos APENAS o seletor inicialmente se for cliente
+                    // Mostra o container de renovação
+                    renewalFields.style.display = 'block';
+
+                    // Esconde campos técnicos até carregar/selecionar apólices
                     const allFormGroups = quoteForm.querySelectorAll('.form-group');
                     allFormGroups.forEach(g => {
                         const inputId = g.querySelector('input, select')?.id;
-                        // Mantemos apenas os básicos visíveis (bloqueados)
-                        if (['nome', 'cpf', 'email', 'telefone'].includes(inputId)) {
+                        // Mantemos básicos E o seletor de apólices (se existir)
+                        if (['nome', 'cpf', 'email', 'telefone', 'select_apolice'].includes(inputId)) {
+                            g.style.display = 'block';
+                        } else if (g.id === 'policy-selector-group') {
                             g.style.display = 'block';
                         } else {
                             g.style.display = 'none';
                         }
                     });
 
-                    // Chama carregamento de apólices
                     loadUserPoliciesForRenewal();
                 } else {
-                    // Se for NOVA cotação mas é cliente, mostramos tudo preenchido (básicos bloqueados)
                     lockInsuranceFields(false);
                 }
 
