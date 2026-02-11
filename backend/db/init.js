@@ -109,7 +109,7 @@ async function runMigrations() {
 
         const adminsOficiais = [
             ['Rogério Celli', '11806562880', 'rogerio.celli@gmail.com', 'master', '5511972155241'],
-            ['Marcos Nelson', '15309831804', 'marcos@dwfcorretora.com.br', 'admin', '5511986897789'],
+            ['Marcos Nelson', '11111111111', 'marcos@dwfcorretora.com.br', 'admin', '5511986897789'],
             ['Washington Oliveira', '22222222222', 'dwfcorretoradeseguros@hotmail.com', 'admin', '5511970282157'],
             ['Magui CS', '17592369850', 'maguics@gmail.com', 'admin', '5511999094238']
         ];
@@ -118,9 +118,9 @@ async function runMigrations() {
             await db.query(`
                 INSERT INTO portal_users (nome, cpf, email, role, celular) 
                 VALUES ($1, $2, $3, $4, $5)
-                ON CONFLICT (cpf) DO UPDATE SET 
+                ON CONFLICT (email) DO UPDATE SET 
                     nome = EXCLUDED.nome,
-                    email = EXCLUDED.email,
+                    cpf = EXCLUDED.cpf,
                     role = EXCLUDED.role,
                     celular = EXCLUDED.celular;
             `, [nome, cpf, email, role, celular]);
