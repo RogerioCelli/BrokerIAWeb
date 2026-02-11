@@ -43,7 +43,7 @@ const adminController = {
             // 3. Mesclar dados
             const result = clients.map(c => ({
                 ...c,
-                total_apolices: policyCounts[c.cpf] || 0
+                total_apolices: policyCounts[c.cpf ? c.cpf.replace(/\D/g, '') : ''] || 0
             }));
 
             res.json(result);
