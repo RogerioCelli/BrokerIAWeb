@@ -102,42 +102,48 @@ document.addEventListener('DOMContentLoaded', async () => {
             policiesGrid.style.display = 'block';
             policiesGrid.innerHTML = policies.map(policy => {
                 const icon = getIcon(policy.ramo);
+                const pdfLink = policy.link_url_apolice || policy.url_pdf;
+                const hasPdf = pdfLink && pdfLink !== 'undefined' && pdfLink !== 'null' && pdfLink !== '';
+
                 return `
                     <div class="policy-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 1.5rem; margin-bottom: 1rem; position: relative;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                            <span class="seguradora-tag">${policy.seguradora}</span>
+                            <span class="seguradora-tag">${policy.seguradora || 'Buscando...'}</span>
                             <i class="${icon}" style="color: var(--primary); font-size: 1.2rem;"></i>
                         </div>
                         
                         <h3 style="margin: 0.5rem 0; font-size: 1.1rem;">${policy.ramo} ${policy.placa ? `(${policy.placa})` : ''}</h3>
                         <p style="color: #888; font-size: 0.8rem; margin-bottom: 1.5rem;">Apólice: ${policy.numero_apolice}</p>
                         
-                        <div style="display: flex; gap: 10px;">
-                            <button onclick="showPolicyDetails(${policy.id})" style="flex: 1; padding: 12px; background: rgba(16, 185, 129, 0.1); color: var(--primary); border: 1px solid var(--primary-glow); border-radius: 12px; cursor: pointer; font-weight: 600;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                            <button onclick="showPolicyDetails(${policy.id})" style="padding: 12px; background: rgba(16, 185, 129, 0.1); color: var(--primary); border: 1px solid var(--primary-glow); border-radius: 12px; cursor: pointer; font-weight: 600;">
                                 <i class="fas fa-search-plus"></i> Detalhes
                             </button>
-                            ${(policy.link_url_apolice || policy.url_pdf) && (policy.link_url_apolice !== 'undefined' && policy.url_pdf !== 'undefined') ? `
-                                <a href="${policy.link_url_apolice || policy.url_pdf}" target="_blank" style="width: 50px; display: flex; align-items: center; justify-content: center; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px;">
-                                    <i class="fas fa-file-pdf"></i>
-                                </a>
-                            ` : ''}
+                            <button onclick="renewPolicy(${policy.id})" style="padding: 12px; background: rgba(59, 130, 246, 0.1); color: var(--secondary); border: 1px solid rgba(59,130,246,0.3); border-radius: 12px; cursor: pointer; font-weight: 600;">
+                                <i class="fas fa-sync-alt"></i> Renovar
+                            </button>
                         </div>
+                        ${hasPdf ? `
+                            <a href="${pdfLink}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; text-decoration: none; font-weight: 600;">
+                                <i class="fas fa-file-pdf"></i> Baixar Apólice Digital
+                            </a>
+                        ` : ''}
                     </div>
                 `;
             }).join('');
         } else {
-            // Layout de TABELA DARK (Conforme aprovado na imagem)
+            // Layout de TABELA DARK (Premium)
             policiesGrid.style.display = 'block';
             policiesGrid.style.overflowX = 'auto';
             let html = `
                 <table style="width: 100%; border-collapse: collapse; background: rgba(13, 20, 31, 0.6); border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px);">
                     <thead>
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.08); text-align: left;">
-                            <th style="padding: 1.5rem; color: #fff; font-family: 'Outfit'; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase;">RAMO</th>
+                            <th style="padding: 1.5rem; color: #fff; font-family: 'Outfit'; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase;">RAMO / ITEM</th>
                             <th style="padding: 1.5rem; color: #fff; font-family: 'Outfit'; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase;">APÓLICE</th>
                             <th style="padding: 1.5rem; color: #fff; font-family: 'Outfit'; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase;">SEGURADORA</th>
                             <th style="padding: 1.5rem; color: #fff; font-family: 'Outfit'; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase;">VIGÊNCIA</th>
-                            <th style="padding: 1.5rem; color: #fff; font-family: 'Outfit'; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: center;">DETALHES</th>
+                            <th style="padding: 1.5rem; color: #fff; font-family: 'Outfit'; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: center;">AÇÕES</th>
                             <th style="padding: 1.5rem; color: #fff; font-family: 'Outfit'; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; text-align: center;">DOWNLOAD</th>
                         </tr>
                     </thead>
@@ -146,29 +152,42 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             policies.forEach(policy => {
                 const icon = getIcon(policy.ramo);
-                const vigencia = `${new Date(policy.data_inicio).toLocaleDateString('pt-BR')}<br><span style="color: #555;">-</span><br>${new Date(policy.data_fim).toLocaleDateString('pt-BR')}`;
+                const vigencia = `${new Date(policy.data_inicio).toLocaleDateString('pt-BR')}<br><span style="color: #444;">até</span><br>${new Date(policy.data_fim).toLocaleDateString('pt-BR')}`;
+
+                const pdfLink = policy.link_url_apolice || policy.url_pdf;
+                const hasPdf = pdfLink && pdfLink !== 'undefined' && pdfLink !== 'null' && pdfLink !== '';
 
                 html += `
                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
                         <td style="padding: 1.2rem; display: flex; align-items: center; gap: 15px;">
-                            <i class="${icon}" style="color: var(--primary); font-size: 1.2rem; width: 24px;"></i>
-                            <span style="font-weight: 500; color: #fff;">${policy.ramo}</span>
+                            <div style="width: 40px; height: 40px; background: rgba(16, 185, 129, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                <i class="${icon}" style="color: var(--primary); font-size: 1.1rem;"></i>
+                            </div>
+                            <div>
+                                <span style="font-weight: 600; color: #fff; display: block;">${policy.ramo}</span>
+                                <span style="font-size: 0.75rem; color: #64748b;">${policy.placa || policy.chassi || 'Seguro Ativo'}</span>
+                            </div>
                         </td>
                         <td style="padding: 1.2rem; color: #888; font-family: monospace; font-size: 0.9rem;">${policy.numero_apolice}</td>
                         <td style="padding: 1.2rem; color: #ccc;">${policy.seguradora || '-'}</td>
-                        <td style="padding: 1.2rem; font-size: 0.85rem; color: #ccc; line-height: 1.2;">${vigencia}</td>
+                        <td style="padding: 1.2rem; font-size: 0.85rem; color: #ccc; line-height: 1.4;">${vigencia}</td>
                         <td style="padding: 1.2rem; text-align: center;">
-                            <button onclick="showPolicyDetails(${policy.id})" style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 1.3rem; transition: transform 0.2s;" title="Ver Detalhes" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
-                                <i class="fas fa-search-plus"></i>
-                            </button>
+                            <div style="display: flex; gap: 10px; justify-content: center;">
+                                <button onclick="showPolicyDetails(${policy.id})" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); width: 36px; height: 36px; border-radius: 8px; color: var(--primary); cursor: pointer; transition: all 0.2s;" title="Ver Detalhes">
+                                    <i class="fas fa-search-plus"></i>
+                                </button>
+                                <button onclick="renewPolicy(${policy.id})" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59,130,246,0.2); width: 36px; height: 36px; border-radius: 8px; color: var(--secondary); cursor: pointer; transition: all 0.2s;" title="Solicitar Renovação">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
                         </td>
                         <td style="padding: 1.2rem; text-align: center;">
-                            ${(policy.link_url_apolice || policy.url_pdf) && (policy.link_url_apolice !== 'undefined' && policy.url_pdf !== 'undefined') ? `
-                                <a href="${policy.link_url_apolice || policy.url_pdf}" target="_blank" style="color: #ef4444; font-size: 1.3rem; transition: transform 0.2s; display: inline-block;" title="Baixar PDF" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
+                            ${hasPdf ? `
+                                <a href="${pdfLink}" target="_blank" style="color: #ef4444; font-size: 1.4rem; transition: transform 0.2s; display: inline-block;" title="Baixar PDF Original" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
                                     <i class="fas fa-file-pdf"></i>
                                 </a>
                             ` : `
-                                <i class="fas fa-clock" style="color: #333; font-size: 1.1rem;" title="Aguardando Sincronização"></i>
+                                <i class="fas fa-clock" style="color: #334155; font-size: 1.1rem;" title="Processando Documento"></i>
                             `}
                         </td>
                     </tr>
@@ -198,45 +217,60 @@ document.addEventListener('DOMContentLoaded', async () => {
     closeModal.onclick = () => policyModal.style.display = 'none';
     window.onclick = (event) => { if (event.target == policyModal) policyModal.style.display = 'none'; }
 
+    window.renewPolicy = (policyId) => {
+        const policy = window.allPolicies.find(p => p.id == policyId);
+        if (!policy) return;
+
+        // Salva os dados da apólice atual no localStorage para o formulário de cotação ler
+        localStorage.setItem('renewal_data', JSON.stringify({
+            tipo_cotacao: 'RENOVACAO',
+            categoria: policy.ramo,
+            seguradora: policy.seguradora,
+            numero_apolice: policy.numero_apolice,
+            placa: policy.placa,
+            chassi: policy.chassi,
+            bonus: policy.classe_bonus || 0, // se existir no banco
+            vigencia_fim: policy.data_fim
+        }));
+
+        alert('Iniciando processo de renovação para a apólice ' + policy.numero_apolice);
+        window.location.href = 'cotacao.html';
+    };
+
     window.showPolicyDetails = (policyId) => {
         const policy = window.allPolicies.find(p => p.id == policyId);
         if (!policy) return;
 
-        // Mapeamento de Labels Amigáveis para os campos técnicos do banco
+        // Mapeamento de Labels Amigáveis (Enriquecido para o cliente)
         const labels = {
             numero_apolice: 'Número da Apólice',
-            seguradora: 'Seguradora',
+            seguradora: 'Seguradora / Companhia',
             ramo: 'Ramo de Seguro',
-            produto: 'Produto / Descrição',
+            status: 'Situação Atual',
             placa: 'Placa do Veículo',
-            chassi: 'Chassi',
-            vigencia_inicio: 'Início da Vigência',
-            vigencia_fim: 'Fim da Vigência',
-            premio_total: 'Prêmio Total',
-            forma_pagamento: 'Forma de Pagamento',
-            status_apolice: 'Status Atual',
-            endereco_apolice: 'Localização/Endereço',
-            cidade_apolice: 'Cidade',
-            uf_apolice: 'Estado (UF)',
-            cep_apolice: 'CEP',
-            data_criacao: 'Data do Registro'
+            chassi: 'Número do Chassi',
+            premio_total: 'Valor do Prêmio (R$)',
+            data_inicio: 'Início da Vigência',
+            data_fim: 'Fim da Vigência',
+            franquia: 'Tipo de Franquia',
+            bonus: 'Classe de Bônus'
         };
 
         let detailsHtml = `
-            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
-                <h2 style="margin: 0; font-family: 'Outfit'; font-size: 1.8rem;">Detalhes da Apólice</h2>
-                 <span style="background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold;">
-                    ${policy.status}
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 1rem;">
+                <h2 style="margin: 0; font-family: 'Outfit'; font-size: 1.5rem; color: #fff;">
+                    <i class="fas fa-shield-alt" style="color: var(--primary); margin-right: 10px;"></i>
+                    Detalhes Técnicos
+                </h2>
+                 <span style="background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 6px 16px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">
+                    ${policy.status || 'ATIVA'}
                 </span>
             </div>
             <div class="details-grid">
         `;
 
-        // Itera por todos os campos que queremos mostrar
         Object.keys(labels).forEach(key => {
-            let value = policy[key] || policy[key.replace('status_apolice', 'status')] || '-';
-
-            // Tratamento especial para datas
+            let value = policy[key] || '-';
             if (key.includes('data') || key.includes('vigencia')) {
                 value = value !== '-' ? new Date(value).toLocaleDateString('pt-BR') : '-';
             }
@@ -244,7 +278,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             detailsHtml += `
                 <div class="detail-box">
                     <span class="detail-label">${labels[key]}</span>
-                    <span class="detail-value">${value}</span>
+                    <span class="detail-value" style="color: ${value === '-' ? '#444' : '#fff'}">${value}</span>
                 </div>
             `;
         });
@@ -252,16 +286,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         detailsHtml += `</div>`;
 
         const currentPdfLink = policy.link_url_apolice || policy.url_pdf;
-        if (currentPdfLink && currentPdfLink !== 'undefined') {
-            detailsHtml += `
-            <div style="margin-top: 2rem; padding: 1rem; background: rgba(59, 130, 246, 0.05); border-radius: 12px; border: 1px border-style: dashed; border-color: #3b82f6; text-align: center;">
-                <p style="margin-bottom: 1rem; font-size: 0.9rem; color: #3b82f6;">Documento PDF disponível para visualização oficial.</p>
-                <a href="${currentPdfLink}" target="_blank" class="btn-login" style="max-width: 300px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none;">
-                    <i class="fas fa-file-pdf"></i> Abrir Apólice Digital
-                </a>
+        const hasPdf = currentPdfLink && currentPdfLink !== 'undefined' && currentPdfLink !== 'null' && currentPdfLink !== '';
+
+        detailsHtml += `
+            <div style="margin-top: 2.5rem; display: flex; gap: 1rem;">
+                ${hasPdf ? `
+                    <a href="${currentPdfLink}" target="_blank" class="btn-login" style="flex: 1; margin: 0; display: inline-flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none;">
+                        <i class="fas fa-file-pdf"></i> Visualizar PDF Oficial
+                    </a>
+                ` : ''}
+                <button onclick="renewPolicy(${policy.id})" class="btn-login" style="flex: 1; margin: 0; background: rgba(59, 130, 246, 0.1); color: var(--secondary); border: 1px solid var(--secondary); display: inline-flex; align-items: center; justify-content: center; gap: 10px;">
+                    <i class="fas fa-sync-alt"></i> Solicitar Renovação
+                </button>
             </div>
-            `;
-        }
+        `;
 
         modalBody.innerHTML = detailsHtml;
         policyModal.style.display = 'flex';

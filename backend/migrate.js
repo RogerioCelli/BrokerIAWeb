@@ -103,6 +103,26 @@ async function migrate() {
             console.log('[PORTAL-MIGRATE] ✅ Marcas populadas.');
         }
 
+        // 6. Tabela de Cotações (Estruturada)
+        console.log('[PORTAL-MIGRATE] Passo 6: Tabela de Cotações...');
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS cotacoes (
+                id SERIAL PRIMARY KEY,
+                cliente_id UUID, -- Opcional: Se for cliente logado
+                tipo_cotacao VARCHAR(50) NOT NULL, -- 'NOVA' ou 'RENOVACAO'
+                categoria VARCHAR(100) NOT NULL,
+                subtipo VARCHAR(100),
+                nome_cliente VARCHAR(255) NOT NULL,
+                cpf_cliente VARCHAR(20),
+                email_cliente VARCHAR(255),
+                telefone_cliente VARCHAR(255),
+                dados_json JSONB, -- Aqui guardamos o perfil de risco detalhado (Auto, Vida, Res)
+                status VARCHAR(50) DEFAULT 'PENDENTE',
+                observacoes TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
         console.log('✅ [PORTAL-MIGRATE] Fim da v1.5.1');
         return;
     } catch (error) {

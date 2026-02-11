@@ -15,13 +15,47 @@
     <div class="blob blob-2"></div>
 
     <main class="main-container">
-        <div class="login-card" style="max-width: 600px;"> <!-- Card um pouco mais largo para o formulário -->
+        <div class="login-card" style="max-width: 650px;">
             <div class="logo-section">
                 <h1>Solicitar Cotação</h1>
-                <p>Preencha os dados abaixo para receber uma proposta personalizada.</p>
+                <p>Escolha o tipo de serviço e preencha os detalhes para sua proposta.</p>
+            </div>
+
+            <!-- Seletor de Tipo de Cotação -->
+            <div class="channel-options" style="margin-bottom: 2rem;">
+                <label class="channel-card">
+                    <input type="radio" name="tipo_cotacao_selector" value="NOVA" checked>
+                    <i class="fas fa-plus-circle"></i>
+                    <div class="channel-info">
+                        <span class="channel-name">Nova Cotação</span>
+                        <span class="channel-detail">Quero contratar um novo seguro</span>
+                    </div>
+                </label>
+                <label class="channel-card">
+                    <input type="radio" name="tipo_cotacao_selector" value="RENOVACAO">
+                    <i class="fas fa-sync-alt"></i>
+                    <div class="channel-info">
+                        <span class="channel-name">Renovação</span>
+                        <span class="channel-detail">Já tenho seguro e quero renovar</span>
+                    </div>
+                </label>
+            </div>
+
+            <div id="client-check" class="form-group"
+                style="display: none; background: rgba(16, 185, 129, 0.05); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--primary-glow); margin-bottom: 2rem;">
+                <p style="font-size: 0.9rem; margin-bottom: 1rem; color: #fff;">Você já é nosso cliente?</p>
+                <div style="display: flex; gap: 1rem;">
+                    <button type="button" class="btn-login" style="margin:0; flex:1;"
+                        onclick="handleIsClient(true)">Sim, sou cliente</button>
+                    <button type="button" class="btn-login" style="margin:0; flex:1; background: rgba(255,255,255,0.1);"
+                        onclick="handleIsClient(false)">Não, ainda não</button>
+                </div>
             </div>
 
             <form id="quoteForm">
+                <!-- Identificação Básica -->
+                <input type="hidden" name="tipo_cotacao" id="tipo_cotacao" value="NOVA">
+
                 <div class="form-group">
                     <label for="nome">Nome Completo</label>
                     <div class="input-wrapper">
@@ -29,11 +63,20 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="telefone">WhatsApp / Telefone</label>
-                    <div class="input-wrapper">
-                        <input type="tel" id="telefone" name="telefone" class="premium-input"
-                            placeholder="(XX) XXXXX-XXXX" required>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="telefone">WhatsApp / Telefone</label>
+                        <div class="input-wrapper">
+                            <input type="tel" id="telefone" name="telefone" class="premium-input"
+                                placeholder="(XX) XXXXX-XXXX" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="cpf">CPF</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="cpf" name="cpf" class="premium-input" placeholder="000.000.000-00"
+                                required>
+                        </div>
                     </div>
                 </div>
 
@@ -45,110 +88,181 @@
                     </div>
                 </div>
 
-                <!-- Categoria Principal -->
                 <div class="form-group">
-                    <label for="categoria_seguro">Categoria</label>
+                    <label for="categoria_seguro">O que deseja segurar?</label>
                     <div class="input-wrapper">
-                        <select id="categoria_seguro" name="categoria_seguro" class="premium-input" required
-                            style="cursor: pointer;">
-                            <option value="" disabled selected style="color: #333;">Carregando categorias...</option>
+                        <select id="categoria_seguro" name="categoria_seguro" class="premium-input" required>
+                            <option value="" disabled selected>Carregando categorias...</option>
                         </select>
                     </div>
                 </div>
 
-                <!-- Subcategoria (Tipo) -->
-                <div class="form-group" id="group-tipo" style="display: none;">
-                    <label for="tipo_seguro">Tipo de Seguro</label>
-                    <div class="input-wrapper">
-                        <select id="tipo_seguro" name="tipo_seguro" class="premium-input" required
-                            style="cursor: pointer;">
-                            <option value="" disabled selected style="color: #333;">Selecione uma categoria primeiro
-                            </option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Campos Dinâmicos -->
+                <!-- Campos Dinâmicos Detalhados -->
                 <div id="dynamicFields">
-                    <!-- Auto -->
+                    <!-- AUTOMÓVEL DETALHADO -->
                     <div class="dynamic-group" id="fields-auto" style="display: none;">
-                        <div class="form-group">
-                            <label for="veiculo_marca">Marca do Veículo</label>
-                            <div class="input-wrapper">
+                        <h3 style="font-size: 1rem; color: var(--primary); margin: 1.5rem 0 1rem;">Dados do Veículo</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>Placa ou Chassi</label>
+                                <input type="text" name="veiculo_identificacao" class="premium-input"
+                                    placeholder="ABC-1234">
+                            </div>
+                            <div class="form-group">
+                                <label>Ano (Fab/Modelo)</label>
+                                <input type="text" name="veiculo_ano" class="premium-input" placeholder="2024/2025">
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>Marca</label>
                                 <select id="veiculo_marca" name="veiculo_marca" class="premium-input">
-                                    <option value="" disabled selected style="color: #333;">Selecione a Marca</option>
+                                    <option value="">Selecione a Marca</option>
                                 </select>
                             </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="veiculo_modelo">Modelo</label>
-                            <div class="input-wrapper">
+                            <div class="form-group">
+                                <label>Modelo</label>
                                 <select id="veiculo_modelo" name="veiculo_modelo" class="premium-input" disabled>
-                                    <option value="" disabled selected style="color: #333;">Selecione a Marca primeiro
-                                    </option>
+                                    <option value="">Selecione a Marca primeiro</option>
                                 </select>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="uso_veiculo">Uso do Veículo</label>
-                            <div class="input-wrapper">
-                                <select id="uso_veiculo" name="uso_veiculo" class="premium-input">
-                                    <option value="lazer" style="color: #333;">Lazer / Particular</option>
-                                    <option value="trabalho" style="color: #333;">Trabalho / Comercial</option>
-                                    <option value="app" style="color: #333;">Motorista de App (Uber/99)</option>
+                            <label>Dispositivos de Segurança (Alarme, Rastreador, etc.)</label>
+                            <input type="text" name="veiculo_seguranca" class="premium-input" placeholder="Nenhum">
+                        </div>
+
+                        <h3 style="font-size: 1rem; color: var(--primary); margin: 1.5rem 0 1rem;">Uso e Perfil</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>Uso Principal</label>
+                                <select name="veiculo_uso" class="premium-input">
+                                    <option value="lazer">Lazer / Ida ao Trabalho</option>
+                                    <option value="profissional">Profissional (App/Entregas)</option>
                                 </select>
+                            </div>
+                            <div class="form-group">
+                                <label>CEP de Pernoite</label>
+                                <input type="text" name="veiculo_cep" class="premium-input" placeholder="00000-000">
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>Garagem em Casa?</label>
+                                <select name="veiculo_garagem" class="premium-input">
+                                    <option value="sim">Sim, fechada</option>
+                                    <option value="nao">Não, na rua</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>KM Diária Estimada</label>
+                                <input type="number" name="veiculo_km_diaria" class="premium-input"
+                                    placeholder="ex: 20">
                             </div>
                         </div>
                     </div>
 
-                    <!-- Residencial -->
+                    <!-- RESIDENCIAL DETALHADO -->
                     <div class="dynamic-group" id="fields-residencial" style="display: none;">
-                        <div class="form-group">
-                            <label for="tipo_imovel">Tipo de Imóvel</label>
-                            <div class="input-wrapper">
-                                <select id="tipo_imovel" name="tipo_imovel" class="premium-input">
-                                    <option value="casa" style="color: #333;">Casa</option>
-                                    <option value="apartamento" style="color: #333;">Apartamento</option>
-                                    <option value="condominio" style="color: #333;">Casa em Condomínio</option>
+                        <h3 style="font-size: 1rem; color: var(--primary); margin: 1.5rem 0 1rem;">Dados do Imóvel</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>CEP do Imóvel</label>
+                                <input type="text" name="res_cep" class="premium-input" placeholder="00000-000">
+                            </div>
+                            <div class="form-group">
+                                <label>Tipo de Imóvel</label>
+                                <select name="res_tipo" class="premium-input">
+                                    <option value="casa">Casa</option>
+                                    <option value="apartamento">Apartamento</option>
+                                    <option value="sobrado">Sobrado</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>Estrutura</label>
+                                <select name="res_construcao" class="premium-input">
+                                    <option value="alvenaria">Alvenaria</option>
+                                    <option value="madeira">Madeira</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Finalidade</label>
+                                <select name="res_finalidade" class="premium-input">
+                                    <option value="habitual">Morada Habitual</option>
+                                    <option value="veraneio">Veraneio</option>
                                 </select>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="cep_imovel">CEP do Imóvel</label>
-                            <div class="input-wrapper">
-                                <input type="text" id="cep_imovel" name="cep_imovel" class="premium-input"
-                                    placeholder="00000-000">
-                            </div>
+                            <label>Valor Estimado de Reconstrução (R$)</label>
+                            <input type="number" name="res_valor_reconstrucao" class="premium-input"
+                                placeholder="ex: 300000">
                         </div>
                     </div>
 
-                    <!-- Vida -->
+                    <!-- VIDA DETALHADO -->
                     <div class="dynamic-group" id="fields-vida" style="display: none;">
-                        <div class="form-group">
-                            <label for="idade">Sua Idade</label>
-                            <div class="input-wrapper">
-                                <input type="number" id="idade" name="idade" class="premium-input" placeholder="Anos">
+                        <h3 style="font-size: 1rem; color: var(--primary); margin: 1.5rem 0 1rem;">Perfil de Saúde</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>Data de Nascimento</label>
+                                <input type="date" name="vida_nascimento" class="premium-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Peso (kg)</label>
+                                <input type="number" name="vida_peso" class="premium-input" placeholder="ex: 75">
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>Altura (cm)</label>
+                                <input type="number" name="vida_altura" class="premium-input" placeholder="ex: 175">
+                            </div>
+                            <div class="form-group">
+                                <label>Fumante?</label>
+                                <select name="vida_fumante" class="premium-input">
+                                    <option value="nao">Não</option>
+                                    <option value="sim">Sim</option>
+                                </select>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="profissao">Profissão</label>
-                            <div class="input-wrapper">
-                                <input type="text" id="profissao" name="profissao" class="premium-input"
-                                    placeholder="Sua ocupação principal">
-                            </div>
+                            <label>Profissão / Ocupação</label>
+                            <input type="text" name="vida_profissao" class="premium-input"
+                                placeholder="Sua ocupação principal">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Campo de Renovação (Condicional) -->
+                <div id="renewal-fields"
+                    style="display: none; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 2rem; padding-top: 1rem;">
+                    <h3 style="font-size: 1rem; color: var(--secondary); margin-bottom: 1rem;">Detalhes da Renovação
+                    </h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label>Seguradora Atual</label>
+                            <input type="text" name="renovacao_seguradora" class="premium-input"
+                                placeholder="Ex: Porto, Azul...">
+                        </div>
+                        <div class="form-group">
+                            <label>Classe de Bônus (0 a 10)</label>
+                            <input type="number" name="renovacao_bonus" class="premium-input" placeholder="ex: 5">
                         </div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="observacoes">Observações (Opcional)</label>
+                    <label for="observacoes">Observações ou Coberturas Adicionais</label>
                     <div class="input-wrapper">
-                        <textarea id="observacoes" name="observacoes" class="premium-input" rows="4"
-                            placeholder="Ex: Detalhes, dúvidas ou melhor horário para contato..."></textarea>
+                        <textarea id="observacoes" name="observacoes" class="premium-input" rows="3"
+                            placeholder="Algo mais que precisamos saber?"></textarea>
                     </div>
                 </div>
 
-                <button type="submit" class="btn-login" id="submitBtn">Enviar Solicitação</button>
+                <button type="submit" class="btn-login" id="submitBtn">Solicitar Orçamento Agora</button>
             </form>
 
             <div class="footer-links">
@@ -160,53 +274,110 @@
     <script>
         // --- Elementos DOM ---
         const categoriaSelect = document.getElementById('categoria_seguro');
-        const tipoSelect = document.getElementById('tipo_seguro');
-        const groupTipo = document.getElementById('group-tipo');
         const dynamicGroups = document.querySelectorAll('.dynamic-group');
         const veiculoMarcaSelect = document.getElementById('veiculo_marca');
         const veiculoModeloSelect = document.getElementById('veiculo_modelo');
+        const renewalFields = document.getElementById('renewal-fields');
+        const clientCheck = document.getElementById('client-check');
+        const tipoCotacaoInput = document.getElementById('tipo_cotacao');
+        const quoteForm = document.getElementById('quoteForm');
 
         // --- Estado Global ---
         let insuranceStructure = [];
 
         // --- Inicialização ---
-        document.addEventListener('DOMContentLoaded', loadInsuranceData);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadInsuranceData();
+            setupQuotationTypeSelectors();
+            checkRenewalData();
+        });
+
+        function checkRenewalData() {
+            const raw = localStorage.getItem('renewal_data');
+            if (!raw) return;
+
+            try {
+                const data = JSON.parse(raw);
+                localStorage.removeItem('renewal_data'); // Limpa após ler
+
+                // Marca como Renovação
+                const renovacaoRadio = document.querySelector('input[value="RENOVACAO"]');
+                if (renovacaoRadio) {
+                    renovacaoRadio.checked = true;
+                    // Dispara o evento de mudança manualmente para mostrar os campos
+                    renovacaoRadio.dispatchEvent(new Event('change'));
+                }
+
+                // Preenche campos comuns
+                if (data.seguradora) {
+                    const segInput = document.querySelector('input[name="renovacao_seguradora"]');
+                    if (segInput) segInput.value = data.seguradora;
+                }
+                if (data.bonus) {
+                    const bonusInput = document.querySelector('input[name="renovacao_bonus"]');
+                    if (bonusInput) bonusInput.value = data.bonus;
+                }
+                if (data.placa) {
+                    const placaInput = document.querySelector('input[name="veiculo_identificacao"]');
+                    if (placaInput) placaInput.value = data.placa;
+                }
+                if (data.chassi) {
+                    const chassiInput = document.querySelector('input[name="veiculo_identificacao"]');
+                    if (chassiInput && !chassiInput.value) chassiInput.value = data.chassi;
+                }
+
+                // Observação automática
+                const obs = document.getElementById('observacoes');
+                if (obs) obs.value = `Solicitação de renovação para apólice nº ${data.numero_apolice}. Vigência até ${new Date(data.vigencia_fim).toLocaleDateString('pt-BR')}.`;
+
+                alert('Dados da sua apólice atual foram carregados com sucesso para facilitar a renovação.');
+
+            } catch (e) { console.error('Erro ao carregar dados de renovação:', e); }
+        }
+
+        function setupQuotationTypeSelectors() {
+            const selectors = document.querySelectorAll('input[name="tipo_cotacao_selector"]');
+            selectors.forEach(s => {
+                s.addEventListener('change', (e) => {
+                    const val = e.target.value;
+                    tipoCotacaoInput.value = val;
+
+                    if (val === 'RENOVACAO') {
+                        renewalFields.style.display = 'block';
+                        clientCheck.style.display = 'block';
+                    } else {
+                        renewalFields.style.display = 'none';
+                        clientCheck.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        function handleIsClient(isClient) {
+            if (isClient) {
+                alert('Redirecionando para o Portal do Cliente para validação segura (2FA).');
+                window.location.href = 'index.html?intent=renewal';
+            } else {
+                clientCheck.style.display = 'none';
+                alert('Por favor, preencha o formulário abaixo com seus dados para iniciarmos seu cadastro.');
+            }
+        }
 
         async function loadInsuranceData() {
             try {
                 const res = await fetch('/api/seguros/estrutura');
-
-                if (!res.ok) {
-                    const errorText = await res.text();
-                    throw new Error(`Erro API (${res.status}): ${errorText.substring(0, 100)}`);
-                }
-
                 insuranceStructure = await res.json();
 
-                if (!Array.isArray(insuranceStructure) || insuranceStructure.length === 0) {
-                    throw new Error('Nenhuma categoria de seguro encontrada no banco.');
-                }
-
-                // Popula Categorias
-                categoriaSelect.innerHTML = '<option value="" disabled selected style="color: #333;">Selecione uma categoria</option>';
+                categoriaSelect.innerHTML = '<option value="" disabled selected>Selecione uma categoria</option>';
                 insuranceStructure.forEach(cat => {
                     const opt = document.createElement('option');
                     opt.value = cat.categoria_id;
                     opt.textContent = cat.categoria_nome;
-                    opt.style.color = '#333';
                     categoriaSelect.appendChild(opt);
                 });
             } catch (error) {
                 console.error('Erro ao carregar seguros:', error);
-                categoriaSelect.innerHTML = `<option value="" disabled selected style="color: #333;">Falha: ${error.message}</option>`;
-
-                // Opção de recarregar
-                const retryBtn = document.createElement('button');
-                retryBtn.textContent = 'Tentar Novamente';
-                retryBtn.className = 'btn-login';
-                retryBtn.style.marginTop = '10px';
-                retryBtn.onclick = () => window.location.reload();
-                categoriaSelect.parentElement.appendChild(retryBtn);
+                categoriaSelect.innerHTML = `<option value="" disabled selected>Falha ao carregar</option>`;
             }
         }
 
@@ -214,47 +385,25 @@
         categoriaSelect.addEventListener('change', function () {
             const catId = this.value;
             const category = insuranceStructure.find(c => c.categoria_id == catId);
-
             if (!category) return;
 
-            // 1. Popula Subcategorias (Tipos)
-            tipoSelect.innerHTML = '<option value="" disabled selected style="color: #333;">Selecione o tipo</option>';
-            if (category.tipos && category.tipos.length > 0) {
-                category.tipos.forEach(tipo => {
-                    // Verifica se o objeto "tipo" é válido (o json_agg no postgres pode retornar null se não houver tipos)
-                    if (tipo.id) {
-                        const opt = document.createElement('option');
-                        opt.value = tipo.nome;
-                        opt.textContent = tipo.nome;
-                        opt.style.color = '#333';
-                        tipoSelect.appendChild(opt);
-                    }
-                });
-                groupTipo.style.display = 'block';
-                tipoSelect.required = true;
-            } else {
-                // Se categoria não tiver sub-tipos, esconde o select secundário
-                groupTipo.style.display = 'none';
-                tipoSelect.required = false;
-            }
-
-            // 2. Lógica de Campos Dinâmicos (Baseado no Nome da Categoria)
             hideAllDynamicFields();
-
             const catName = category.categoria_nome.toLowerCase();
 
-            if (catName.includes('mobilidade') || catName.includes('veículo') || catName.includes('transporte')) {
+            // Lógica de separação solicitada: Automóvel vs Transporte vs Residencial vs Vida
+            if (catName.includes('automóvel') || catName.includes('veículo')) {
                 showDynamicGroup('fields-auto');
-                // Carrega marcas apenas se for "Mobilidade"
                 loadVeiculoMarcas('CARRO');
-            } else if (catName.includes('patrimoniais') || catName.includes('residencial')) {
+            } else if (catName.includes('transporte')) {
+                showDynamicGroup('fields-auto'); // Usa base de auto mas podemos customizar no futuro
+                loadVeiculoMarcas('CAMINHAO');
+            } else if (catName.includes('residencial') || catName.includes('patrimoniais')) {
                 showDynamicGroup('fields-residencial');
-            } else if (catName.includes('pessoas') || catName.includes('vida')) {
+            } else if (catName.includes('vida') || catName.includes('pessoas')) {
                 showDynamicGroup('fields-vida');
             }
         });
 
-        // --- Evento: Mudança de Marca (Veículo) ---
         if (veiculoMarcaSelect) {
             veiculoMarcaSelect.addEventListener('change', function () {
                 const marcaId = this.value;
@@ -262,117 +411,86 @@
             });
         }
 
-        // --- Funções Auxiliares de Veículos ---
         async function loadVeiculoMarcas(tipo = 'CARRO') {
             try {
-                // Se já estiver populado (length > 1), não recarrega para não piscar, a menos que mude a categoria de veículo
-                if (veiculoMarcaSelect.options.length > 1) return;
-
                 veiculoMarcaSelect.innerHTML = '<option value="" disabled selected>Carregando...</option>';
                 const res = await fetch(`/api/seguros/veiculos/marcas?categoria=${tipo}`);
                 const marcas = await res.json();
 
-                veiculoMarcaSelect.innerHTML = '<option value="" disabled selected style="color: #333;">Selecione a Marca</option>';
+                veiculoMarcaSelect.innerHTML = '<option value="" disabled selected>Selecione a Marca</option>';
                 marcas.forEach(marca => {
                     const opt = document.createElement('option');
                     opt.value = marca.id;
                     opt.textContent = marca.nome;
-                    opt.style.color = '#333';
                     veiculoMarcaSelect.appendChild(opt);
                 });
-            } catch (error) {
-                console.error('Erro marcas:', error);
-            }
+            } catch (error) { console.error(error); }
         }
 
         async function loadVeiculoModelos(parentId) {
             try {
                 veiculoModeloSelect.disabled = true;
-                veiculoModeloSelect.innerHTML = '<option value="" disabled selected>Carregando modelos...</option>';
-
+                veiculoModeloSelect.innerHTML = '<option value="" disabled selected>Carregando...</option>';
                 const res = await fetch(`/api/seguros/veiculos/modelos/${parentId}`);
                 const modelos = await res.json();
 
-                veiculoModeloSelect.innerHTML = '<option value="" disabled selected style="color: #333;">Selecione o Modelo</option>';
+                veiculoModeloSelect.innerHTML = '<option value="" disabled selected>Selecione o Modelo</option>';
                 modelos.forEach(mod => {
                     const opt = document.createElement('option');
                     opt.value = mod.nome;
                     opt.textContent = mod.nome;
-                    opt.style.color = '#333';
                     veiculoModeloSelect.appendChild(opt);
                 });
                 veiculoModeloSelect.disabled = false;
-            } catch (error) {
-                console.error('Erro modelos:', error);
-            }
+            } catch (error) { console.error(error); }
         }
 
         function hideAllDynamicFields() {
-            dynamicGroups.forEach(group => {
-                group.style.display = 'none';
-                group.querySelectorAll('input, select').forEach(input => input.required = false);
-            });
+            dynamicGroups.forEach(group => group.style.display = 'none');
         }
 
         function showDynamicGroup(id) {
             const group = document.getElementById(id);
-            if (group) {
-                group.style.display = 'block';
-                group.querySelectorAll('input, select').forEach(input => input.required = true);
-            }
+            if (group) group.style.display = 'block';
         }
 
-        // Script para lidar com o envio real para a API
-        document.getElementById('quoteForm').addEventListener('submit', async function (e) {
+        quoteForm.addEventListener('submit', async function (e) {
             e.preventDefault();
-
             const btn = document.getElementById('submitBtn');
             const originalText = btn.innerText;
 
-            // Interface de carregamento
             btn.innerText = 'Enviando...';
             btn.disabled = true;
-            btn.style.opacity = '0.7';
 
             try {
-                // Coleta dados
                 const formData = new FormData(e.target);
 
-                // Adiciona labels de texto para os campos que usam IDs no select
-                if (categoriaSelect.value && categoriaSelect.selectedOptions[0]) {
+                // Enriquecimento de labels
+                if (categoriaSelect.selectedOptions[0])
                     formData.append('categoria_nome', categoriaSelect.selectedOptions[0].text);
-                }
-                if (veiculoMarcaSelect && veiculoMarcaSelect.value && veiculoMarcaSelect.selectedOptions[0]) {
+                if (veiculoMarcaSelect && veiculoMarcaSelect.selectedOptions[0])
                     formData.append('veiculo_marca_nome', veiculoMarcaSelect.selectedOptions[0].text);
-                }
 
                 const data = Object.fromEntries(formData.entries());
 
-                // Envio para a API Real
                 const response = await fetch('/api/seguros/submit', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
 
-                const result = await response.json();
-
                 if (response.ok) {
-                    alert('✅ Solicitação recebida com sucesso! Em breve um de nossos especialistas entrará em contato.');
+                    alert('✅ Solicitação de ' + data.tipo_cotacao + ' recebida com sucesso!');
                     window.location.href = 'index.html';
                 } else {
-                    throw new Error(result.error || 'Erro ao enviar solicitação');
+                    const resJson = await response.json();
+                    throw new Error(resJson.error || 'Erro ao enviar');
                 }
-
             } catch (error) {
-                console.error('Erro no envio:', error);
-                alert('❌ Ocorreu um erro ao enviar sua solicitação: ' + error.message);
+                alert('❌ Erro: ' + error.message);
             } finally {
                 btn.innerText = originalText;
                 btn.disabled = false;
-                btn.style.opacity = '1';
             }
         });
     </script>
