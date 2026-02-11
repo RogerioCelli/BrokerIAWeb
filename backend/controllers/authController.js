@@ -178,6 +178,8 @@ const authController = {
                     id: user.id,
                     nome: user.nome,
                     cpf_cnpj: user.cpf,
+                    email: user.email,
+                    telefone: user.telefone,
                     org_nome: org.nome,
                     org_logo: org.logo_url,
                     contatos_org: org.config_json?.contatos || {
