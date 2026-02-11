@@ -618,7 +618,9 @@
         function lockInsuranceFields(lock) {
             const inputs = document.querySelectorAll('#dynamicFields input, #dynamicFields select, #renewal-fields input, #renewal-fields select');
             inputs.forEach(el => {
-                if (el.id === 'observacoes') return;
+                // Manter observações e seletor de apólice sempre abertos para troca
+                if (el.id === 'observacoes' || el.id === 'select_apolice') return;
+
                 if (el.tagName === 'SELECT') el.disabled = lock;
                 else el.readOnly = lock;
                 el.style.background = lock ? 'rgba(255,255,255,0.02)' : '';
@@ -685,6 +687,14 @@
                 downloadContainer.style.display = 'flex';
             } else { downloadContainer.style.display = 'none'; }
             lockInsuranceFields(true);
+
+            // 7. Observação automática para contexto do corretor
+            const obs = document.getElementById('observacoes');
+            if (obs) {
+                const dataFim = p.data_fim ? new Date(p.data_fim).toLocaleDateString('pt-BR') : 'não informada';
+                obs.value = `Solicitação de renovação para apólice nº ${p.numero_apolice || 'N/A'}. Vigência até ${dataFim}.`;
+            }
+
             alert('Dados da apólice carregados. Se houver alguma divergência ou alteração necessária, utilize o campo "Observações".');
         });
 

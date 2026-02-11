@@ -39,6 +39,8 @@ const policyController = {
                     vigencia_fim as data_fim,
                     status_apolice as status,
                     placa,
+                    chassi,
+                    classe_bonus as bonus,
                     url_pdf,
                     link_url_apolice,
                     data_criacao
