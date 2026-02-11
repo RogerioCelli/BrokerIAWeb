@@ -56,39 +56,40 @@ async function migrate() {
 
         // 4. Popular Seguros
         console.log('[PORTAL-MIGRATE] Passo 4: Verificando Dados de Seguros...');
-        const checkSeguros = await db.query('SELECT COUNT(*) FROM categorias_seguros');
-        if (parseInt(checkSeguros.rows[0].count) < 3) {
-            console.log('[PORTAL-MIGRATE] Inserindo Categorias Master...');
-            const estruturaSeguros = {
-                "Automóvel": ["Carro Passeio", "Pesados", "Moto", "App/Uber"],
-                "Transporte": ["Carga", "Logística", "Transporte de Carga"],
-                "Patrimoniais": ["Residencial", "Condomínio", "Empresarial"],
-                "Vida": ["Vida Individual", "Vida em Grupo", "Saúde"],
-                "Responsabilidade Civil": ["RC Profissional", "RC Geral"],
-                "Financeiros": ["Fiança Locatícia", "Capitalização"]
-            };
 
-            const categoriasOrdem = {
-                "Automóvel": 1,
-                "Transporte": 2,
-                "Patrimoniais": 3,
-                "Vida": 4,
-                "Responsabilidade Civil": 5,
-                "Financeiros": 6
-            };
+        // CORREÇÃO: Remove a categoria antiga se existir para garantir a separação
+        await db.query("DELETE FROM categorias_seguros WHERE nome = 'Automóvel e Transporte'");
 
-            for (const [categoria, tipos] of Object.entries(estruturaSeguros)) {
-                const resCat = await db.query(
-                    `INSERT INTO categorias_seguros (nome, ordem) VALUES ($1, $2) ON CONFLICT (nome) DO UPDATE SET ordem = EXCLUDED.ordem RETURNING id`,
-                    [categoria, categoriasOrdem[categoria]]
-                );
-                const catId = resCat.rows[0].id;
-                for (const tipo of tipos) {
-                    await db.query(`INSERT INTO tipos_seguros (nome, categoria_id) VALUES ($1, $2) ON CONFLICT (nome, categoria_id) DO NOTHING`, [tipo, catId]);
-                }
+        const estruturaSeguros = {
+            "Automóvel": ["Carro Passeio", "Pesados", "Moto", "App/Uber"],
+            "Transporte": ["Carga", "Logística", "Transporte de Carga"],
+            "Patrimoniais": ["Residencial", "Condomínio", "Empresarial"],
+            "Vida": ["Vida Individual", "Vida em Grupo", "Saúde"],
+            "Responsabilidade Civil": ["RC Profissional", "RC Geral"],
+            "Financeiros": ["Fiança Locatícia", "Capitalização"]
+        };
+
+        const categoriasOrdem = {
+            "Automóvel": 1,
+            "Transporte": 2,
+            "Patrimoniais": 3,
+            "Vida": 4,
+            "Responsabilidade Civil": 5,
+            "Financeiros": 6
+        };
+
+        for (const [categoria, tipos] of Object.entries(estruturaSeguros)) {
+            const resCat = await db.query(
+                `INSERT INTO categorias_seguros (nome, ordem) VALUES ($1, $2) 
+                 ON CONFLICT (nome) DO UPDATE SET ordem = EXCLUDED.ordem RETURNING id`,
+                [categoria, categoriasOrdem[categoria]]
+            );
+            const catId = resCat.rows[0].id;
+            for (const tipo of tipos) {
+                await db.query(`INSERT INTO tipos_seguros (nome, categoria_id) VALUES ($1, $2) ON CONFLICT (nome, categoria_id) DO NOTHING`, [tipo, catId]);
             }
-            console.log('[PORTAL-MIGRATE] ✅ Seguros populados.');
         }
+        console.log('[PORTAL-MIGRATE] ✅ Seguros populados com separação Auto/Transporte.');
 
         // 5. Popular Marcas
         console.log('[PORTAL-MIGRATE] Passo 5: Verificando Marcas...');
