@@ -381,7 +381,9 @@
         document.addEventListener('DOMContentLoaded', () => {
             console.log('[PORTAL] Inicializando formulário de cotação...');
 
-            // 1. Limpeza TOTAL inicial (Garantir página limpa sem exceções)
+            // 1. Limpeza TOTAL inicial (Lousa limpa sem exceções)
+            localStorage.removeItem('broker_ia_token');
+            localStorage.removeItem('broker_ia_user');
             quoteForm.reset();
             lockClientFields(false);
             lockInsuranceFields(false);
@@ -390,7 +392,7 @@
             loadInsuranceData();
             setupQuotationTypeSelectors();
 
-            // 3. Verificar se veio do Dashboard "Renovar" (Caso específico)
+            // 3. Verificar se veio do Dashboard "Renovar" (Pode trazer dados da apólice, mas não do cliente)
             checkRenewalData();
 
             // 4. Aplicar Máscaras
@@ -426,8 +428,11 @@
                 const renovacaoRadio = document.querySelector('input[value="RENOVACAO"]');
                 if (renovacaoRadio) {
                     renovacaoRadio.checked = true;
+                    // O dispatch trigger o setupQuotationTypeSelectors
                     renovacaoRadio.dispatchEvent(new Event('change'));
                 }
+
+                // Preenche dados técnicos se vierem, mas o NOME/CPF continuam vazios até o login
                 if (data.seguradora) document.getElementById('renovacao_seguradora').value = data.seguradora;
                 if (data.bonus) document.getElementById('renovacao_bonus').value = data.bonus;
                 if (data.placa || data.chassi) {
@@ -436,7 +441,6 @@
                 }
                 const obs = document.getElementById('observacoes');
                 if (obs) obs.value = `Solicitação de renovação para apólice nº ${data.numero_apolice}. Vigência até ${new Date(data.vigencia_fim).toLocaleDateString('pt-BR')}.`;
-                alert('Dados da sua apólice atual foram carregados com sucesso para facilitar a renovação.');
             } catch (e) { console.error('Erro ao carregar dados de renovação:', e); }
         }
 
@@ -448,54 +452,38 @@
                 s.addEventListener('change', (e) => {
                     const val = e.target.value;
                     tipoCotacaoInput.value = val;
-                    const token = localStorage.getItem('broker_ia_token');
 
                     if (val === 'RENOVACAO') {
                         // 1. Fluxo de Renovação: Esconder Categoria IMEDIATAMENTE
                         renewalFields.style.display = 'block';
-                        catGroup.style.display = 'none'; // Não escolhe categoria manual na renovação
+                        catGroup.style.display = 'none';
 
-                        // 2. Zerar campos enquanto não valida
+                        // 2. Garantir que campos de identificação estão vazios
                         document.getElementById('nome').value = '';
                         document.getElementById('cpf').value = '';
                         document.getElementById('email').value = '';
                         document.getElementById('telefone').value = '';
                         lockClientFields(false);
 
-                        if (!token) {
-                            // 3. Mostrar pergunta "Você já é nosso cliente?"
-                            clientCheck.style.display = 'block';
-                        } else {
-                            // Já logado: Carrega ficha e apólices
-                            const user = JSON.parse(localStorage.getItem('broker_ia_user') || '{}');
-                            document.getElementById('nome').value = user.nome || '';
-                            document.getElementById('cpf').value = user.cpf_cnpj || '';
-                            document.getElementById('email').value = user.email || '';
-                            document.getElementById('telefone').value = user.telefone || '';
-                            lockClientFields(true);
-                            loadUserPoliciesForRenewal();
-                        }
-                    } else {
-                        // Fluxo de Nova Cotação: Lousa Limpa e Categoria Reaparece
-                        console.log('[PORTAL] Nova Cotação. Limpando sessão e campos.');
-
-                        renewalFields.style.display = 'none';
-                        clientCheck.style.display = 'none';
-                        catGroup.style.display = 'block'; // Volta a aparecer para cotar novo
+                        // 3. SEMPRE mostrar pergunta "Você já é nosso cliente?" para forçar login
+                        clientCheck.style.display = 'block';
                         document.getElementById('policy-selector-group').style.display = 'none';
 
-                        localStorage.removeItem('broker_ia_token');
-                        localStorage.removeItem('broker_ia_user');
+                    } else {
+                        // Fluxo de Nova Cotação: Lousa Limpa
+                        renewalFields.style.display = 'none';
+                        clientCheck.style.display = 'none';
+                        catGroup.style.display = 'block';
+                        document.getElementById('policy-selector-group').style.display = 'none';
 
-                        const fields = ['nome', 'cpf', 'email', 'telefone', 'renovacao_seguradora', 'renovacao_bonus'];
-                        fields.forEach(id => {
-                            const el = document.getElementById(id);
-                            if (el) el.value = '';
-                        });
+                        document.getElementById('nome').value = '';
+                        document.getElementById('cpf').value = '';
+                        document.getElementById('email').value = '';
+                        document.getElementById('telefone').value = '';
 
                         lockClientFields(false);
                         lockInsuranceFields(false);
-                        hideAllDynamicFields(); // Limpa as abas de veículo/casa etc
+                        hideAllDynamicFields();
                         categoriaSelect.value = '';
                     }
                 });
@@ -579,16 +567,27 @@
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Código inválido.');
+
+                // 1. Salvar Sessão
                 localStorage.setItem('broker_ia_token', data.token);
                 localStorage.setItem('broker_ia_user', JSON.stringify(data.user));
+
+                // 2. Preencher Campos
                 document.getElementById('nome').value = data.user.nome || '';
                 document.getElementById('cpf').value = data.user.cpf_cnpj || '';
                 document.getElementById('email').value = data.user.email || '';
                 document.getElementById('telefone').value = data.user.telefone || '';
+
                 lockClientFields(true);
                 closeLoginModal();
                 clientCheck.style.display = 'none';
-                if (tipoCotacaoInput.value === 'RENOVACAO') loadUserPoliciesForRenewal();
+
+                // 3. Se for Renovação, carregar apólices imediatamente
+                if (tipoCotacaoInput.value === 'RENOVACAO') {
+                    console.log('[PORTAL] Login OK. Carregando apólices para renovação...');
+                    loadUserPoliciesForRenewal();
+                }
+
                 alert(`Olá ${data.user.nome.split(' ')[0]}, reconhecemos seu cadastro. Seus dados básicos foram carregados.`);
             } catch (err) { alert(err.message); } finally {
                 btn.disabled = false;
@@ -632,14 +631,21 @@
         async function loadUserPoliciesForRenewal() {
             const token = localStorage.getItem('broker_ia_token');
             if (!token) return;
+
+            const group = document.getElementById('policy-selector-group');
+            const select = document.getElementById('select_apolice');
+            const renFields = document.getElementById('renewal-fields');
+            const catGroup = document.querySelector('.form-group label[for="categoria_seguro"]').closest('.form-group');
+
             try {
+                console.log('[PORTAL] Buscando apólices do cliente...');
                 const res = await fetch(`${API_URL}/policies/my`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const policies = await res.json();
-                const select = document.getElementById('select_apolice');
-                const group = document.getElementById('policy-selector-group');
-                if (policies.length > 0) {
+
+                if (Array.isArray(policies) && policies.length > 0) {
+                    console.log(`[PORTAL] ${policies.length} apólices encontradas.`);
                     select.innerHTML = '<option value="">-- Selecione uma apólice para renovar --</option>';
                     policies.forEach(p => {
                         const opt = document.createElement('option');
@@ -647,10 +653,21 @@
                         opt.textContent = `${p.ramo} - ${p.seguradora} (Placa: ${p.placa || 'N/A'})`;
                         select.appendChild(opt);
                     });
+
+                    // Garante visibilidade do fluxo de renovação
+                    renFields.style.display = 'block';
                     group.style.display = 'block';
+                    catGroup.style.display = 'none'; // Sempre esconde categoria na renovação
                     window.userPolicies = policies;
+                } else {
+                    console.warn('[PORTAL] Nenhuma apólice ativa encontrada para este CPF.');
+                    group.style.display = 'none';
+                    alert('Não encontramos apólices ativas no seu cadastro para carregamento automático. Por favor, preencha os dados manualmente.');
                 }
-            } catch (err) { console.error('Erro ao carregar apólices:', err); }
+            } catch (err) {
+                console.error('Erro ao carregar apólices:', err);
+                alert('Erro ao carregar suas apólices. Você pode preencher os dados manualmente.');
+            }
         }
 
         function checkPdfLink(link) {
