@@ -60,19 +60,21 @@ async function migrate() {
         if (parseInt(checkSeguros.rows[0].count) < 3) {
             console.log('[PORTAL-MIGRATE] Inserindo Categorias Master...');
             const estruturaSeguros = {
-                "Automóvel e Transporte": ["Automóvel", "Moto", "Caminhão", "Frota", "Transporte de Carga"],
+                "Automóvel": ["Carro Passeio", "Pesados", "Moto", "App/Uber"],
+                "Transporte": ["Carga", "Logística", "Transporte de Carga"],
                 "Patrimoniais": ["Residencial", "Condomínio", "Empresarial"],
-                "Vida": ["Vida Individual", "Vida em Grupo", "Funeral", "Saúde"],
+                "Vida": ["Vida Individual", "Vida em Grupo", "Saúde"],
                 "Responsabilidade Civil": ["RC Profissional", "RC Geral"],
                 "Financeiros": ["Fiança Locatícia", "Capitalização"]
             };
 
             const categoriasOrdem = {
-                "Automóvel e Transporte": 1,
-                "Patrimoniais": 2,
-                "Vida": 3,
-                "Responsabilidade Civil": 4,
-                "Financeiros": 5
+                "Automóvel": 1,
+                "Transporte": 2,
+                "Patrimoniais": 3,
+                "Vida": 4,
+                "Responsabilidade Civil": 5,
+                "Financeiros": 6
             };
 
             for (const [categoria, tipos] of Object.entries(estruturaSeguros)) {
