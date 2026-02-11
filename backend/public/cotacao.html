@@ -447,6 +447,7 @@
         function setupQuotationTypeSelectors() {
             const selectors = document.querySelectorAll('input[name="tipo_cotacao_selector"]');
             const catGroup = document.querySelector('.form-group label[for="categoria_seguro"]').closest('.form-group');
+            const footerLinks = document.querySelector('.footer-links');
 
             selectors.forEach(s => {
                 s.addEventListener('change', (e) => {
@@ -460,22 +461,21 @@
                     document.getElementById('policy-download-container').style.display = 'none';
 
                     if (val === 'RENOVACAO') {
-                        // 1. Fluxo de Renovação: Esconder Categoria 
-                        catGroup.style.display = 'none';
+                        // 1. Fluxo de Renovação: Esconder TUDO abaixo do seletor (Mockup CORRETO)
+                        quoteForm.style.display = 'none';
+                        footerLinks.style.display = 'none';
 
-                        // 2. Limpar campos de identificação (Sem preenchimento automático)
-                        document.getElementById('nome').value = '';
-                        document.getElementById('cpf').value = '';
-                        document.getElementById('email').value = '';
-                        document.getElementById('telefone').value = '';
-                        lockClientFields(false);
-
-                        // 3. Mostrar UNICAMENTE a pergunta de identificação
-                        // Os campos de "Detalhes da Renovação" (renewalFields) só aparecem DEPOIS do login
+                        // 2. Mostrar APENAS a pergunta de identificação
                         clientCheck.style.display = 'block';
 
+                        // Limpar campos por segurança
+                        quoteForm.reset();
+                        lockClientFields(false);
+
                     } else {
-                        // Fluxo de Nova Cotação: Lousa Limpa e Categoria Reaparece
+                        // Fluxo de Nova Cotação: Lousa Limpa e Form reaparece
+                        quoteForm.style.display = 'block';
+                        footerLinks.style.display = 'block';
                         catGroup.style.display = 'block';
 
                         document.getElementById('nome').value = '';
@@ -497,6 +497,7 @@
         }
 
         function handleIsClient(isClient) {
+            const footerLinks = document.querySelector('.footer-links');
             if (isClient) {
                 document.getElementById('loginModal').style.display = 'flex';
                 document.getElementById('modalStep1').style.display = 'block';
@@ -504,8 +505,20 @@
                 document.getElementById('modalStep3').style.display = 'none';
                 document.getElementById('modalIdentifier').focus();
             } else {
+                // Caso "Não, ainda não": Mostra o form como Nova Cotação
                 clientCheck.style.display = 'none';
-                alert('Por favor, preencha o formulário abaixo com seus dados para iniciarmos seu cadastro.');
+                quoteForm.style.display = 'block';
+                footerLinks.style.display = 'block';
+
+                const catGroup = document.querySelector('.form-group label[for="categoria_seguro"]').closest('.form-group');
+                catGroup.style.display = 'block';
+
+                // Marca Visualmente como Nova Cotação
+                const novaRadio = document.querySelector('input[value="NOVA"]');
+                if (novaRadio) {
+                    novaRadio.checked = true;
+                    tipoCotacaoInput.value = 'NOVA';
+                }
             }
         }
 
@@ -587,6 +600,11 @@
                 lockClientFields(true);
                 closeLoginModal();
                 clientCheck.style.display = 'none';
+
+                // Mostrar o formulário e rodapé após login (foram escondidos na seleção de renovação)
+                const footerLinks = document.querySelector('.footer-links');
+                quoteForm.style.display = 'block';
+                footerLinks.style.display = 'block';
 
                 // 3. Se for Renovação, carregar apólices imediatamente
                 if (tipoCotacaoInput.value === 'RENOVACAO') {
