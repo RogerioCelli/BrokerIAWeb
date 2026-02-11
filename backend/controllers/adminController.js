@@ -67,7 +67,7 @@ const adminController = {
                     vigencia_fim as data_fim,
                     status_apolice as status,
                     placa,
-                    COALESCE(link_url_apolice, url_pdf) as link_url_apolice,
+                    COALESCE(link_url_apolice, url_pdf, url_link) as link_url_apolice,
                     data_sincronizacao
                 FROM apolices_brokeria
                 WHERE REPLACE(REPLACE(REPLACE(cpf, '.', ''), '-', ''), ' ', '') = $1
@@ -98,7 +98,7 @@ const adminController = {
                     placa,
                     cpf,
                     url_pdf,
-                    COALESCE(link_url_apolice, url_pdf) as link_url_apolice,
+                    COALESCE(link_url_apolice, url_pdf, url_link) as link_url_apolice,
                     data_criacao,
                     data_sincronizacao
                 FROM apolices_brokeria
@@ -142,6 +142,7 @@ const adminController = {
 
             // Webhook do n8n (Placeholder - O usuário deve configurar no .env ou aqui)
             const N8N_WEBHOOK_URL = process.env.N8N_SYNC_WEBHOOK_URL || 'https://n8n.brokeria.com.br/webhook/sync-apolices';
+            console.log(`[ADMIN] Chamando n8n em: ${N8N_WEBHOOK_URL}`);
 
             const response = await fetch(N8N_WEBHOOK_URL, {
                 method: 'POST',
@@ -154,8 +155,11 @@ const adminController = {
                 })
             });
 
+            const responseData = await response.text();
+            console.log(`[ADMIN] Resposta do n8n (Status ${response.status}):`, responseData);
+
             if (!response.ok) {
-                throw new Error(`Falha ao chamar n8n: ${response.statusText}`);
+                throw new Error(`Falha ao chamar n8n: ${response.statusText} - ${responseData}`);
             }
 
             res.json({

@@ -102,19 +102,29 @@ async function runMigrations() {
             END $$;
         `);
 
-        // Garantir Equipe de Administradores
+        // Garantir Equipe de Administradores (Portal)
         await db.query(`
-            INSERT INTO portal_users (nome, cpf, email, role) 
-            VALUES 
-                ('Rogério Celli', '11806562880', 'rogerio.celli@gmail.com', 'master'),
-                ('Marcos', '15309831804', 'marcos@dwfcorretora.com.br', 'admin'),
-                ('Washington Oliveira', '22222222222', 'dwfcorretoradeseguros@hotmail.com', 'admin'),
-                ('Magui', '11111111111', 'magui@exemplo.com', 'admin')
-            ON CONFLICT (cpf) DO UPDATE SET 
-                nome = EXCLUDED.nome,
-                email = EXCLUDED.email,
-                role = EXCLUDED.role;
+            ALTER TABLE portal_users ADD COLUMN IF NOT EXISTS celular VARCHAR(20);
         `);
+
+        const adminsOficiais = [
+            ['Rogério Celli', '11806562880', 'rogerio.celli@gmail.com', 'master', '5511972155241'],
+            ['Marcos Nelson', '15309831804', 'marcos@dwfcorretora.com.br', 'admin', '5511986897789'],
+            ['Washington Oliveira', '22222222222', 'dwfcorretoradeseguros@hotmail.com', 'admin', '5511970282157'],
+            ['Magui CS', '17592369850', 'maguics@gmail.com', 'admin', '5511999094238']
+        ];
+
+        for (const [nome, cpf, email, role, celular] of adminsOficiais) {
+            await db.query(`
+                INSERT INTO portal_users (nome, cpf, email, role, celular) 
+                VALUES ($1, $2, $3, $4, $5)
+                ON CONFLICT (cpf) DO UPDATE SET 
+                    nome = EXCLUDED.nome,
+                    email = EXCLUDED.email,
+                    role = EXCLUDED.role,
+                    celular = EXCLUDED.celular;
+            `, [nome, cpf, email, role, celular]);
+        }
 
         // Garantir as colunas no banco de apólices (DB Externo) conforme CSV
         await db.apolicesQuery(`

@@ -162,14 +162,52 @@
         }
 
         .download-link:hover {
-            background: rgba(16, 185, 129, 0.2);
-            transform: translateY(-1px);
+            color: #60a5fa;
+            border-color: #60a5fa;
+            background: rgba(59, 130, 246, 0.1);
         }
 
         .no-download {
-            color: var(--text-secondary);
+            color: #64748b;
             font-size: 0.75rem;
             font-style: italic;
+        }
+
+        /* SEARCH & SORT STYLES */
+        .controls-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .search-input {
+            flex: 1;
+            background: #0f172a;
+            border: 1px solid var(--border);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent);
+        }
+
+        .sort-select {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
         }
 
         /* [Manter estilos anteriores e adicionar novos] */
@@ -317,12 +355,32 @@
 
     <!-- CLIENTES -->
     <div id="clients-panel" class="data-panel active">
+        <div class="controls-row">
+            <input type="text" id="search-clients" class="search-input"
+                placeholder="🔍 Buscar por nome, CPF ou e-mail..." oninput="filterClients()">
+            <select id="sort-clients" class="sort-select" onchange="filterClients()">
+                <option value="data_cadastro">Ordenar por: Data Cadastro</option>
+                <option value="nome">Ordenar por: Nome</option>
+                <option value="cpf">Ordenar por: CPF</option>
+                <option value="total_apolices">Ordenar por: Qtd. Apólices</option>
+            </select>
+        </div>
         <div id="clients-container">
         </div>
     </div>
 
     <!-- APOLICES -->
     <div id="policies-panel" class="data-panel">
+        <div class="controls-row">
+            <input type="text" id="search-policies" class="search-input"
+                placeholder="🔍 Buscar por número, seguradora, CPF ou placa..." oninput="filterPolicies()">
+            <select id="sort-policies" class="sort-select" onchange="filterPolicies()">
+                <option value="data_sincronizacao">Ordenar por: Mais Recentes (Sync)</option>
+                <option value="numero_apolice">Ordenar por: Nº Apólice</option>
+                <option value="cpf">Ordenar por: CPF</option>
+                <option value="seguradora">Ordenar por: Seguradora</option>
+            </select>
+        </div>
         <div id="policies-container">
         </div>
     </div>
@@ -349,6 +407,8 @@
     <script>
         const API_URL = '/api/admin';
         let currentAdminId = null;
+        let allClientsData = [];
+        let allPoliciesData = [];
 
         // --- AUTH LOGIC ---
 
@@ -415,7 +475,6 @@
             location.reload();
         }
 
-        // Interceptador para adicionar Token nas chamadas
         async function fetchWithAuth(url, options = {}) {
             const token = localStorage.getItem('admin_token');
             const headers = { ...options.headers, 'Authorization': `Bearer ${token}` };
@@ -460,7 +519,7 @@
                 btn.innerHTML = originalText;
                 btn.disabled = false;
                 btn.style.opacity = '1';
-                loadAllData(); // Recarrega os dados para ver as datas novas
+                loadAllData();
             }
         }
 
@@ -474,7 +533,6 @@
                 btn.style.opacity = '0.5';
                 btn.style.cursor = 'not-allowed';
 
-                // Mostrar indicadores de loading nos containers
                 document.getElementById('clients-container').innerHTML = '<div class="load-indicator">Atualizando clientes...</div>';
                 document.getElementById('policies-container').innerHTML = '<div class="load-indicator">Atualizando apólices...</div>';
 
@@ -497,69 +555,64 @@
         }
 
         async function loadClients() {
-            const container = document.getElementById('clients-container');
             try {
                 const res = await fetchWithAuth(`${API_URL}/clients`);
                 const data = await res.json();
-
                 if (data.error) throw new Error(data.error);
-
-                if (data.length === 0) {
-                    container.innerHTML = '<p style="padding: 1rem">Nenhum cliente encontrado.</p>';
-                    return;
-                }
-
-                let html = `
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Nome Completo</th>
-                                <th>CPF</th>
-                                <th>Email</th>
-                                <th>Celular</th>
-                                <th style="text-align: center;">Qtd. Apólices</th>
-                                <th>Data Cadastro</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-
-                data.forEach(client => {
-                    const badgeColor = client.total_apolices > 0 ? '#10b981' : '#64748b';
-                    html += `
-                        <tr onclick="toggleClientDetails('${client.cpf}', this)" style="cursor: pointer;">
-                            <td style="font-family: monospace; color: #64748b">${client.id}</td>
-                            <td style="font-weight: 500">
-                                <span style="margin-right: 8px; color: var(--accent)">▶</span>
-                                ${client.nome}
-                            </td>
-                            <td>${client.cpf}</td>
-                            <td>${client.email}</td>
-                            <td>${client.celular || '-'}</td>
-                            <td style="text-align: center;">
-                                <span class="status-badge" style="background: ${badgeColor}20; color: ${badgeColor}; width: 30px; display: inline-block;">
-                                    ${client.total_apolices}
-                                </span>
-                            </td>
-                            <td>${client.data_cadastro ? new Date(client.data_cadastro).toLocaleDateString('pt-BR') : '-'}</td>
-                        </tr>
-                        <tr id="details-${client.cpf}" style="display: none; background: rgba(0,0,0,0.2)">
-                            <td colspan="7" style="padding: 1.5rem; border-bottom: 2px solid var(--accent)">
-                                <div id="container-${client.cpf}">
-                                    <div class="load-indicator">Buscando apólices detalhadas...</div>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                });
-
-                html += '</tbody></table>';
-                container.innerHTML = html;
-
+                allClientsData = data;
+                filterClients();
             } catch (error) {
-                container.innerHTML = `<p style="color: #ef4444; padding: 1rem">Erro ao carregar clientes: ${error.message}</p>`;
+                document.getElementById('clients-container').innerHTML = `<p style="color: #ef4444; padding: 1rem">Erro ao carregar clientes: ${error.message}</p>`;
             }
+        }
+
+        function filterClients() {
+            const searchTerm = document.getElementById('search-clients').value.toLowerCase();
+            const sortBy = document.getElementById('sort-clients').value;
+
+            let filtered = allClientsData.filter(c =>
+                (c.nome && c.nome.toLowerCase().includes(searchTerm)) ||
+                (c.cpf && c.cpf.includes(searchTerm)) ||
+                (c.email && c.email.toLowerCase().includes(searchTerm))
+            );
+
+            filtered.sort((a, b) => {
+                if (sortBy === 'nome') return (a.nome || '').localeCompare(b.nome || '');
+                if (sortBy === 'cpf') return (a.cpf || '').localeCompare(b.cpf || '');
+                if (sortBy === 'total_apolices') return (b.total_apolices || 0) - (a.total_apolices || 0);
+                if (sortBy === 'data_cadastro') return new Date(b.data_cadastro || 0) - new Date(a.data_cadastro || 0);
+                return 0;
+            });
+
+            renderClientsTable(filtered);
+        }
+
+        function renderClientsTable(data) {
+            const container = document.getElementById('clients-container');
+            if (data.length === 0) {
+                container.innerHTML = '<p style="padding: 1rem; color: var(--text-secondary)">Nenhum cliente encontrado.</p>';
+                return;
+            }
+
+            let html = `<table><thead><tr><th>ID</th><th>Nome Completo</th><th>CPF</th><th>Email</th><th>Celular</th><th style="text-align: center;">Qtd. Apólices</th><th>Data Cadastro</th></tr></thead><tbody>`;
+            data.forEach(client => {
+                const badgeColor = client.total_apolices > 0 ? '#10b981' : '#64748b';
+                html += `
+                    <tr onclick="toggleClientDetails('${client.cpf}', this)" style="cursor: pointer;">
+                        <td style="font-family: monospace; color: #64748b">${client.id}</td>
+                        <td style="font-weight: 500"><span style="margin-right: 8px; color: var(--accent)">▶</span>${client.nome}</td>
+                        <td>${client.cpf}</td>
+                        <td>${client.email}</td>
+                        <td>${client.celular || '-'}</td>
+                        <td style="text-align: center;"><span class="status-badge" style="background: ${badgeColor}20; color: ${badgeColor}; width: 30px; display: inline-block;">${client.total_apolices}</span></td>
+                        <td>${client.data_cadastro ? new Date(client.data_cadastro).toLocaleDateString('pt-BR') : '-'}</td>
+                    </tr>
+                    <tr id="details-${client.cpf}" style="display: none; background: rgba(0,0,0,0.2)">
+                        <td colspan="7" style="padding: 1.5rem; border-bottom: 2px solid var(--accent)"><div id="container-${client.cpf}"><div class="load-indicator">Buscando apólices detalhadas...</div></div></td>
+                    </tr>
+                `;
+            });
+            container.innerHTML = html + '</tbody></table>';
         }
 
         async function toggleClientDetails(cpf, row) {
@@ -568,69 +621,36 @@
             const arrow = row.querySelector('span');
 
             if (detailsRow.style.display === 'none') {
-                // Fechar outros abertos (opcional, mas limpo)
-                // Abrir este
                 detailsRow.style.display = 'table-row';
                 arrow.style.transform = 'rotate(90deg)';
-                arrow.style.display = 'inline-block';
                 arrow.style.transition = 'transform 0.2s';
 
-                // Carregar dados se ainda não carregados
                 if (container.innerHTML.includes('Buscando')) {
                     try {
                         const res = await fetchWithAuth(`${API_URL}/clients/${cpf}/policies`);
                         const policies = await res.json();
-
                         if (policies.length === 0) {
-                            container.innerHTML = '<p style="color: var(--text-secondary)">Nenhuma apólice encontrada para este CPF.</p>';
+                            container.innerHTML = '<p style="color: var(--text-secondary)">Nenhuma apólice encontrada.</p>';
                             return;
                         }
 
-                        let pTable = `
-                            <h4 style="margin-bottom: 15px; color: var(--accent); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">
-                                Detalhes das Apólices de ${cpf}
-                            </h4>
-                            <table style="background: #0f172a; border: 1px solid var(--border);">
-                                <thead>
-                                    <tr>
-                                        <th>Nº Apólice</th>
-                                        <th>Seguradora</th>
-                                        <th>Ramo</th>
-                                        <th>Vigência</th>
-                                        <th>Status</th>
-                                        <th>Upload</th>
-                                        <th>Ação</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                        `;
-
+                        let pTable = `<h4 style="margin-bottom: 15px; color: var(--accent); font-size: 0.9rem; text-transform: uppercase;">Detalhes das Apólices</h4>
+                                     <table style="background: #0f172a; border: 1px solid var(--border);">
+                                     <thead><tr><th>Nº Apólice</th><th>Seguradora</th><th>Ramo</th><th>Vigência</th><th>Status</th><th>Upload</th><th>Ação</th></tr></thead><tbody>`;
                         policies.forEach(p => {
                             const statusCls = p.status === 'ATIVA' ? 'status-ativa' : 'status-cancelada';
-                            const syncDate = p.data_sincronizacao ? new Date(p.data_sincronizacao).toLocaleString('pt-BR') : 'Pendente';
-                            const syncColor = p.data_sincronizacao ? '#10b981' : '#f59e0b';
-
-                            pTable += `
-                                <tr>
-                                    <td style="font-weight: 500">${p.numero_apolice}</td>
-                                    <td>${p.seguradora}</td>
-                                    <td>${p.ramo}</td>
-                                    <td>${formatDate(p.data_inicio)} - ${formatDate(p.data_fim)}</td>
-                                    <td><span class="status-badge ${statusCls}">${p.status}</span></td>
-                                    <td style="color: ${syncColor}; font-size: 0.8rem">${syncDate}</td>
-                                    <td>
-                                        ${p.link_url_apolice ? `<a href="${p.link_url_apolice}" target="_blank" class="download-link">Abrir PDF</a>` : '-'}
-                                    </td>
-                                </tr>
-                            `;
+                            pTable += `<tr>
+                                <td>${p.numero_apolice}</td>
+                                <td>${p.seguradora}</td>
+                                <td>${p.ramo}</td>
+                                <td>${formatDate(p.data_inicio)} - ${formatDate(p.data_fim)}</td>
+                                <td><span class="status-badge ${statusCls}">${p.status}</span></td>
+                                <td style="color: #10b981; font-size: 0.8rem">${p.data_sincronizacao ? new Date(p.data_sincronizacao).toLocaleString('pt-BR') : 'Pendente'}</td>
+                                <td>${p.link_url_apolice ? `<a href="${p.link_url_apolice}" target="_blank" class="download-link">Abrir PDF</a>` : '-'}</td>
+                            </tr>`;
                         });
-
-                        pTable += '</tbody></table>';
-                        container.innerHTML = pTable;
-
-                    } catch (err) {
-                        container.innerHTML = `<p style="color: #ef4444">Erro ao carregar detalhes: ${err.message}</p>`;
-                    }
+                        container.innerHTML = pTable + '</tbody></table>';
+                    } catch (err) { container.innerHTML = `<p style="color: #ef4444">Erro: ${err.message}</p>`; }
                 }
             } else {
                 detailsRow.style.display = 'none';
@@ -641,88 +661,74 @@
         function formatDate(dateStr) {
             if (!dateStr) return '-';
             const date = new Date(dateStr);
-            if (isNaN(date.getTime()) || date.getFullYear() < 2000) return '-';
-            return date.toLocaleDateString('pt-BR');
+            return isNaN(date.getTime()) || date.getFullYear() < 2000 ? '-' : date.toLocaleDateString('pt-BR');
         }
 
         async function loadPolicies() {
-            const container = document.getElementById('policies-container');
             try {
                 const res = await fetchWithAuth(`${API_URL}/policies`);
                 const data = await res.json();
-
                 if (data.error) throw new Error(data.error);
+                allPoliciesData = data;
+                filterPolicies();
 
-                if (data.length === 0) {
-                    container.innerHTML = '<p style="padding: 1rem">Nenhuma apólice encontrada.</p>';
-                    return;
-                }
-
-                // Atualizar última sincronização no header
                 const lastSync = data.filter(p => p.data_sincronizacao).sort((a, b) => new Date(b.data_sincronizacao) - new Date(a.data_sincronizacao))[0];
                 if (lastSync) {
                     document.getElementById('sync-summary').style.display = 'block';
                     document.getElementById('sync-time-val').innerText = new Date(lastSync.data_sincronizacao).toLocaleString('pt-BR');
                 }
-
-                let html = `
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Apólice</th>
-                                <th>Seguradora</th>
-                                <th>Ramo</th>
-                                <th>CPF Titular</th>
-                                <th>Vigência</th>
-                                <th>Placa</th>
-                                <th>Status</th>
-                                <th>Data e Hora Upload</th>
-                                <th>Arquivo</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-
-                data.forEach(pol => {
-                    const statusClass = pol.status === 'ATIVA' ? 'status-ativa' : 'status-cancelada';
-                    const syncDate = pol.data_sincronizacao ? new Date(pol.data_sincronizacao).toLocaleString('pt-BR') : 'Pendente';
-                    const syncColor = pol.data_sincronizacao ? '#10b981' : '#f59e0b';
-
-                    html += `
-                        <tr>
-                            <td style="font-family: monospace; color: #64748b">${pol.id}</td>
-                            <td style="font-weight: 500">${pol.numero_apolice}</td>
-                            <td>${pol.seguradora}</td>
-                            <td>${pol.ramo}</td>
-                            <td>${pol.cpf}</td>
-                            <td>${formatDate(pol.data_inicio)} - ${formatDate(pol.data_fim)}</td>
-                            <td>${pol.placa || '-'}</td>
-                            <td><span class="status-badge ${statusClass}">${pol.status}</span></td>
-                            <td style="font-size: 0.85rem; font-weight: 500; color: ${syncColor}">
-                                ${syncDate}
-                            </td>
-                            <td>
-                                ${(() => {
-                            const finalUrl = (pol.link_url_apolice && pol.link_url_apolice !== 'undefined') ? pol.link_url_apolice : (pol.url_pdf && pol.url_pdf !== 'undefined' ? pol.url_pdf : null);
-                            return finalUrl
-                                ? `<a href="${finalUrl}" target="_blank" class="download-link">
-                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                             PDF
-                                           </a>`
-                                : '<span class="no-download">Pendente</span>';
-                        })()}
-                            </td>
-                        </tr>
-                    `;
-                });
-
-                html += '</tbody></table>';
-                container.innerHTML = html;
-
             } catch (error) {
-                container.innerHTML = `<p style="color: #ef4444; padding: 1rem">Erro ao carregar apólices: ${error.message}</p>`;
+                document.getElementById('policies-container').innerHTML = `<p style="color: #ef4444; padding: 1rem">Erro: ${error.message}</p>`;
             }
+        }
+
+        function filterPolicies() {
+            const searchTerm = document.getElementById('search-policies').value.toLowerCase();
+            const sortBy = document.getElementById('sort-policies').value;
+
+            let filtered = allPoliciesData.filter(p =>
+                (p.numero_apolice && p.numero_apolice.toLowerCase().includes(searchTerm)) ||
+                (p.seguradora && p.seguradora.toLowerCase().includes(searchTerm)) ||
+                (p.cpf && p.cpf.includes(searchTerm)) ||
+                (p.placa && p.placa.toLowerCase().includes(searchTerm))
+            );
+
+            filtered.sort((a, b) => {
+                if (sortBy === 'numero_apolice') return (a.numero_apolice || '').localeCompare(b.numero_apolice || '');
+                if (sortBy === 'seguradora') return (a.seguradora || '').localeCompare(b.seguradora || '');
+                if (sortBy === 'cpf') return (a.cpf || '').localeCompare(b.cpf || '');
+                if (sortBy === 'data_sincronizacao') return new Date(b.data_sincronizacao || 0) - new Date(a.data_sincronizacao || 0);
+                return 0;
+            });
+
+            renderPoliciesTable(filtered);
+        }
+
+        function renderPoliciesTable(data) {
+            const container = document.getElementById('policies-container');
+            if (data.length === 0) {
+                container.innerHTML = '<p style="padding: 1rem; color: var(--text-secondary)">Nenhuma apólice encontrada.</p>';
+                return;
+            }
+
+            let html = `<table><thead><tr><th>ID</th><th>Apólice</th><th>Seguradora</th><th>Ramo</th><th>CPF Titular</th><th>Vigência</th><th>Placa</th><th>Status</th><th>Upload</th><th>Arquivo</th></tr></thead><tbody>`;
+            data.forEach(pol => {
+                const statusClass = pol.status === 'ATIVA' ? 'status-ativa' : 'status-cancelada';
+                const finalUrl = (pol.link_url_apolice && pol.link_url_apolice !== 'undefined') ? pol.link_url_apolice : (pol.url_pdf && pol.url_pdf !== 'undefined' ? pol.url_pdf : null);
+                html += `<tr>
+                    <td>${pol.id}</td>
+                    <td style="font-weight: 500">${pol.numero_apolice}</td>
+                    <td>${pol.seguradora}</td>
+                    <td>${pol.ramo}</td>
+                    <td>${pol.cpf}</td>
+                    <td>${formatDate(pol.data_inicio)} - ${formatDate(pol.data_fim)}</td>
+                    <td>${pol.placa || '-'}</td>
+                    <td><span class="status-badge ${statusClass}">${pol.status}</span></td>
+                    <td style="font-size: 0.85rem; color: #10b981">${pol.data_sincronizacao ? new Date(pol.data_sincronizacao).toLocaleString('pt-BR') : 'Pendente'}</td>
+                    <td>${finalUrl ? `<a href="${finalUrl}" target="_blank" class="download-link">PDF</a>` : '-'}</td>
+                </tr>`;
+            });
+            container.innerHTML = html + '</tbody></table>';
         }
 
         // GESTÃO DE USUÁRIOS (MASTER)
@@ -731,31 +737,14 @@
             try {
                 const res = await fetchWithAuth(`${API_URL}/users`);
                 const data = await res.json();
-
-                if (data.error) throw new Error(data.error);
-
-                if (data.length === 0) {
-                    container.innerHTML = '<p style="padding: 1rem">Nenhum usuário encontrado.</p>';
-                    return;
-                }
-
+                if (data.length === 0) { container.innerHTML = '<p>Nenhum usuário.</p>'; return; }
                 let html = `<table><thead><tr><th>Nome</th><th>E-mail</th><th>Função</th><th>Ações</th></tr></thead><tbody>`;
                 data.forEach(u => {
-                    html += `
-                        <tr>
-                            <td>${u.nome}</td>
-                            <td>${u.email}</td>
-                            <td><span class="db-badge">${u.role.toUpperCase()}</span></td>
-                            <td>
-                                ${u.role !== 'master' ? `<button onclick="deleteUser(${u.id})" style="color:#ef4444; background:none; border:none; cursor:pointer">Excluir</button>` : '-'}
-                            </td>
-                        </tr>
-                    `;
+                    html += `<tr><td>${u.nome}</td><td>${u.email}</td><td><span class="db-badge">${u.role.toUpperCase()}</span></td>
+                            <td>${u.role !== 'master' ? `<button onclick="deleteUser(${u.id})" style="color:#ef4444; background:none; border:none; cursor:pointer">Excluir</button>` : '-'}</td></tr>`;
                 });
                 container.innerHTML = html + '</tbody></table>';
-            } catch (error) {
-                container.innerHTML = `<p style="color: #ef4444; padding: 1rem">Erro ao carregar usuários: ${error.message}</p>`;
-            }
+            } catch (error) { container.innerHTML = `<p>Erro: ${error.message}</p>`; }
         }
 
         async function saveUser() {
@@ -766,42 +755,33 @@
                 role: document.getElementById('new-user-role').value
             };
             try {
-                const res = await fetchWithAuth(`${API_URL}/users`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(userData)
-                });
+                const res = await fetchWithAuth(`${API_URL}/users`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(userData) });
                 const data = await res.json();
                 if (data.error) throw new Error(data.error);
-                alert('Usuário adicionado com sucesso!');
+                alert('Sucesso!');
                 document.getElementById('new-user-nome').value = '';
                 document.getElementById('new-user-cpf').value = '';
                 document.getElementById('new-user-email').value = '';
                 loadUsers();
-            } catch (err) {
-                alert('Erro ao adicionar usuário: ' + err.message);
-            }
+            } catch (err) { alert('Erro: ' + err.message); }
         }
 
         async function deleteUser(id) {
-            if (!confirm('Excluir este administrador?')) return;
+            if (!confirm('Excluir?')) return;
             try {
                 const res = await fetchWithAuth(`${API_URL}/users/${id}`, { method: 'DELETE' });
                 const data = await res.json();
                 if (data.error) throw new Error(data.error);
                 alert('Usuário excluído com sucesso!');
                 loadUsers();
-            } catch (err) {
-                alert('Erro ao excluir usuário: ' + err.message);
-            }
+            } catch (err) { alert('Erro: ' + err.message); }
         }
 
         function switchTab(tab) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.data-panel').forEach(p => p.classList.remove('active'));
             document.getElementById(`${tab}-panel`).classList.add('active');
-            // Add active class to clicked button
-            document.querySelector(`button[onclick="switchTab('${tab}')"]`).classList.add('active');
+            event.currentTarget.classList.add('active');
         }
 
         // Init
