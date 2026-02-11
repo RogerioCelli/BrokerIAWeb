@@ -586,6 +586,7 @@
                 // 2. Preencher Campos
                 document.getElementById('nome').value = data.user.nome || '';
                 document.getElementById('cpf').value = data.user.cpf_cnpj || '';
+                document.getElementById('email').value = data.user.email || '';
                 document.getElementById('telefone').value = data.user.telefone || '';
 
                 // Estágio final do fluxo: Mostrar FORM
@@ -595,20 +596,27 @@
 
                 // 3. Lógica Especial para Renovação de Cliente Ativo
                 if (tipoCotacaoInput.value === 'RENOVACAO') {
-                    // Regra: Esconde TUDO do form exceto o seletor de apólices inicialmente
-                    const allFormGroups = quoteForm.querySelectorAll('.form-group:not(#policy-selector-group)');
+                    // Limpar visual para focar na escolha da apólice
+                    console.log('[PORTAL] Modo Renovação detectado. Ajustando visual...');
+
+                    // Escondemos campos técnicos de renovação temporariamente até que a apólice seja escolhida
+                    document.getElementById('renewal-fields').style.display = 'block';
+                    document.getElementById('policy-selector-group').style.display = 'block';
+
                     const dynamicContainer = document.getElementById('dynamicFields');
-
-                    // Esconde temporariamente até selecionarem apólice
-                    allFormGroups.forEach(g => {
-                        // Manter campos de identificação (readonly) e o seletor de apólice
-                        if (['nome', 'cpf', 'email', 'telefone'].includes(g.querySelector('input')?.id)) return;
-                        g.style.display = 'none';
-                    });
                     dynamicContainer.style.display = 'none';
-                    renewalFields.style.display = 'block';
 
-                    console.log('[PORTAL] Login OK. Carregando apólices para renovação...');
+                    // Esconder os labels/inputs que não são básicos e nem o seletor
+                    const allGroups = quoteForm.querySelectorAll('.form-group');
+                    allGroups.forEach(g => {
+                        const inputId = g.querySelector('input, select')?.id;
+                        if (['nome', 'cpf', 'email', 'telefone', 'select_apolice'].includes(inputId)) {
+                            g.style.display = 'block';
+                        } else if (g.id !== 'policy-selector-group') {
+                            g.style.display = 'none';
+                        }
+                    });
+
                     loadUserPoliciesForRenewal();
                 }
 
@@ -729,6 +737,7 @@
             if (!p) return;
 
             console.log('[PORTAL] Apólice selecionada:', p.numero_apolice);
+            showRenewalFieldsAfterSelection();
 
             // 1. Mapeamento de Categoria
             const catOpt = [...categoriaSelect.options].find(o =>
@@ -780,6 +789,21 @@
                     categoriaSelect.appendChild(opt);
                 });
             } catch (e) { console.error('Erro ao carregar seguros:', e); }
+        }
+
+        function showRenewalFieldsAfterSelection() {
+            // Reexibe os campos que foram escondidos durante a fase de login/identificação
+            const allFormGroups = quoteForm.querySelectorAll('.form-group');
+            const dynamicContainer = document.getElementById('dynamicFields');
+            const catGroup = document.querySelector('.form-group label[for="categoria_seguro"]').closest('.form-group');
+
+            allFormGroups.forEach(g => {
+                if (g !== catGroup) {
+                    g.style.display = 'block';
+                }
+            });
+            dynamicContainer.style.display = 'block';
+            document.getElementById('renewal-fields').style.display = 'block';
         }
 
         function hideAllDynamicFields() {
