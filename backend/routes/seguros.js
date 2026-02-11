@@ -1,49 +1,80 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const quoteController = require('../controllers/quoteController');
 
 /**
- * GET /api/seguros/categorias
- * Listar todas as categorias de seguro do Master
+ * GET /api/seguros/estrutura
+ * Retorna todas as categorias e seus tipos de seguro aninhados do banco local.
  */
-router.get('/categorias', async (req, res) => {
+router.get('/estrutura', async (req, res) => {
     try {
-        const result = await db.masterQuery('SELECT * FROM categorias_seguros ORDER BY ramo, nome');
+        const query = `
+            SELECT 
+                c.id as categoria_id, 
+                c.nome as categoria_nome,
+                json_agg(json_build_object('id', t.id, 'nome', t.nome)) filter (where t.id is not null) as tipos
+            FROM categorias_seguros c
+            LEFT JOIN tipos_seguros t ON c.id = t.categoria_id
+            GROUP BY c.id, c.nome, c.ordem
+            ORDER BY c.ordem NULLS LAST, c.id;
+        `;
+
+        const result = await db.query(query);
         res.json(result.rows);
     } catch (error) {
-        console.error('[MASTER-DB-ERR] Erro ao buscar categorias:', error);
-        res.status(500).json({ error: 'Erro ao carregar categorias do Master' });
+        console.error('Erro ao buscar estrutura de seguros:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });
 
 /**
- * GET /api/seguros/marcas/:categoriaId
- * Listar marcas de uma categoria específica (Master)
+ * GET /api/seguros/veiculos/marcas
+ * Retorna todas as marcas de veículos filtradas por categoria.
  */
-router.get('/marcas/:categoriaId', async (req, res) => {
+router.get('/veiculos/marcas', async (req, res) => {
     try {
-        const { categoriaId } = req.params;
-        const result = await db.masterQuery('SELECT * FROM marcas_veiculos WHERE categoria_id = $1 ORDER BY nome', [categoriaId]);
+        const { categoria } = req.query;
+        let sql = `SELECT id, nome, fipe_codigo FROM veiculos_base WHERE tipo = 'MARCA'`;
+        const params = [];
+
+        if (categoria) {
+            sql += ` AND categoria_veiculo = $1`;
+            params.push(categoria.toUpperCase());
+        }
+
+        sql += ` ORDER BY nome ASC`;
+
+        const result = await db.query(sql, params);
         res.json(result.rows);
     } catch (error) {
-        console.error('[MASTER-DB-ERR] Erro ao buscar marcas:', error);
-        res.status(500).json({ error: 'Erro ao carregar marcas do Master' });
+        console.error('Erro ao buscar marcas:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });
 
 /**
- * GET /api/seguros/modelos/:marcaId
- * Listar modelos de uma marca específica (Master)
+ * GET /api/seguros/veiculos/modelos/:parentId
+ * Retorna os modelos de uma marca.
  */
-router.get('/modelos/:marcaId', async (req, res) => {
+router.get('/veiculos/modelos/:parentId', async (req, res) => {
     try {
-        const { marcaId } = req.params;
-        const result = await db.masterQuery('SELECT * FROM modelos_veiculos WHERE marca_id = $1 ORDER BY nome', [marcaId]);
+        const { parentId } = req.params;
+        const result = await db.query(
+            `SELECT id, nome, fipe_codigo, tipo FROM veiculos_base WHERE parent_id = $1 ORDER BY nome ASC`,
+            [parentId]
+        );
         res.json(result.rows);
     } catch (error) {
-        console.error('[MASTER-DB-ERR] Erro ao buscar modelos:', error);
-        res.status(500).json({ error: 'Erro ao carregar modelos do Master' });
+        console.error('Erro ao buscar modelos:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });
+
+/**
+ * POST /api/seguros/submit
+ * Recebe e registra uma nova solicitação de cotação.
+ */
+router.post('/submit', quoteController.submitQuote);
 
 module.exports = router;

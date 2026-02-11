@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error('Por favor, insira um CPF (11 dígitos) ou CNPJ (14 dígitos) válido.');
                 }
 
-                mainButton.textContent = 'Verificando...';
+                mainButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
 
                 const response = await fetch(`${API_URL}/auth/request`, {
                     method: 'POST',
@@ -74,12 +74,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 identifierGroup.style.display = 'none';
                 channelGroup.style.display = 'block';
-                mainButton.textContent = 'Enviar Código';
+                mainButton.textContent = 'Receber Código';
                 currentStep = 'CHANNEL';
 
             } else if (currentStep === 'CHANNEL') {
                 const selectedChannel = document.querySelector('input[name="auth_channel"]:checked').value;
-                mainButton.textContent = 'Enviando...';
+                mainButton.innerHTML = '<i class="fas fa-paper-plane fa-spin"></i> Enviando Código...';
 
                 // Simula re-envio especificando o canal
                 const response = await fetch(`${API_URL}/auth/request`, {
@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentStep = 'TOKEN';
 
             } else if (currentStep === 'TOKEN') {
-                mainButton.textContent = 'Validando...';
+                mainButton.innerHTML = '<i class="fas fa-shield-alt fa-spin"></i> Validando...';
 
                 const response = await fetch(`${API_URL}/auth/validate`, {
                     method: 'POST',
@@ -118,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('broker_ia_token', data.token);
                 localStorage.setItem('broker_ia_user', JSON.stringify(data.user));
 
-                mainButton.textContent = 'Sucesso! Entrando...';
+                mainButton.innerHTML = '<i class="fas fa-check"></i> Sucesso! Entrando...';
                 setTimeout(() => {
                     window.location.href = 'dashboard.html';
                 }, 600);
@@ -126,7 +126,10 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             mainButton.textContent = 'Erro: ' + error.message;
             setTimeout(() => {
-                mainButton.textContent = originalBtnText;
+                // Restaura o texto correto baseado no step atual
+                if (currentStep === 'IDENTIFICATION') mainButton.textContent = 'Verificar Acesso';
+                else if (currentStep === 'CHANNEL') mainButton.textContent = 'Receber Código';
+                else mainButton.textContent = 'Validar Acesso';
             }, 3000);
         } finally {
             mainButton.disabled = false;

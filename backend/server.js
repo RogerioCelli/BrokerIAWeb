@@ -59,12 +59,22 @@ app.listen(PORT, async () => {
     // Garantir que o banco de dados está sincronizado antes de atender requisições
     await runMigrations();
 
+    // Listar rotas registradas para debug
+    console.log('🛣️  Rotas de API registradas:');
+    app._router.stack.forEach(r => {
+        if (r.route && r.route.path) console.log(`   - ${Object.keys(r.route.methods).join(',').toUpperCase()} ${r.route.path}`);
+        else if (r.name === 'router') r.handle.stack.forEach(sr => {
+            if (sr.route) console.log(`   - ${Object.keys(sr.route.methods).join(',').toUpperCase()} ${sr.regexp} -> ${sr.route.path}`);
+        });
+    });
+
     const packageJson = require('./package.json');
     console.log(`
     🚀 Broker IA Web SaaS Rodando! [VERSÃO ${packageJson.version}]
     📡 Porta: ${PORT}
     🏠 Ambiente: ${process.env.NODE_ENV}
     ⏰ Hora do Start: ${new Date().toLocaleString('pt-BR')}
+    🗄️  Banco Portal: ${process.env.DATABASE_URL ? process.env.DATABASE_URL.split('@')[1] : 'NÃO CONFIGURADO'}
     `);
 
     // Relógio de Autoverificação (Heartbeat) - Se isso não mudar no log, o log travou!

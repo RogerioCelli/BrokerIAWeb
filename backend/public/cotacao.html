@@ -175,7 +175,17 @@
         async function loadInsuranceData() {
             try {
                 const res = await fetch('/api/seguros/estrutura');
+
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    throw new Error(`Erro API (${res.status}): ${errorText.substring(0, 100)}`);
+                }
+
                 insuranceStructure = await res.json();
+
+                if (!Array.isArray(insuranceStructure) || insuranceStructure.length === 0) {
+                    throw new Error('Nenhuma categoria de seguro encontrada no banco.');
+                }
 
                 // Popula Categorias
                 categoriaSelect.innerHTML = '<option value="" disabled selected style="color: #333;">Selecione uma categoria</option>';
@@ -188,7 +198,15 @@
                 });
             } catch (error) {
                 console.error('Erro ao carregar seguros:', error);
-                categoriaSelect.innerHTML = '<option value="" disabled selected style="color: #333;">Falha ao carregar</option>';
+                categoriaSelect.innerHTML = `<option value="" disabled selected style="color: #333;">Falha: ${error.message}</option>`;
+
+                // Opção de recarregar
+                const retryBtn = document.createElement('button');
+                retryBtn.textContent = 'Tentar Novamente';
+                retryBtn.className = 'btn-login';
+                retryBtn.style.marginTop = '10px';
+                retryBtn.onclick = () => window.location.reload();
+                categoriaSelect.parentElement.appendChild(retryBtn);
             }
         }
 
@@ -304,41 +322,58 @@
             }
         }
 
-        // Script simples para lidar com o envio
-        document.getElementById('quoteForm').addEventListener('submit', function (e) {
+        // Script para lidar com o envio real para a API
+        document.getElementById('quoteForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
             const btn = document.getElementById('submitBtn');
             const originalText = btn.innerText;
 
-            // Simula processamento
+            // Interface de carregamento
             btn.innerText = 'Enviando...';
             btn.disabled = true;
             btn.style.opacity = '0.7';
 
-            // Coleta dados
-            const formData = new FormData(e.target);
+            try {
+                // Coleta dados
+                const formData = new FormData(e.target);
 
-            // Adiciona labels de texto para selects que enviam IDs
-            if (categoriaSelect.value && categoriaSelect.selectedOptions[0]) {
-                formData.append('categoria_nome', categoriaSelect.selectedOptions[0].text);
-            }
-            if (veiculoMarcaSelect && veiculoMarcaSelect.value && veiculoMarcaSelect.selectedOptions[0]) {
-                formData.append('veiculo_marca_nome', veiculoMarcaSelect.selectedOptions[0].text);
-            }
+                // Adiciona labels de texto para os campos que usam IDs no select
+                if (categoriaSelect.value && categoriaSelect.selectedOptions[0]) {
+                    formData.append('categoria_nome', categoriaSelect.selectedOptions[0].text);
+                }
+                if (veiculoMarcaSelect && veiculoMarcaSelect.value && veiculoMarcaSelect.selectedOptions[0]) {
+                    formData.append('veiculo_marca_nome', veiculoMarcaSelect.selectedOptions[0].text);
+                }
 
-            const data = Object.fromEntries(formData.entries());
+                const data = Object.fromEntries(formData.entries());
 
-            console.log('Dados da cotação:', data);
+                // Envio para a API Real
+                const response = await fetch('/api/seguros/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
 
-            setTimeout(() => {
-                alert('✅ Solicitação recebida com sucesso! Em breve um de nossos especialistas entrará em contato.');
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('✅ Solicitação recebida com sucesso! Em breve um de nossos especialistas entrará em contato.');
+                    window.location.href = 'index.html';
+                } else {
+                    throw new Error(result.error || 'Erro ao enviar solicitação');
+                }
+
+            } catch (error) {
+                console.error('Erro no envio:', error);
+                alert('❌ Ocorreu um erro ao enviar sua solicitação: ' + error.message);
+            } finally {
                 btn.innerText = originalText;
                 btn.disabled = false;
                 btn.style.opacity = '1';
-                // e.target.reset(); 
-                window.location.href = 'index.html';
-            }, 1500);
+            }
         });
     </script>
 </body>
