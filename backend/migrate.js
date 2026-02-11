@@ -7,7 +7,7 @@ const db = require('./db');
  */
 async function migrate() {
     try {
-        console.log('--- [PORTAL-MIGRATE] Iniciando v1.5.1 ---');
+        console.log('--- [PORTAL-MIGRATE] Iniciando v1.5.2 ---');
 
         // 0. Estrutura de Seguros
         console.log('[PORTAL-MIGRATE] Passo 0: Tabelas de Seguros...');
@@ -123,7 +123,7 @@ async function migrate() {
             );
         `);
 
-        console.log('✅ [PORTAL-MIGRATE] Fim da v1.5.1');
+        console.log('✅ [PORTAL-MIGRATE] Fim da v1.5.2');
         return;
     } catch (error) {
         console.error('❌ [PORTAL] Erro na migração:', error);
