@@ -21,38 +21,46 @@
                 <p>Escolha o tipo de serviço e preencha os detalhes para sua proposta.</p>
             </div>
 
-            <!-- Seletor de Tipo de Cotação -->
-            <div class="channel-options" style="margin-bottom: 2rem;">
-                <label class="channel-card">
-                    <input type="radio" name="tipo_cotacao_selector" value="NOVA" checked>
-                    <i class="fas fa-plus-circle"></i>
-                    <div class="channel-info">
-                        <span class="channel-name">Nova Cotação</span>
-                        <span class="channel-detail">Quero contratar um novo seguro</span>
+            <!-- Fluxo de Startup Iniciado por Modal (Request do Usuário) -->
+            <div id="startup-overlay"
+                style="display: flex; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); align-items: center; justify-content: center;">
+                <!-- Etapa 1: Já é cliente? -->
+                <div id="startup-step-1" class="login-card"
+                    style="max-width: 400px; text-align: center; padding: 2.5rem;">
+                    <div class="logo-section">
+                        <i class="fas fa-user-shield"
+                            style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;"></i>
+                        <h2 style="margin-bottom: 1.5rem;">Bem-vindo(a)!</h2>
+                        <p style="margin-bottom: 2rem;">Você já é segurado da Broker IA?</p>
                     </div>
-                </label>
-                <label class="channel-card">
-                    <input type="radio" name="tipo_cotacao_selector" value="RENOVACAO">
-                    <i class="fas fa-sync-alt"></i>
-                    <div class="channel-info">
-                        <span class="channel-name">Renovação</span>
-                        <span class="channel-detail">Já tenho seguro e quero renovar</span>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <button onclick="setStartupChoice('isClient', true)" class="btn-login"
+                            style="margin:0; width: 100%;">Sim, sou cliente</button>
+                        <button onclick="setStartupChoice('isClient', false)" class="btn-login"
+                            style="margin:0; width: 100%; background: rgba(255,255,255,0.1);">Não, ainda não</button>
                     </div>
-                </label>
-            </div>
+                </div>
 
-            <div id="client-check" class="form-group"
-                style="display: none; background: rgba(16, 185, 129, 0.05); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--primary-glow); margin-bottom: 2rem;">
-                <p style="font-size: 0.9rem; margin-bottom: 1rem; color: #fff;">Você já é nosso cliente?</p>
-                <div style="display: flex; gap: 1rem;">
-                    <button type="button" class="btn-login" style="margin:0; flex:1;"
-                        onclick="handleIsClient(true)">Sim, sou cliente</button>
-                    <button type="button" class="btn-login" style="margin:0; flex:1; background: rgba(255,255,255,0.1);"
-                        onclick="handleIsClient(false)">Não, ainda não</button>
+                <!-- Etapa 2: O que gostaria? -->
+                <div id="startup-step-2" class="login-card"
+                    style="display: none; max-width: 400px; text-align: center; padding: 2.5rem;">
+                    <div class="logo-section">
+                        <i class="fas fa-question-circle"
+                            style="font-size: 3rem; color: var(--secondary); margin-bottom: 1rem;"></i>
+                        <h2 style="margin-bottom: 1.5rem;">O que gostaria?</h2>
+                        <p style="margin-bottom: 2rem;">Selecione o tipo de atendimento que deseja hoje.</p>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <button onclick="setStartupChoice('goal', 'RENOVACAO')" class="btn-login"
+                            style="margin:0; width: 100%; border-color: var(--secondary); color: var(--secondary);">Fazer
+                            Renovação</button>
+                        <button onclick="setStartupChoice('goal', 'NOVA')" class="btn-login"
+                            style="margin:0; width: 100%; background: var(--primary);">Nova Cotação</button>
+                    </div>
                 </div>
             </div>
 
-            <form id="quoteForm">
+            <form id="quoteForm" style="display: none;">
                 <!-- Identificação Básica -->
                 <input type="hidden" name="tipo_cotacao" id="tipo_cotacao" value="NOVA">
 
@@ -417,6 +425,38 @@
             });
         });
 
+        // --- Variáveis de Fluxo ---
+        let startupChoices = { isClient: null, goal: null };
+
+        function setStartupChoice(key, value) {
+            startupChoices[key] = value;
+            if (key === 'isClient') {
+                document.getElementById('startup-step-1').style.display = 'none';
+                document.getElementById('startup-step-2').style.display = 'block';
+            } else if (key === 'goal') {
+                processStartupFlow();
+            }
+        }
+
+        function processStartupFlow() {
+            // Documento oculta o overlay
+            document.getElementById('startup-overlay').style.display = 'none';
+            tipoCotacaoInput.value = startupChoices.goal;
+
+            if (startupChoices.isClient) {
+                // Caso Cliente: Abre Modal 2FA
+                document.getElementById('loginModal').style.display = 'flex';
+                document.getElementById('modalStep1').style.display = 'block';
+            } else {
+                // Caso Não-Cliente: Abre Form Full limpo
+                quoteForm.style.display = 'block';
+                document.querySelector('.footer-links').style.display = 'block';
+                if (startupChoices.goal === 'RENOVACAO') {
+                    renewalFields.style.display = 'block';
+                }
+            }
+        }
+
         // --- Funções de Lógica ---
 
         function checkRenewalData() {
@@ -599,17 +639,30 @@
 
                 lockClientFields(true);
                 closeLoginModal();
-                clientCheck.style.display = 'none';
 
-                // Mostrar o formulário e rodapé após login (foram escondidos na seleção de renovação)
-                const footerLinks = document.querySelector('.footer-links');
+                // Mostrar o formulário e rodapé após login (Lógica solicitada)
                 quoteForm.style.display = 'block';
-                footerLinks.style.display = 'block';
+                document.querySelector('.footer-links').style.display = 'block';
 
-                // 3. Se for Renovação, carregar apólices imediatamente
-                if (tipoCotacaoInput.value === 'RENOVACAO') {
-                    console.log('[PORTAL] Login OK. Carregando apólices para renovação...');
+                if (startupChoices.goal === 'RENOVACAO') {
+                    // Se for renovação, esconder campos técnicos até carregar apólices
+                    // No caso de renovação, mostramos APENAS o seletor inicialmente se for cliente
+                    const allFormGroups = quoteForm.querySelectorAll('.form-group');
+                    allFormGroups.forEach(g => {
+                        const inputId = g.querySelector('input, select')?.id;
+                        // Mantemos apenas os básicos visíveis (bloqueados)
+                        if (['nome', 'cpf', 'email', 'telefone'].includes(inputId)) {
+                            g.style.display = 'block';
+                        } else {
+                            g.style.display = 'none';
+                        }
+                    });
+
+                    // Chama carregamento de apólices
                     loadUserPoliciesForRenewal();
+                } else {
+                    // Se for NOVA cotação mas é cliente, mostramos tudo preenchido (básicos bloqueados)
+                    lockInsuranceFields(false);
                 }
 
                 alert(`Olá ${data.user.nome.split(' ')[0]}, reconhecemos seu cadastro. Seus dados básicos foram carregados.`);
@@ -652,6 +705,19 @@
             categoriaSelect.disabled = lock;
         }
 
+        function showRenewalFieldsAfterSelection() {
+            // Reexibe os campos que foram escondidos durante a fase de login/identificação
+            const allFormGroups = quoteForm.querySelectorAll('.form-group');
+            allFormGroups.forEach(g => {
+                g.style.display = 'block';
+            });
+            // O seletor de apólices continua visível
+            document.getElementById('policy-selector-group').style.display = 'block';
+
+            // Se for renovação de cliente ativo, os campos técnicos de seguro ficam travados
+            lockInsuranceFields(true);
+        }
+
         async function loadUserPoliciesForRenewal() {
             const token = localStorage.getItem('broker_ia_token');
             if (!token) return;
@@ -688,7 +754,16 @@
                     if (policies.length === 1) {
                         select.value = policies[0].id_apolice;
                         select.dispatchEvent(new Event('change'));
+                        showRenewalFieldsAfterSelection();
+                    } else {
+                        // Se tiver mais de uma, espera o usuário escolher para mostrar os campos
+                        alert('Encontramos mais de uma apólice em seu nome. Por favor, escolha qual deseja renovar.');
                     }
+                } else {
+                    // Fallback se for cliente mas não tiver apólice (Raro)
+                    alert('Não encontramos apólices ativas para carregamento automático. Por favor, preencha os dados manualmente.');
+                    showRenewalFieldsAfterSelection();
+                    lockInsuranceFields(false);
                 }
             } catch (err) {
                 console.error('Erro ao carregar apólices:', err);
@@ -759,6 +834,9 @@
                 const dataFim = p.data_fim ? new Date(p.data_fim).toLocaleDateString('pt-BR') : 'não informada';
                 obs.value = `Solicitação de renovação para apólice nº ${p.numero_apolice || 'N/A'}. Vigência até ${dataFim}.`;
             }
+
+            // Se for cliente ativo, os campos de seguro estão bloqueados pelo auto-preenchimento
+            showRenewalFieldsAfterSelection();
         });
 
         async function loadInsuranceData() {
@@ -850,13 +928,18 @@
                     body: JSON.stringify(data)
                 });
                 if (response.ok) {
-                    alert('✅ Solicitação recebida com sucesso! Nossa equipe entrará em contato em breve.');
-                    window.location.href = 'index.html';
+                    btn.innerText = '✅ Enviado!';
+                    btn.classList.add('success-btn'); // Feedback visual
+                    setTimeout(() => {
+                        alert('✅ Solicitação recebida com sucesso! Nossa equipe entrará em contato em breve.');
+                        window.location.href = 'index.html';
+                    }, 1000);
                 } else {
                     const resJson = await response.json();
                     throw new Error(resJson.error || 'Erro ao enviar');
                 }
-            } catch (error) { alert('❌ Erro: ' + error.message); } finally {
+            } catch (error) {
+                alert('❌ Erro: ' + error.message);
                 btn.innerText = originalText;
                 btn.disabled = false;
             }
