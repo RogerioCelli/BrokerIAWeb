@@ -28,58 +28,19 @@ const policyController = {
                 }
             }
 
-            // Consulta principal na tabela apolices_brokeria
-            const queryText = `
-                SELECT
-                    id_apolice as id,
-                    numero_apolice,
-                    seguradora,
-                    ramo,
-                    vigencia_inicio as data_inicio,
-                    vigencia_fim as data_fim,
-                    status_apolice as status,
-                    placa,
-                    chassi,
-                    classe_bonus as bonus,
-                    url_pdf,
-                    link_url_apolice,
-                    data_criacao
-                FROM apolices_brokeria
-                WHERE REPLACE(REPLACE(cpf, '.', ''), '-', '') = $1
-                ORDER BY vigencia_fim DESC
-            `;
+            // Consulta solicitada: SELECT * na apolices_brokeria
+            // Consulta Direta (Como funcionava antes)
+            const queryText = `SELECT * FROM apolices_brokeria WHERE cpf = $1 ORDER BY vigencia_fim DESC`;
 
-            // Executa a query no banco de APOLICES (Correto)
+            console.log(`[PORTAL-SEARCH] Buscando apólices para o CPF: ${cleanCpf}`);
             const { rows } = await db.apolicesQuery(queryText, [cleanCpf]);
 
-            // Retorna apenas os dados da tabela apolices_brokeria, sem enriquecimento externo
+            console.log(`[PORTAL-SEARCH] Resultado: ${rows.length} apólices found.`);
             res.json(rows);
 
         } catch (error) {
             console.error('[CRITICAL-ERROR]', error.message);
-
-            // RAIO-X: Se a tabela não existe, me mostre o que existe!
-            let tablesFound = 'Nenhuma tabela';
-            let currentDbName = 'Desconhecido';
-
-            if (error.message.includes('does not exist')) {
-                try {
-                    const { rows: dbInfo } = await db.apolicesQuery('SELECT current_database() as db_name');
-                    currentDbName = dbInfo[0].db_name;
-
-                    const { rows } = await db.apolicesQuery(`
-                        SELECT table_name 
-                        FROM information_schema.tables 
-                        WHERE table_schema = 'public'
-                `);
-                    tablesFound = rows.map(r => r.table_name).join(', ') || 'Nenhuma (Banco Vazio?)';
-                    console.error('[RAIO-X] Tabelas encontradas no banco:', tablesFound);
-                } catch (scanErr) {
-                    console.error('[RAIO-X] Falha ao escanear:', scanErr.message);
-                }
-            }
-
-            res.status(500).json({ error: `Erro no Banco(${currentDbName}): ${error.message}. (O que existe lá: ${tablesFound})` });
+            res.status(500).json({ error: error.message });
         }
     },
 

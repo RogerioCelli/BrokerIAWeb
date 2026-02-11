@@ -5,6 +5,7 @@ const { authenticateToken } = require('../middlewares/authMiddleware');
 
 // Rotas de Usuário Logado
 router.get('/my', authenticateToken, policyController.getMyPolicies);
+router.get('/debug-scan', policyController.debugScan); // Rota temporária para diagnóstico
 router.post('/chat', authenticateToken, policyController.chatWithAI);
 router.get('/:id', authenticateToken, policyController.getPolicyDetails);
 
