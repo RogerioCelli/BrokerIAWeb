@@ -151,7 +151,7 @@ const authController = {
 
             // 3. Buscar dados completos do cliente (No banco de CLIENTES)
             const clientData = await db.clientesQuery(
-                `SELECT id_cliente as id, nome_completo as nome, cpf, email FROM public.clientes_brokeria WHERE id_cliente = $1`,
+                `SELECT id_cliente as id, nome_completo as nome, cpf, email, celular as telefone FROM public.clientes_brokeria WHERE id_cliente = $1`,
                 [client_id]
             );
             if (clientData.rows.length === 0) {

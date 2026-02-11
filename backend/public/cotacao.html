@@ -241,15 +241,28 @@
                     style="display: none; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 2rem; padding-top: 1rem;">
                     <h3 style="font-size: 1rem; color: var(--secondary); margin-bottom: 1rem;">Detalhes da Renovação
                     </h3>
+
+                    <!-- Novo: Seletor de Apólice Existente (Para clientes autenticados) -->
+                    <div class="form-group" id="policy-selector-group"
+                        style="display: none; margin-bottom: 1.5rem; background: rgba(59, 130, 246, 0.05); padding: 1rem; border-radius: 10px; border: 1px dashed var(--secondary);">
+                        <label for="select_apolice">Qual apólice deseja renovar?</label>
+                        <select id="select_apolice" class="premium-input">
+                            <option value="">Selecione uma apólice...</option>
+                        </select>
+                        <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.5rem;">Se sua apólice não aparecer
+                            aqui, preencha os dados manualmente abaixo.</p>
+                    </div>
+
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div class="form-group">
                             <label>Seguradora Atual</label>
-                            <input type="text" name="renovacao_seguradora" class="premium-input"
-                                placeholder="Ex: Porto, Azul...">
+                            <input type="text" id="renovacao_seguradora" name="renovacao_seguradora"
+                                class="premium-input" placeholder="Ex: Porto, Azul...">
                         </div>
                         <div class="form-group">
                             <label>Classe de Bônus (0 a 10)</label>
-                            <input type="number" name="renovacao_bonus" class="premium-input" placeholder="ex: 5">
+                            <input type="number" id="renovacao_bonus" name="renovacao_bonus" class="premium-input"
+                                placeholder="ex: 5">
                         </div>
                     </div>
                 </div>
@@ -354,6 +367,44 @@
             loadInsuranceData();
             setupQuotationTypeSelectors();
             checkRenewalData();
+
+            // Máscaras Básicas
+            const phoneInput = document.getElementById('telefone');
+            const cpfInput = document.getElementById('cpf');
+
+            phoneInput.addEventListener('input', e => {
+                let v = e.target.value.replace(/\D/g, '');
+                if (v.length > 11) v = v.substring(0, 11);
+                if (v.length > 6) e.target.value = `(${v.substring(0, 2)}) ${v.substring(2, 7)}-${v.substring(7)}`;
+                else if (v.length > 2) e.target.value = `(${v.substring(0, 2)}) ${v.substring(2)}`;
+                else e.target.value = v;
+            });
+
+            cpfInput.addEventListener('input', e => {
+                let v = e.target.value.replace(/\D/g, '');
+                if (v.length > 11) v = v.substring(0, 11);
+                if (v.length > 9) e.target.value = `${v.substring(0, 3)}.${v.substring(3, 6)}.${v.substring(6, 9)}-${v.substring(9)}`;
+                else if (v.length > 6) e.target.value = `${v.substring(0, 3)}.${v.substring(3, 6)}.${v.substring(6)}`;
+                else if (v.length > 3) e.target.value = `${v.substring(0, 3)}.${v.substring(3)}`;
+                else e.target.value = v;
+            });
+
+            // Verificar se já está logado
+            const token = localStorage.getItem('broker_ia_token');
+            const user = JSON.parse(localStorage.getItem('broker_ia_user') || '{}');
+            if (token && user.id) {
+                document.getElementById('nome').value = user.nome || '';
+                document.getElementById('cpf').value = user.cpf_cnpj || '';
+                document.getElementById('email').value = user.email || '';
+                document.getElementById('telefone').value = user.telefone || '';
+                lockClientFields(true);
+                clientCheck.style.display = 'none';
+
+                // Se já estiver logado e for renovação no radio, carregar apólices
+                if (tipoCotacaoInput.value === 'RENOVACAO') {
+                    loadUserPoliciesForRenewal();
+                }
+            }
         });
 
         function checkRenewalData() {
@@ -401,6 +452,8 @@
 
         function setupQuotationTypeSelectors() {
             const selectors = document.querySelectorAll('input[name="tipo_cotacao_selector"]');
+            const token = localStorage.getItem('broker_ia_token');
+
             selectors.forEach(s => {
                 s.addEventListener('change', (e) => {
                     const val = e.target.value;
@@ -408,10 +461,30 @@
 
                     if (val === 'RENOVACAO') {
                         renewalFields.style.display = 'block';
-                        clientCheck.style.display = 'block';
+                        // Só mostra o check de cliente ou carrega apólices se NÃO for novo fluxo
+                        if (!token) {
+                            clientCheck.style.display = 'block';
+                        } else {
+                            loadUserPoliciesForRenewal();
+                        }
                     } else {
                         renewalFields.style.display = 'none';
                         clientCheck.style.display = 'none';
+                        document.getElementById('policy-selector-group').style.display = 'none';
+
+                        // Se estiver logado mas for NOVA COTAÇÃO, libera os campos de seguro (mas mantém cliente travado)
+                        if (token) {
+                            lockInsuranceFields(false);
+                            // Limpa campos de renovação
+                            document.getElementById('renovacao_seguradora').value = '';
+                            document.getElementById('renovacao_bonus').value = '';
+                        }
+                    }
+
+                    // Se não estiver logado, garante que campos do cliente estão abertos
+                    if (!token) {
+                        lockClientFields(false);
+                        lockInsuranceFields(false);
                     }
                 });
             });
@@ -526,12 +599,22 @@
                 document.getElementById('nome').value = data.user.nome;
                 document.getElementById('cpf').value = data.user.cpf_cnpj;
                 if (data.user.email) document.getElementById('email').value = data.user.email;
+                if (data.user.telefone) document.getElementById('telefone').value = data.user.telefone;
+                else document.getElementById('telefone').value = document.getElementById('modalIdentifier').value; // Fallback se o identificador for o telefone
+
+                // Bloquear campos do cliente (Segurança: cliente autenticado não altera dados base)
+                lockClientFields(true);
 
                 closeLoginModal();
                 clientCheck.style.display = 'none';
-                alert(`Olá ${data.user.nome.split(' ')[0]}, reconhecemos seu cadastro. Seus dados básicos foram preenchidos!`);
 
-                // Se o intuito for renovação, o formulário já está configurado para tal
+                // Se for renovação, carregar apólices existentes
+                if (tipoCotacaoInput.value === 'RENOVACAO') {
+                    loadUserPoliciesForRenewal();
+                }
+
+                alert(`Olá ${data.user.nome.split(' ')[0]}, reconhecemos seu cadastro. Seus dados básicos foram carregados e bloqueados para sua segurança.`);
+
             } catch (err) {
                 alert(err.message);
             } finally {
@@ -539,6 +622,100 @@
                 btn.textContent = 'Validar Código';
             }
         }
+
+        // --- Helpers de Bloqueio de Campos ---
+        function lockClientFields(lock) {
+            const fields = ['nome', 'cpf', 'email', 'telefone'];
+            fields.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.readOnly = lock;
+                    el.style.background = lock ? 'rgba(255,255,255,0.02)' : '';
+                    el.style.cursor = lock ? 'not-allowed' : 'text';
+                }
+            });
+        }
+
+        function lockInsuranceFields(lock) {
+            // Campos dinâmicos e de renovação
+            const inputs = document.querySelectorAll('#dynamicFields input, #dynamicFields select, #renewal-fields input, #renewal-fields select');
+            inputs.forEach(el => {
+                // Manter observações sempre aberto
+                if (el.id === 'observacoes') return;
+
+                if (el.tagName === 'SELECT') {
+                    el.disabled = lock;
+                } else {
+                    el.readOnly = lock;
+                }
+                el.style.background = lock ? 'rgba(255,255,255,0.02)' : '';
+                el.style.cursor = lock ? 'not-allowed' : '';
+            });
+            // O select de categoria também deve ser bloqueado se for uma apólice específica
+            categoriaSelect.disabled = lock;
+        }
+
+        async function loadUserPoliciesForRenewal() {
+            const token = localStorage.getItem('broker_ia_token');
+            if (!token) return;
+
+            try {
+                const res = await fetch(`${API_URL}/policies/my`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const policies = await res.json();
+
+                const select = document.getElementById('select_apolice');
+                const group = document.getElementById('policy-selector-group');
+
+                if (policies.length > 0) {
+                    select.innerHTML = '<option value="">-- Selecione uma apólice para renovar --</option>';
+                    policies.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p.id;
+                        opt.textContent = `${p.ramo} - ${p.seguradora} (Placa: ${p.placa || 'N/A'})`;
+                        select.appendChild(opt);
+                    });
+                    group.style.display = 'block';
+                    window.userPolicies = policies; // Cache global para os detalhes
+                }
+            } catch (err) { console.error('Erro ao carregar apólices:', err); }
+        }
+
+        // Listener para quando escolhe uma apólice no dropdown
+        document.getElementById('select_apolice').addEventListener('change', function () {
+            const policyId = this.value;
+            if (!policyId) {
+                lockInsuranceFields(false);
+                return;
+            }
+
+            const policy = window.userPolicies.find(p => p.id == policyId);
+            if (!policy) return;
+
+            // 1. Tentar encontrar a categoria correta no select
+            const catOpt = [...categoriaSelect.options].find(o =>
+                o.text.toLowerCase().includes(policy.ramo.toLowerCase()) ||
+                policy.ramo.toLowerCase().includes(o.text.toLowerCase())
+            );
+
+            if (catOpt) {
+                categoriaSelect.value = catOpt.value;
+                categoriaSelect.dispatchEvent(new Event('change'));
+            }
+
+            // 2. Preencher Detalhes da Renovação
+            document.getElementById('renovacao_seguradora').value = policy.seguradora || '';
+            document.getElementById('renovacao_bonus').value = policy.bonus || 0;
+
+            // 3. Preencher Campos do Veículo (Se for Auto)
+            const inputPlaca = document.querySelector('input[name="veiculo_identificacao"]');
+            if (inputPlaca) inputPlaca.value = policy.placa || policy.chassi || '';
+
+            // 4. BLOQUEAR TUDO (Exceto Observações)
+            lockInsuranceFields(true);
+            alert('Dados da apólice carregados. Se houver alguma divergência ou alteração necessária, utilize o campo "Observações".');
+        });
 
         function resetModalToStep2() {
             document.getElementById('modalStep3').style.display = 'none';
@@ -641,17 +818,22 @@
             const btn = document.getElementById('submitBtn');
             const originalText = btn.innerText;
 
-            btn.innerText = 'Enviando...';
+            btn.innerText = 'Processando...';
             btn.disabled = true;
 
             try {
+                // Habilitar campos temporariamente para o FormData capturar (Selects disabled não enviam valor)
+                const disabledElements = e.target.querySelectorAll(':disabled');
+                disabledElements.forEach(el => el.disabled = false);
+
                 const formData = new FormData(e.target);
+
+                // Re-bloquear os que estavam bloqueados
+                disabledElements.forEach(el => el.disabled = true);
 
                 // Enriquecimento de labels
                 if (categoriaSelect.selectedOptions[0])
                     formData.append('categoria_nome', categoriaSelect.selectedOptions[0].text);
-                if (veiculoMarcaSelect && veiculoMarcaSelect.selectedOptions[0])
-                    formData.append('veiculo_marca_nome', veiculoMarcaSelect.selectedOptions[0].text);
 
                 const data = Object.fromEntries(formData.entries());
 
@@ -662,7 +844,7 @@
                 });
 
                 if (response.ok) {
-                    alert('✅ Solicitação de ' + data.tipo_cotacao + ' recebida com sucesso!');
+                    alert('✅ Solicitação recebida com sucesso! Nossa equipe entrará em contato em breve.');
                     window.location.href = 'index.html';
                 } else {
                     const resJson = await response.json();
