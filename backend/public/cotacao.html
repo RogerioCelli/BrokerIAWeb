@@ -453,28 +453,30 @@
                     const val = e.target.value;
                     tipoCotacaoInput.value = val;
 
+                    // Reset TOTAL de visibilidade antes de aplicar lógica
+                    renewalFields.style.display = 'none';
+                    clientCheck.style.display = 'none';
+                    document.getElementById('policy-selector-group').style.display = 'none';
+                    document.getElementById('policy-download-container').style.display = 'none';
+
                     if (val === 'RENOVACAO') {
-                        // 1. Fluxo de Renovação: Esconder Categoria IMEDIATAMENTE
-                        renewalFields.style.display = 'block';
+                        // 1. Fluxo de Renovação: Esconder Categoria 
                         catGroup.style.display = 'none';
 
-                        // 2. Garantir que campos de identificação estão vazios
+                        // 2. Limpar campos de identificação (Sem preenchimento automático)
                         document.getElementById('nome').value = '';
                         document.getElementById('cpf').value = '';
                         document.getElementById('email').value = '';
                         document.getElementById('telefone').value = '';
                         lockClientFields(false);
 
-                        // 3. SEMPRE mostrar pergunta "Você já é nosso cliente?" para forçar login
+                        // 3. Mostrar UNICAMENTE a pergunta de identificação
+                        // Os campos de "Detalhes da Renovação" (renewalFields) só aparecem DEPOIS do login
                         clientCheck.style.display = 'block';
-                        document.getElementById('policy-selector-group').style.display = 'none';
 
                     } else {
-                        // Fluxo de Nova Cotação: Lousa Limpa
-                        renewalFields.style.display = 'none';
-                        clientCheck.style.display = 'none';
+                        // Fluxo de Nova Cotação: Lousa Limpa e Categoria Reaparece
                         catGroup.style.display = 'block';
-                        document.getElementById('policy-selector-group').style.display = 'none';
 
                         document.getElementById('nome').value = '';
                         document.getElementById('cpf').value = '';
@@ -485,6 +487,10 @@
                         lockInsuranceFields(false);
                         hideAllDynamicFields();
                         categoriaSelect.value = '';
+
+                        // Limpar campos técnicos de renovação
+                        document.getElementById('renovacao_seguradora').value = '';
+                        document.getElementById('renovacao_bonus').value = '';
                     }
                 });
             });
@@ -646,6 +652,8 @@
 
                 if (Array.isArray(policies) && policies.length > 0) {
                     console.log(`[PORTAL] ${policies.length} apólices encontradas.`);
+
+                    // Limpa e Preenche Select
                     select.innerHTML = '<option value="">-- Selecione uma apólice para renovar --</option>';
                     policies.forEach(p => {
                         const opt = document.createElement('option');
@@ -654,15 +662,22 @@
                         select.appendChild(opt);
                     });
 
-                    // Garante visibilidade do fluxo de renovação
+                    // Garante visibilidade e esconde categoria
                     renFields.style.display = 'block';
                     group.style.display = 'block';
-                    catGroup.style.display = 'none'; // Sempre esconde categoria na renovação
+                    catGroup.style.display = 'none';
                     window.userPolicies = policies;
+
+                    // Lógica solicitada: Se tiver só UMA, traz automaticamente
+                    if (policies.length === 1) {
+                        console.log('[PORTAL] Cliente possui apenas uma apólice. Selecionando automaticamente...');
+                        select.value = policies[0].id;
+                        select.dispatchEvent(new Event('change'));
+                    }
                 } else {
-                    console.warn('[PORTAL] Nenhuma apólice ativa encontrada para este CPF.');
+                    console.warn('[PORTAL] Nenhuma apólice ativa encontrada.');
                     group.style.display = 'none';
-                    alert('Não encontramos apólices ativas no seu cadastro para carregamento automático. Por favor, preencha os dados manualmente.');
+                    alert('Não encontramos apólices ativas vinculadas ao seu CPF para carregamento automático.');
                 }
             } catch (err) {
                 console.error('Erro ao carregar apólices:', err);
@@ -680,39 +695,60 @@
             const policyId = this.value;
             const downloadContainer = document.getElementById('policy-download-container');
             const catGroup = document.querySelector('.form-group label[for="categoria_seguro"]').closest('.form-group');
+
+            // Se desmarcou, libera tudo
             if (!policyId) {
                 lockInsuranceFields(false);
-                catGroup.style.display = 'block';
+                hideAllDynamicFields(); // Limpa visual anterior
+                categoriaSelect.value = '';
+                document.getElementById('renovacao_seguradora').value = '';
+                document.getElementById('renovacao_bonus').value = '';
                 downloadContainer.style.display = 'none';
                 return;
             }
+
             const p = window.userPolicies.find(pl => pl.id == policyId);
             if (!p) return;
+
+            console.log('[PORTAL] Apólice selecionada:', p.numero_apolice);
+
+            // 1. Mapeamento de Categoria
             const catOpt = [...categoriaSelect.options].find(o =>
                 o.text.toLowerCase().includes(p.ramo.toLowerCase()) ||
                 p.ramo.toLowerCase().includes(o.text.toLowerCase())
             );
-            if (catOpt) { categoriaSelect.value = catOpt.value; categoriaSelect.dispatchEvent(new Event('change')); }
+            if (catOpt) {
+                categoriaSelect.value = catOpt.value;
+                categoriaSelect.dispatchEvent(new Event('change'));
+            }
+
+            // 2. Preenchimento de Campos de Renovação
             document.getElementById('renovacao_seguradora').value = p.seguradora || '';
             document.getElementById('renovacao_bonus').value = p.bonus || 0;
+
+            // 3. Preenchimento do Veículo (Se for categoria auto)
             const placa = document.querySelector('input[name="veiculo_identificacao"]');
             if (placa) placa.value = p.placa || p.chassi || '';
-            catGroup.style.display = 'none';
+
+            // 4. Download do PDF Original
             const pdfUrl = p.link_url_apolice || p.url_pdf;
             if (checkPdfLink(pdfUrl)) {
                 document.getElementById('btn_download_apolice').href = pdfUrl;
                 downloadContainer.style.display = 'flex';
-            } else { downloadContainer.style.display = 'none'; }
+            } else {
+                downloadContainer.style.display = 'none';
+            }
+
+            // 5. Trava os campos preenchidos e esconde seletor de categoria
+            catGroup.style.display = 'none';
             lockInsuranceFields(true);
 
-            // 7. Observação automática para contexto do corretor
+            // 6. Observação automática (Contexto)
             const obs = document.getElementById('observacoes');
             if (obs) {
                 const dataFim = p.data_fim ? new Date(p.data_fim).toLocaleDateString('pt-BR') : 'não informada';
                 obs.value = `Solicitação de renovação para apólice nº ${p.numero_apolice || 'N/A'}. Vigência até ${dataFim}.`;
             }
-
-            alert('Dados da apólice carregados. Se houver alguma divergência ou alteração necessária, utilize o campo "Observações".');
         });
 
         async function loadInsuranceData() {
@@ -728,11 +764,15 @@
             } catch (e) { console.error('Erro ao carregar seguros:', e); }
         }
 
+        function hideAllDynamicFields() {
+            dynamicGroups.forEach(g => g.style.display = 'none');
+        }
+
         categoriaSelect.addEventListener('change', function () {
             const catId = this.value;
             const category = insuranceStructure.find(c => c.categoria_id == catId);
             if (!category) return;
-            dynamicGroups.forEach(g => g.style.display = 'none');
+            hideAllDynamicFields();
             const catName = category.categoria_nome.toLowerCase();
             if (catName.includes('automóvel') || catName.includes('veículo')) {
                 document.getElementById('fields-auto').style.display = 'block';
