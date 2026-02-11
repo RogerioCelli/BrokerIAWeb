@@ -30,11 +30,11 @@ const authController = {
             }
 
             // 1. Buscar a organização pelo slug (No banco MASTER)
-            const orgResult = await db.masterQuery('SELECT id FROM organizacoes WHERE slug = $1 AND ativo = TRUE', [org_slug]);
+            const orgResult = await db.masterQuery('SELECT * FROM organizacoes WHERE slug = $1 AND ativo = TRUE', [org_slug]);
             if (orgResult.rows.length === 0) {
                 return res.status(404).json({ error: 'Corretora não encontrada ou inativa' });
             }
-            const orgId = orgResult.rows[0].id;
+            const org = orgResult.rows[0];
 
             // 2. Buscar o cliente (CPF ou E-mail) no BANCO DE CLIENTES
             const cleanIdentifier = identifier.includes('@') ? identifier : identifier.replace(/\D/g, '');
@@ -64,19 +64,18 @@ const authController = {
             const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutos
 
             // 4. Salvar o token no banco LOCAL (Portal)
-            // Criaremos esta tabela no migrate
             await db.query(`
                 INSERT INTO tokens_acesso (cliente_id, token_hash, expira_em) 
                 VALUES ($1, $2, $3)
                 ON CONFLICT (cliente_id) DO UPDATE SET token_hash = $2, expira_em = $3, usado = FALSE`,
                 [client.id, token, expiresAt]
             ).catch(err => {
-                console.warn('[AUTH] Tabela tokens_acesso não existe ainda no Portal. Usando Log apenas.');
+                console.warn('[AUTH] Tabela tokens_acesso não existe ainda no Portal.');
             });
 
             console.log(`[AUTH-TOKEN] Código para ${client.nome}: ${token}`);
 
-            // 5. Preparar dados mascarados para o frontend
+            // 5. Preparar dados mascarados
             const maskedEmail = client.email ? client.email.replace(/(.{2})(.*)(@.*)/, "$1******$3") : "Não cadastrado";
             const maskedPhone = client.telefone ? client.telefone.replace(/.*(\d{2})$/, "(**) *****-**$1") : "Não cadastrado";
 
@@ -85,10 +84,10 @@ const authController = {
             // 6. Envio Omnichannel
             if (channel === 'email' && client.email) {
                 const mailOptions = {
-                    from: `"Portal Broker IA" <${process.env.SMTP_USER}>`,
+                    from: `"${org.nome}" <${process.env.SMTP_USER}>`,
                     to: client.email,
                     subject: `Seu Código de Acesso: ${token}`,
-                    html: `<h2>Olá, ${client.nome}!</h2><p>Seu código é: <b>${token}</b></p>`
+                    html: `<h2>Olá, ${client.nome}!</h2><p>Seu código para acessar o portal da ${org.nome} é: <b>${token}</b></p>`
                 };
                 transporter.sendMail(mailOptions).catch(err => console.error('[SMTP]', err.message));
             } else if (channel === 'whatsapp' && process.env.N8N_WEBHOOK_URL) {
@@ -102,7 +101,8 @@ const authController = {
                         target: client.telefone,
                         token: token,
                         cpf: (client.cpf || "").replace(/\D/g, ''),
-                        portal_url: 'https://brokeria-api-brokeriaweb.cx0m9g.easypanel.host/login.html'
+                        org_name: org.nome,
+                        portal_url: `https://brokeria-api-brokeriaweb.cx0m9g.easypanel.host/login.html`
                     })
                 }).catch(e => console.error('[N8N]', e.message));
             }
@@ -112,7 +112,9 @@ const authController = {
                 step: channel ? 'VALIDATION' : 'CHANNEL_SELECTION',
                 client_id: client.id,
                 masked_email: maskedEmail,
-                masked_phone: maskedPhone
+                masked_phone: maskedPhone,
+                org_name: org.nome,
+                org_logo: org.logo_url
             });
 
         } catch (error) {
@@ -152,14 +154,19 @@ const authController = {
                 `SELECT id_cliente as id, nome_completo as nome, cpf, email FROM public.clientes_brokeria WHERE id_cliente = $1`,
                 [client_id]
             );
+            if (clientData.rows.length === 0) {
+                return res.status(404).json({ error: 'Cliente não encontrado' });
+            }
             const user = clientData.rows[0];
 
-            // Dados da Org (Mock fixo para manter compatibilidade na UI)
-            user.org_nome = "Portal Broker IA";
+            // 4. Buscar dados da Organização (SaaS)
+            // Aqui buscamos a organização ativa. Em um cenário real, o cliente está vinculado a uma org_id.
+            const orgResult = await db.masterQuery('SELECT * FROM organizacoes WHERE ativo = TRUE LIMIT 1');
+            const org = orgResult.rows[0] || { nome: "Portal Broker IA" };
 
-            // 4. Gerar o JWT (8 horas)
+            // 5. Gerar o JWT (8 horas como solicitado, mas com expiração clara)
             const sessionToken = jwt.sign(
-                { id: user.id, nome: user.nome, cpf: user.cpf, role: 'customer' },
+                { id: user.id, nome: user.nome, cpf: user.cpf, role: 'customer', org_id: org.id },
                 process.env.JWT_SECRET,
                 { expiresIn: '8h' }
             );
@@ -171,7 +178,15 @@ const authController = {
                     id: user.id,
                     nome: user.nome,
                     cpf_cnpj: user.cpf,
-                    org_nome: user.org_nome
+                    org_nome: org.nome,
+                    org_logo: org.logo_url,
+                    contatos_org: org.config_json?.contatos || {
+                        endereco: org.config_json?.endereco || "Endereço não informado",
+                        email: org.config_json?.email || "contato@brokeria.com.br",
+                        celular: org.config_json?.celular || "(11) 99999-9999",
+                        fixo: org.config_json?.fixo || "(11) 4004-0000",
+                        site: org.config_json?.site || "www.brokeria.com.br"
+                    }
                 }
             });
 

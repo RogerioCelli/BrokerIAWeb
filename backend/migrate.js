@@ -111,17 +111,29 @@ async function migrate() {
         await db.query(`
             CREATE TABLE IF NOT EXISTS cotacoes (
                 id SERIAL PRIMARY KEY,
-                cliente_id UUID, -- Opcional: Se for cliente logado
-                tipo_cotacao VARCHAR(50) NOT NULL, -- 'NOVA' ou 'RENOVACAO'
+                cliente_id UUID,
+                tipo_cotacao VARCHAR(50) NOT NULL,
                 categoria VARCHAR(100) NOT NULL,
                 subtipo VARCHAR(100),
                 nome_cliente VARCHAR(255) NOT NULL,
                 cpf_cliente VARCHAR(20),
                 email_cliente VARCHAR(255),
                 telefone_cliente VARCHAR(255),
-                dados_json JSONB, -- Aqui guardamos o perfil de risco detalhado (Auto, Vida, Res)
+                dados_json JSONB,
                 status VARCHAR(50) DEFAULT 'PENDENTE',
                 observacoes TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
+        console.log('[PORTAL-MIGRATE] Passo 7: Tabela de Tokens 2FA...');
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS tokens_acesso (
+                id SERIAL PRIMARY KEY,
+                cliente_id UUID UNIQUE NOT NULL,
+                token_hash VARCHAR(255) NOT NULL,
+                usado BOOLEAN DEFAULT FALSE,
+                expira_em TIMESTAMP WITHOUT TIME ZONE NOT NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
         `);

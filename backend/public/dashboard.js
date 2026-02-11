@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('broker_ia_token');
     const userData = JSON.parse(localStorage.getItem('broker_ia_user') || '{}');
-    const API_URL = 'https://brokeria-api-brokeriaweb.cx0m9g.easypanel.host/api';
+    const API_URL = '/api'; // Versão relativa para facilitar deploy
 
     // Redireciona se não estiver logado
     if (!token || !userData.id) {
@@ -11,29 +11,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Preenche dados básicos e da organização
     document.getElementById('welcomeName').textContent = `Olá, ${userData.nome.split(' ')[0]}!`;
-    document.getElementById('orgName').textContent = userData.org_nome || 'Broker IA Corretora Demo';
+    document.getElementById('orgName').textContent = userData.org_nome || 'Portal Broker IA';
 
     // Preencher Rodapé Institucional (Dados da Corretora)
-    if (userData.contatos_org) {
-        document.getElementById('footerOrgName').textContent = userData.org_nome;
-        document.getElementById('footerAddress').textContent = userData.contatos_org.endereco || 'Endereço não informado';
+    function renderFooter() {
+        if (userData.contatos_org) {
+            document.getElementById('footerOrgName').textContent = userData.org_nome;
+            document.getElementById('footerAddress').textContent = userData.contatos_org.endereco || 'Endereço não informado';
 
-        const footerContacts = document.getElementById('footerContacts');
-        const c = userData.contatos_org;
+            const footerContacts = document.getElementById('footerContacts');
+            const c = userData.contatos_org;
 
-        footerContacts.innerHTML = `
-            <div class="contact-group">
-                <h4>Atendimento Digital</h4>
-                ${c.site ? `<a href="${c.site}" target="_blank" class="footer-link"><i class="fas fa-globe"></i> ${c.site.replace('https://', '').replace(/\/$/, '')}</a>` : ''}
-                ${c.email ? `<a href="mailto:${c.email}" class="footer-link"><i class="fas fa-envelope"></i> ${c.email}</a>` : ''}
-            </div>
-            <div class="contact-group">
-                <h4>Fale Conosco</h4>
-                ${c.fixo ? `<a href="tel:${c.fixo.replace(/\D/g, '')}" class="footer-link"><i class="fas fa-phone-alt"></i> ${c.fixo} (Fixo)</a>` : ''}
-                ${c.celular ? `<a href="https://wa.me/${c.celular.replace(/\D/g, '')}" target="_blank" class="footer-link" style="color: #25d366;"><i class="fab fa-whatsapp"></i> ${c.celular} (WhatsApp)</a>` : ''}
-            </div>
-        `;
+            footerContacts.innerHTML = `
+                <div class="contact-group">
+                    <h4>Atendimento Digital</h4>
+                    ${c.site ? `<a href="${c.site.startsWith('http') ? c.site : 'https://' + c.site}" target="_blank" class="footer-link"><i class="fas fa-globe"></i> ${c.site.replace('https://', '').replace(/\/$/, '')}</a>` : ''}
+                    ${c.email ? `<a href="mailto:${c.email}" class="footer-link"><i class="fas fa-envelope"></i> ${c.email}</a>` : ''}
+                </div>
+                <div class="contact-group">
+                    <h4>Fale Conosco</h4>
+                    ${c.fixo ? `<a href="tel:${c.fixo.replace(/\D/g, '')}" class="footer-link"><i class="fas fa-phone-alt"></i> ${c.fixo} (Fixo)</a>` : ''}
+                    ${c.celular ? `<a href="https://wa.me/${c.celular.replace(/\D/g, '')}" target="_blank" class="footer-link" style="color: #25d366;"><i class="fab fa-whatsapp"></i> ${c.celular} (WhatsApp)</a>` : ''}
+                </div>
+            `;
+        }
     }
+    renderFooter();
 
     const policiesGrid = document.getElementById('policiesGrid');
     const logoutBtn = document.getElementById('logoutBtn');
@@ -42,24 +45,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     logoutBtn.addEventListener('click', () => {
         localStorage.clear();
         window.location.href = 'index.html';
-    });
-
-    // Manipulação de cliques em ações das apólices (Documentos e Envio de Docs)
-    policiesGrid.addEventListener('click', (e) => {
-        const btn = e.target.closest('.btn-action');
-        if (!btn) return;
-
-        const isDocuments = btn.classList.contains('btn-documents');
-        const policyNum = btn.closest('.policy-card').querySelector('.policy-details').textContent;
-
-        if (isDocuments) {
-            console.log(`Documentos Disponíveis (${policyNum})`);
-            // Aqui podemos abrir um modal no futuro
-        } else {
-            const safePath = userData.cpf_cnpj.replace(/\D/g, '');
-            console.log(`Módulo de Envio para pasta: /upload_cliente/${safePath}/`);
-            // Aqui podemos abrir um modal no futuro
-        }
     });
 
     // Carrega Apólices
@@ -89,6 +74,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         `;
     }
 
+    function checkPdfLink(link) {
+        if (!link) return false;
+        const normalized = String(link).toLowerCase().trim();
+        if (normalized === "" || normalized === "null" || normalized === "undefined" || normalized === "none") return false;
+        return true;
+    }
+
     function renderPolicies(policies) {
         if (policies.length === 0) {
             policiesGrid.innerHTML = '<p style="text-align: center; color: #64748b; padding: 2rem;">Você ainda não possui apólices cadastradas.</p>';
@@ -103,7 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             policiesGrid.innerHTML = policies.map(policy => {
                 const icon = getIcon(policy.ramo);
                 const pdfLink = policy.link_url_apolice || policy.url_pdf;
-                const hasPdf = pdfLink && pdfLink !== 'undefined' && pdfLink !== 'null' && pdfLink !== '';
+                const hasPdf = checkPdfLink(pdfLink);
 
                 return `
                     <div class="policy-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 1.5rem; margin-bottom: 1rem; position: relative;">
@@ -155,7 +147,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const vigencia = `${new Date(policy.data_inicio).toLocaleDateString('pt-BR')}<br><span style="color: #444;">até</span><br>${new Date(policy.data_fim).toLocaleDateString('pt-BR')}`;
 
                 const pdfLink = policy.link_url_apolice || policy.url_pdf;
-                const hasPdf = pdfLink && pdfLink !== 'undefined' && pdfLink !== 'null' && pdfLink !== '';
+                const hasPdf = checkPdfLink(pdfLink);
 
                 html += `
                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
@@ -201,12 +193,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function getIcon(ramo) {
         if (!ramo) return 'fas fa-file-contract';
-        switch (ramo.toUpperCase()) {
-            case 'AUTOMOVEL': return 'fas fa-car';
-            case 'RESIDENCIAL': return 'fas fa-home';
-            case 'VIDA': return 'fas fa-heartbeat';
-            default: return 'fas fa-file-contract';
-        }
+        const r = ramo.toUpperCase();
+        if (r.includes('AUTO')) return 'fas fa-car';
+        if (r.includes('RESIDENCIAL')) return 'fas fa-home';
+        if (r.includes('VIDA')) return 'fas fa-heartbeat';
+        if (r.includes('TRANSPORTE')) return 'fas fa-truck';
+        return 'fas fa-file-contract';
     }
 
     // --- Lógica do Modal de Detalhes ---

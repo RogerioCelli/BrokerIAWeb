@@ -269,6 +269,70 @@
                 <a href="index.html"><i class="fas fa-arrow-left"></i> Voltar para Home</a>
             </div>
         </div>
+
+        <!-- Modal de Login 2FA para Clientes -->
+        <div id="loginModal" class="modal"
+            style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); align-items: center; justify-content: center;">
+            <div class="login-card" style="width: 100%; max-width: 400px; margin: 0 20px; position: relative;">
+                <button type="button" onclick="closeLoginModal()"
+                    style="position: absolute; right: 20px; top: 20px; background: none; border: none; color: #64748b; cursor: pointer; font-size: 1.2rem;">
+                    <i class="fas fa-times"></i>
+                </button>
+
+                <div class="logo-section" style="margin-bottom: 2rem;">
+                    <h2 id="loginModalTitle" style="font-family: 'Outfit'; color: #fff;">Validar Acesso</h2>
+                    <p id="loginModalDesc">Identifique-se para carregar seus dados.</p>
+                </div>
+
+                <div id="modalStep1">
+                    <div class="form-group">
+                        <label>CPF ou CNPJ</label>
+                        <input type="text" id="modalIdentifier" class="premium-input" placeholder="000.000.000-00">
+                    </div>
+                    <button type="button" class="btn-login" id="btnModalStep1" onclick="handleModalStep1()">Verificar
+                        Identidade</button>
+                </div>
+
+                <div id="modalStep2" style="display: none;">
+                    <label
+                        style="display: block; margin-bottom: 1rem; color: #94a3b8; font-size: 0.85rem; font-weight: 600; text-transform: uppercase;">Como
+                        deseja receber o código?</label>
+                    <div class="channel-options" style="flex-direction: column; gap:10px;">
+                        <label class="channel-card" style="padding: 1rem;">
+                            <input type="radio" name="modal_channel" value="whatsapp" checked>
+                            <i class="fab fa-whatsapp"></i>
+                            <div class="channel-info">
+                                <span class="channel-name">WhatsApp</span>
+                                <span class="channel-detail" id="modalMaskedPhone"></span>
+                            </div>
+                        </label>
+                        <label class="channel-card" style="padding: 1rem;">
+                            <input type="radio" name="modal_channel" value="email">
+                            <i class="fas fa-envelope"></i>
+                            <div class="channel-info">
+                                <span class="channel-name">E-mail</span>
+                                <span class="channel-detail" id="modalMaskedEmail"></span>
+                            </div>
+                        </label>
+                    </div>
+                    <button type="button" class="btn-login" id="btnModalStep2" onclick="handleModalStep2()"
+                        style="margin-top: 1.5rem;">Receber Código</button>
+                </div>
+
+                <div id="modalStep3" style="display: none;">
+                    <div class="form-group">
+                        <label>Token de Segurança</label>
+                        <input type="text" id="modalToken" class="premium-input" placeholder="000000" maxlength="6"
+                            style="text-align: center; font-size: 1.5rem; letter-spacing: 0.5em;">
+                    </div>
+                    <button type="button" class="btn-login" id="btnModalStep3" onclick="handleModalStep3()">Validar
+                        Código</button>
+                    <button type="button" onclick="resetModalToStep2()"
+                        style="background:none; border:none; color: var(--primary); font-size: 0.8rem; margin-top: 1rem; width:100%; cursor:pointer;">Não
+                        recebi o código</button>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script>
@@ -355,12 +419,130 @@
 
         function handleIsClient(isClient) {
             if (isClient) {
-                alert('Redirecionando para o Portal do Cliente para validação segura (2FA).');
-                window.location.href = 'index.html?intent=renewal';
+                document.getElementById('loginModal').style.display = 'flex';
+                document.getElementById('modalStep1').style.display = 'block';
+                document.getElementById('modalStep2').style.display = 'none';
+                document.getElementById('modalStep3').style.display = 'none';
+                document.getElementById('modalIdentifier').focus();
             } else {
                 clientCheck.style.display = 'none';
                 alert('Por favor, preencha o formulário abaixo com seus dados para iniciarmos seu cadastro.');
             }
+        }
+
+        function closeLoginModal() {
+            document.getElementById('loginModal').style.display = 'none';
+        }
+
+        // --- Lógica do Modal 2FA ---
+        const ORG_SLUG = 'corretora-demo';
+        const API_URL = 'https://brokeria-api-brokeriaweb.cx0m9g.easypanel.host/api';
+        let modalClientId = null;
+
+        async function handleModalStep1() {
+            const identifier = document.getElementById('modalIdentifier').value;
+            const btn = document.getElementById('btnModalStep1');
+            if (!identifier) return alert('Por favor, informe seu CPF ou CNPJ.');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+
+            try {
+                const res = await fetch(`${API_URL}/auth/request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier, org_slug: ORG_SLUG })
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Erro ao identificar segurado');
+
+                modalClientId = data.client_id;
+                document.getElementById('modalMaskedPhone').textContent = data.masked_phone;
+                document.getElementById('modalMaskedEmail').textContent = data.masked_email;
+
+                document.getElementById('modalStep1').style.display = 'none';
+                document.getElementById('modalStep2').style.display = 'block';
+                document.getElementById('loginModalDesc').textContent = 'Escolha como receber seu código.';
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Verificar Identidade';
+            }
+        }
+
+        async function handleModalStep2() {
+            const channel = document.querySelector('input[name="modal_channel"]:checked').value;
+            const identifier = document.getElementById('modalIdentifier').value;
+            const btn = document.getElementById('btnModalStep2');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-paper-plane fa-spin"></i> Enviando...';
+
+            try {
+                const res = await fetch(`${API_URL}/auth/request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier, org_slug: ORG_SLUG, channel })
+                });
+
+                if (!res.ok) throw new Error('Erro ao enviar código.');
+
+                document.getElementById('modalStep2').style.display = 'none';
+                document.getElementById('modalStep3').style.display = 'block';
+                document.getElementById('loginModalDesc').textContent = 'Digite o código de 6 dígitos que enviamos.';
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Receber Código';
+            }
+        }
+
+        async function handleModalStep3() {
+            const token = document.getElementById('modalToken').value;
+            const btn = document.getElementById('btnModalStep3');
+            if (token.length < 6) return alert('O código deve ter 6 dígitos.');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-shield-alt fa-spin"></i> Validando...';
+
+            try {
+                const res = await fetch(`${API_URL}/auth/validate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ client_id: modalClientId, token })
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Código inválido.');
+
+                // Sucesso! Preenche o formulário e fecha o modal
+                localStorage.setItem('broker_ia_token', data.token);
+                localStorage.setItem('broker_ia_user', JSON.stringify(data.user));
+
+                // Preencher campos do form de cotação
+                document.getElementById('nome').value = data.user.nome;
+                document.getElementById('cpf').value = data.user.cpf_cnpj;
+                if (data.user.email) document.getElementById('email').value = data.user.email;
+
+                closeLoginModal();
+                clientCheck.style.display = 'none';
+                alert(`Olá ${data.user.nome.split(' ')[0]}, reconhecemos seu cadastro. Seus dados básicos foram preenchidos!`);
+
+                // Se o intuito for renovação, o formulário já está configurado para tal
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Validar Código';
+            }
+        }
+
+        function resetModalToStep2() {
+            document.getElementById('modalStep3').style.display = 'none';
+            document.getElementById('modalStep2').style.display = 'block';
         }
 
         async function loadInsuranceData() {
