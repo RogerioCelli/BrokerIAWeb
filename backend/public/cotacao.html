@@ -442,21 +442,31 @@
 
         function setupQuotationTypeSelectors() {
             const selectors = document.querySelectorAll('input[name="tipo_cotacao_selector"]');
-            const token = localStorage.getItem('broker_ia_token');
+            const catGroup = document.querySelector('.form-group label[for="categoria_seguro"]').closest('.form-group');
 
             selectors.forEach(s => {
                 s.addEventListener('change', (e) => {
                     const val = e.target.value;
                     tipoCotacaoInput.value = val;
+                    const token = localStorage.getItem('broker_ia_token');
 
                     if (val === 'RENOVACAO') {
-                        // Se for renovação, precisa de login
+                        // 1. Fluxo de Renovação: Esconder Categoria IMEDIATAMENTE
                         renewalFields.style.display = 'block';
+                        catGroup.style.display = 'none'; // Não escolhe categoria manual na renovação
+
+                        // 2. Zerar campos enquanto não valida
+                        document.getElementById('nome').value = '';
+                        document.getElementById('cpf').value = '';
+                        document.getElementById('email').value = '';
+                        document.getElementById('telefone').value = '';
+                        lockClientFields(false);
+
                         if (!token) {
-                            // Pop-up automático de login se clicar em renovação
-                            handleIsClient(true);
+                            // 3. Mostrar pergunta "Você já é nosso cliente?"
+                            clientCheck.style.display = 'block';
                         } else {
-                            // Já logado: Preenche dados do cliente e carrega apólices
+                            // Já logado: Carrega ficha e apólices
                             const user = JSON.parse(localStorage.getItem('broker_ia_user') || '{}');
                             document.getElementById('nome').value = user.nome || '';
                             document.getElementById('cpf').value = user.cpf_cnpj || '';
@@ -466,25 +476,27 @@
                             loadUserPoliciesForRenewal();
                         }
                     } else {
-                        // Limpeza Total para Nova Cotação
-                        console.log('[PORTAL] Nova Cotação selecionada. Limpando campos.');
+                        // Fluxo de Nova Cotação: Lousa Limpa e Categoria Reaparece
+                        console.log('[PORTAL] Nova Cotação. Limpando sessão e campos.');
+
                         renewalFields.style.display = 'none';
                         clientCheck.style.display = 'none';
+                        catGroup.style.display = 'block'; // Volta a aparecer para cotar novo
                         document.getElementById('policy-selector-group').style.display = 'none';
-                        document.querySelector('.form-group label[for="categoria_seguro"]').closest('.form-group').style.display = 'block';
 
-                        // Limpa Nome, CPF, etc. (Já que é NOVA cotação, pode ser outro CPF)
-                        document.getElementById('nome').value = '';
-                        document.getElementById('cpf').value = '';
-                        document.getElementById('email').value = '';
-                        document.getElementById('telefone').value = '';
+                        localStorage.removeItem('broker_ia_token');
+                        localStorage.removeItem('broker_ia_user');
+
+                        const fields = ['nome', 'cpf', 'email', 'telefone', 'renovacao_seguradora', 'renovacao_bonus'];
+                        fields.forEach(id => {
+                            const el = document.getElementById(id);
+                            if (el) el.value = '';
+                        });
 
                         lockClientFields(false);
                         lockInsuranceFields(false);
-
-                        // Limpa campos de renovação
-                        document.getElementById('renovacao_seguradora').value = '';
-                        document.getElementById('renovacao_bonus').value = '';
+                        hideAllDynamicFields(); // Limpa as abas de veículo/casa etc
+                        categoriaSelect.value = '';
                     }
                 });
             });
