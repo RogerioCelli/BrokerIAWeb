@@ -118,9 +118,9 @@ async function runMigrations() {
             await db.query(`
                 INSERT INTO portal_users (nome, cpf, email, role, celular) 
                 VALUES ($1, $2, $3, $4, $5)
-                ON CONFLICT (email) DO UPDATE SET 
+                ON CONFLICT (cpf) DO UPDATE SET 
                     nome = EXCLUDED.nome,
-                    cpf = EXCLUDED.cpf,
+                    email = EXCLUDED.email,
                     role = EXCLUDED.role,
                     celular = EXCLUDED.celular;
             `, [nome, cpf, email, role, celular]);
