@@ -381,12 +381,19 @@
         document.addEventListener('DOMContentLoaded', () => {
             console.log('[PORTAL] Inicializando formulário de cotação...');
 
-            // 1. Carregar Dados Iniciais
+            // 1. Limpeza TOTAL inicial (Garantir página limpa sem exceções)
+            quoteForm.reset();
+            lockClientFields(false);
+            lockInsuranceFields(false);
+
+            // 2. Carregar Dados de Estrutura
             loadInsuranceData();
             setupQuotationTypeSelectors();
-            checkRenewalData(); // Verifica se veio do dashboard (localStorage)
 
-            // 2. Aplicar Máscaras
+            // 3. Verificar se veio do Dashboard "Renovar" (Caso específico)
+            checkRenewalData();
+
+            // 4. Aplicar Máscaras
             const phoneInput = document.getElementById('telefone');
             const cpfInput = document.getElementById('cpf');
 
@@ -406,35 +413,6 @@
                 else if (v.length > 3) e.target.value = `${v.substring(0, 3)}.${v.substring(3)}`;
                 else e.target.value = v;
             });
-
-            // 3. Gerenciar Sessão do Usuário
-            const token = localStorage.getItem('broker_ia_token');
-            const user = JSON.parse(localStorage.getItem('broker_ia_user') || '{}');
-
-            if (token && user.id) {
-                console.log('[PORTAL] Usuário autenticado detectado:', user.nome);
-                document.getElementById('nome').value = user.nome || '';
-                document.getElementById('cpf').value = user.cpf_cnpj || '';
-                document.getElementById('email').value = user.email || '';
-                document.getElementById('telefone').value = user.telefone || '';
-                lockClientFields(true);
-                clientCheck.style.display = 'none';
-
-                // Se cair na página já como Renovação (ex: vindo do dashboard), carrega as apólices
-                if (tipoCotacaoInput.value === 'RENOVACAO') {
-                    loadUserPoliciesForRenewal();
-                }
-            } else {
-                console.log('[PORTAL] Sessão limpa. Campos liberados.');
-                document.getElementById('nome').value = '';
-                document.getElementById('cpf').value = '';
-                document.getElementById('email').value = '';
-                document.getElementById('telefone').value = '';
-                lockClientFields(false);
-                // Se não houver token mas houver dados de user (sessão inválida), limpa
-                localStorage.removeItem('broker_ia_token');
-                localStorage.removeItem('broker_ia_user');
-            }
         });
 
         // --- Funções de Lógica ---
@@ -465,28 +443,48 @@
         function setupQuotationTypeSelectors() {
             const selectors = document.querySelectorAll('input[name="tipo_cotacao_selector"]');
             const token = localStorage.getItem('broker_ia_token');
+
             selectors.forEach(s => {
                 s.addEventListener('change', (e) => {
                     const val = e.target.value;
                     tipoCotacaoInput.value = val;
+
                     if (val === 'RENOVACAO') {
+                        // Se for renovação, precisa de login
                         renewalFields.style.display = 'block';
-                        if (!token) clientCheck.style.display = 'block';
-                        else loadUserPoliciesForRenewal();
+                        if (!token) {
+                            // Pop-up automático de login se clicar em renovação
+                            handleIsClient(true);
+                        } else {
+                            // Já logado: Preenche dados do cliente e carrega apólices
+                            const user = JSON.parse(localStorage.getItem('broker_ia_user') || '{}');
+                            document.getElementById('nome').value = user.nome || '';
+                            document.getElementById('cpf').value = user.cpf_cnpj || '';
+                            document.getElementById('email').value = user.email || '';
+                            document.getElementById('telefone').value = user.telefone || '';
+                            lockClientFields(true);
+                            loadUserPoliciesForRenewal();
+                        }
                     } else {
+                        // Limpeza Total para Nova Cotação
+                        console.log('[PORTAL] Nova Cotação selecionada. Limpando campos.');
                         renewalFields.style.display = 'none';
                         clientCheck.style.display = 'none';
                         document.getElementById('policy-selector-group').style.display = 'none';
                         document.querySelector('.form-group label[for="categoria_seguro"]').closest('.form-group').style.display = 'block';
-                        if (token) {
-                            lockInsuranceFields(false);
-                            document.getElementById('renovacao_seguradora').value = '';
-                            document.getElementById('renovacao_bonus').value = '';
-                        }
-                    }
-                    if (!token) {
+
+                        // Limpa Nome, CPF, etc. (Já que é NOVA cotação, pode ser outro CPF)
+                        document.getElementById('nome').value = '';
+                        document.getElementById('cpf').value = '';
+                        document.getElementById('email').value = '';
+                        document.getElementById('telefone').value = '';
+
                         lockClientFields(false);
                         lockInsuranceFields(false);
+
+                        // Limpa campos de renovação
+                        document.getElementById('renovacao_seguradora').value = '';
+                        document.getElementById('renovacao_bonus').value = '';
                     }
                 });
             });
