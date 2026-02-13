@@ -290,11 +290,14 @@
                     <label for="observacoes">Observações ou Coberturas Adicionais</label>
                     <div class="input-wrapper">
                         <textarea id="observacoes" name="observacoes" class="premium-input" rows="3"
-                            placeholder="Algo mais que precisamos saber?"></textarea>
+                            placeholder="Ex: Cobertura para vidros, carro reserva, ou algum outro detalhe específico..."></textarea>
                     </div>
                 </div>
 
-                <button type="submit" class="btn-login" id="submitBtn">Solicitar Orçamento Agora</button>
+                <button type="submit" class="btn-login" id="submitBtn">
+                    <span id="btnText">Solicitar Orçamento Agora</span>
+                    <i id="btnSpinner" class="fas fa-spinner fa-spin" style="display: none; margin-left: 8px;"></i>
+                </button>
             </form>
 
             <div class="footer-links">
@@ -695,15 +698,35 @@
         function lockInsuranceFields(lock) {
             const inputs = document.querySelectorAll('#dynamicFields input, #dynamicFields select, #renewal-fields input, #renewal-fields select');
             inputs.forEach(el => {
-                // Manter observações e seletor de apólice sempre abertos para troca
+                // Manter observações e seletor de apólice sempre abertos
                 if (el.id === 'observacoes' || el.id === 'select_apolice') return;
 
-                if (el.tagName === 'SELECT') el.disabled = lock;
-                else el.readOnly = lock;
+                // Campos de veículo (Marca/Modelo) precisam ser tratados com cuidado se estiverem carregando
+                if (el.tagName === 'SELECT') {
+                    el.disabled = lock;
+                } else {
+                    el.readOnly = lock;
+                }
+
                 el.style.background = lock ? 'rgba(255,255,255,0.02)' : '';
                 el.style.cursor = lock ? 'not-allowed' : '';
+
+                // Melhora visual do campo travado
+                if (lock) {
+                    el.style.opacity = '0.7';
+                } else {
+                    el.style.opacity = '1';
+                }
             });
+            // O seletor de categoria principal também trava
             categoriaSelect.disabled = lock;
+            if (lock) {
+                categoriaSelect.style.background = 'rgba(255,255,255,0.02)';
+                categoriaSelect.style.opacity = '0.7';
+            } else {
+                categoriaSelect.style.background = '';
+                categoriaSelect.style.opacity = '1';
+            }
         }
 
         function showRenewalFieldsAfterSelection() {
@@ -809,18 +832,47 @@
             );
             if (catOpt) {
                 categoriaSelect.value = catOpt.value;
-                categoriaSelect.dispatchEvent(new Event('change'));
+                // Dispara o change para mostrar os campos dinâmicos (ex: fields-auto)
+                const changeEvent = new Event('change');
+                categoriaSelect.dispatchEvent(changeEvent);
             }
 
-            // 3. Preencher Dados de Renovação
+            // 2. Preencher Dados de Renovação
             document.getElementById('renovacao_seguradora').value = p.seguradora || '';
             document.getElementById('renovacao_bonus').value = p.bonus || p.classe_bonus || '';
-            lockInsuranceFields(true);
-            // 3. Preenchimento do Veículo (Se for categoria auto)
-            const placa = document.querySelector('input[name="veiculo_identificacao"]');
-            if (placa) placa.value = p.placa || p.chassi || '';
 
-            // 5. Link de Download (Prioridade para url_link do Google Drive)
+            // 3. Preenchimento do Veículo (Se for categoria auto)
+            const placaInput = document.querySelector('input[name="veiculo_identificacao"]');
+            if (placaInput) placaInput.value = p.placa || p.chassi || '';
+
+            const anoInput = document.querySelector('input[name="veiculo_ano"]');
+            if (anoInput) anoInput.value = p.ano_modelo || '';
+
+            // Tentar preencher Marca e Modelo (Se houver na base de apólices)
+            if (p.marca) {
+                // Tenta achar a marca no select
+                const marcaOpt = [...veiculoMarcaSelect.options].find(o =>
+                    o.text.toLowerCase().includes(p.marca.toLowerCase())
+                );
+                if (marcaOpt) {
+                    veiculoMarcaSelect.value = marcaOpt.value;
+                    // Força carregamento dos modelos
+                    const marcaChangeEvent = new Event('change');
+                    veiculoMarcaSelect.dispatchEvent(marcaChangeEvent);
+
+                    // Como o carregamento de modelos é async, precisamos de um pequeno delay ou check
+                    setTimeout(() => {
+                        if (p.modelo) {
+                            const modeloOpt = [...veiculoModeloSelect.options].find(o =>
+                                o.text.toLowerCase().includes(p.modelo.toLowerCase())
+                            );
+                            if (modeloOpt) veiculoModeloSelect.value = modeloOpt.value;
+                        }
+                    }, 800);
+                }
+            }
+
+            // 4. Link de Download (Prioridade para url_link do Google Drive)
             const pdfUrl = p.url_link || p.link_url_apolice || p.url_pdf;
             if (checkPdfLink(pdfUrl)) {
                 document.getElementById('btn_download_apolice').href = pdfUrl;
@@ -829,7 +881,7 @@
                 downloadContainer.style.display = 'none';
             }
 
-            // 5. Trava os campos preenchidos e esconde seletor de categoria
+            // 5. Trava os campos preenchidos
             catGroup.style.display = 'none';
             lockInsuranceFields(true);
 
@@ -840,7 +892,6 @@
                 obs.value = `Solicitação de renovação para apólice nº ${p.numero_apolice || 'N/A'}. Vigência até ${dataFim}.`;
             }
 
-            // Se for cliente ativo, os campos de seguro estão bloqueados pelo auto-preenchimento
             showRenewalFieldsAfterSelection();
         });
 
@@ -917,35 +968,52 @@
         quoteForm.addEventListener('submit', async function (e) {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
-            const originalText = btn.innerText;
-            btn.innerText = 'Processando...';
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+
+            const originalText = btnText.innerText;
+            btnText.innerText = 'Processando Solicitação...';
+            btnSpinner.style.display = 'inline-block';
             btn.disabled = true;
+
             try {
+                // Habilita campos temporariamente para o FormData capturar (mesmo os read-only)
                 const disabled = e.target.querySelectorAll(':disabled');
                 disabled.forEach(el => el.disabled = false);
                 const formData = new FormData(e.target);
                 disabled.forEach(el => el.disabled = true);
-                if (categoriaSelect.selectedOptions[0]) formData.append('categoria_nome', categoriaSelect.selectedOptions[0].text);
+
+                if (categoriaSelect.selectedOptions[0]) {
+                    formData.append('categoria_nome', categoriaSelect.selectedOptions[0].text);
+                }
+
                 const data = Object.fromEntries(formData.entries());
+
                 const response = await fetch(`${API_URL}/seguros/submit`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
+
                 if (response.ok) {
-                    btn.innerText = '✅ Enviado!';
-                    btn.classList.add('success-btn'); // Feedback visual
+                    btnText.innerText = 'Solicitação Enviada com Sucesso!';
+                    btnSpinner.style.display = 'none';
+                    btn.classList.add('success-btn');
+
+                    // Efeito de confete ou celebraçao simples (opcional, mas o feedback visual já está forte)
                     setTimeout(() => {
-                        alert('✅ Solicitação recebida com sucesso! Nossa equipe entrará em contato em breve.');
+                        alert('✅ Sua solicitação foi recebida! Nossa equipe entrará em contato em breve via WhatsApp ou E-mail.');
                         window.location.href = 'index.html';
-                    }, 1000);
+                    }, 2000);
                 } else {
                     const resJson = await response.json();
-                    throw new Error(resJson.error || 'Erro ao enviar');
+                    throw new Error(resJson.error || 'Erro inesperado ao processar');
                 }
             } catch (error) {
-                alert('❌ Erro: ' + error.message);
-                btn.innerText = originalText;
+                console.error('[SUBMIT-ERR]', error);
+                alert('❌ Houve um erro: ' + error.message);
+                btnText.innerText = originalText;
+                btnSpinner.style.display = 'none';
                 btn.disabled = false;
             }
         });

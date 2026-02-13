@@ -350,7 +350,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await delay(500);
             agentStatus.remove();
 
-            const response = await fetch(`${API_URL} /policies/chat`, {
+            const response = await fetch(`${API_URL}/policies/chat`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token} `,
@@ -377,7 +377,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function addMessage(type, text) {
         const div = document.createElement('div');
-        div.className = `message ${type} `;
+        div.className = `message ${type}`;
         div.textContent = text;
         chatMessages.appendChild(div);
         chatMessages.scrollTop = chatMessages.scrollHeight;
