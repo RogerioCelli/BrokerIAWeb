@@ -12,6 +12,34 @@ async function runMigrations() {
         // 0. Rodar Migração de Estrutura de Seguros/Veículos (Automático)
         await migrate();
 
+        // 0.1 BLINDAGEM DE SCHEMA: Garante que as tabelas migradas tenham as travas necessárias
+        // Isso evita o erro de "no unique constraint for ON CONFLICT"
+        await db.query(`
+            DO $$ 
+            BEGIN 
+                -- Constraints para portal_users
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'portal_users_cpf_key') THEN
+                    ALTER TABLE public.portal_users ADD CONSTRAINT portal_users_cpf_key UNIQUE (cpf);
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'portal_users_email_key') THEN
+                    ALTER TABLE public.portal_users ADD CONSTRAINT portal_users_email_key UNIQUE (email);
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'portal_users_celular_key') THEN
+                    ALTER TABLE public.portal_users ADD CONSTRAINT portal_users_celular_key UNIQUE (celular);
+                END IF;
+
+                -- Constraints para seguradoras
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'seguradoras_nome_key') THEN
+                    ALTER TABLE public.seguradoras ADD CONSTRAINT seguradoras_nome_key UNIQUE (nome);
+                END IF;
+
+                -- Constraints para apólices
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'apolices_brokeria_numero_apolice_key') THEN
+                    ALTER TABLE public.apolices_brokeria ADD CONSTRAINT apolices_brokeria_numero_apolice_key UNIQUE (numero_apolice);
+                END IF;
+            END $$;
+        `);
+
         // 1. Criar Tabela de Seguradoras se não existir
         await db.query(`
             CREATE TABLE IF NOT EXISTS seguradoras (
