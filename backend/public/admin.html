@@ -390,10 +390,11 @@
         <div
             style="margin-bottom: 1.5rem; background: var(--card-bg); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border);">
             <h3 style="margin-bottom: 1rem;">Cadastrar Novo Administrador</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 100px 150px; gap: 10px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 100px 150px; gap: 10px;">
                 <input type="text" id="new-user-nome" class="login-input" placeholder="Nome Completo">
-                <input type="text" id="new-user-cpf" class="login-input" placeholder="CPF (apenas números)">
+                <input type="text" id="new-user-cpf" class="login-input" placeholder="CPF">
                 <input type="text" id="new-user-email" class="login-input" placeholder="E-mail">
+                <input type="text" id="new-user-celular" class="login-input" placeholder="Celular (DDI+DDD+N)">
                 <select id="new-user-role" class="login-input">
                     <option value="admin">Admin</option>
                     <option value="master">Master</option>
@@ -738,9 +739,14 @@
                 const res = await fetchWithAuth(`${API_URL}/users`);
                 const data = await res.json();
                 if (data.length === 0) { container.innerHTML = '<p>Nenhum usuário.</p>'; return; }
-                let html = `<table><thead><tr><th>Nome</th><th>E-mail</th><th>Função</th><th>Ações</th></tr></thead><tbody>`;
+                let html = `<table><thead><tr><th>Nome</th><th>CPF</th><th>E-mail</th><th>Celular</th><th>Função</th><th>Ações</th></tr></thead><tbody>`;
                 data.forEach(u => {
-                    html += `<tr><td>${u.nome}</td><td>${u.email}</td><td><span class="db-badge">${u.role.toUpperCase()}</span></td>
+                    html += `<tr>
+                            <td style="font-weight:600">${u.nome}</td>
+                            <td style="color:var(--text-secondary)">${u.cpf || '-'}</td>
+                            <td>${u.email}</td>
+                            <td>${u.celular || '-'}</td>
+                            <td><span class="db-badge">${u.role.toUpperCase()}</span></td>
                             <td>${u.role !== 'master' ? `<button onclick="deleteUser(${u.id})" style="color:#ef4444; background:none; border:none; cursor:pointer">Excluir</button>` : '-'}</td></tr>`;
                 });
                 container.innerHTML = html + '</tbody></table>';
@@ -752,6 +758,7 @@
                 nome: document.getElementById('new-user-nome').value,
                 cpf: document.getElementById('new-user-cpf').value,
                 email: document.getElementById('new-user-email').value,
+                celular: document.getElementById('new-user-celular').value,
                 role: document.getElementById('new-user-role').value
             };
             try {
@@ -762,6 +769,7 @@
                 document.getElementById('new-user-nome').value = '';
                 document.getElementById('new-user-cpf').value = '';
                 document.getElementById('new-user-email').value = '';
+                document.getElementById('new-user-celular').value = '';
                 loadUsers();
             } catch (err) { alert('Erro: ' + err.message); }
         }

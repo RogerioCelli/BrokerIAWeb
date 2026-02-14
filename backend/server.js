@@ -9,6 +9,7 @@ require('dotenv').config();
 const authRoutes = require('./routes/authRoutes');
 const policyRoutes = require('./routes/policyRoutes');
 const segurosRoutes = require('./routes/seguros');
+const magicLinkRoutes = require('./routes/magicLinkRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -36,6 +37,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/policies', policyRoutes);
 app.use('/api/admin', require('./routes/adminRoutes')); // Novo Painel Admin
 app.use('/api/seguros', segurosRoutes); // Endpoint Público de Seguros
+app.use('/api/magic-link', magicLinkRoutes);
 
 // Rotas Base
 app.get('/', (req, res) => {

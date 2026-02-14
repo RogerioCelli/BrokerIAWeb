@@ -180,7 +180,7 @@ const adminController = {
 
     getPortalUsers: async (req, res) => {
         try {
-            const { rows } = await db.query('SELECT id, nome, cpf, email, role, ativo, data_criacao FROM portal_users ORDER BY role DESC, nome ASC');
+            const { rows } = await db.query('SELECT id, nome, cpf, email, celular, role, ativo, data_criacao FROM portal_users ORDER BY role DESC, nome ASC');
             res.json(rows);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -189,14 +189,18 @@ const adminController = {
 
     createPortalUser: async (req, res) => {
         try {
-            const { nome, cpf, email, role } = req.body;
+            const { nome, cpf, email, celular, role } = req.body;
             if (!nome || !cpf || !email) return res.status(400).json({ error: 'Dados incompletos' });
 
             const cleanCpf = cpf.replace(/\D/g, '');
+            const cleanCelular = celular ? celular.replace(/\D/g, '') : null;
 
             await db.query(
-                'INSERT INTO portal_users (nome, cpf, email, role) VALUES ($1, $2, $3, $4) ON CONFLICT (cpf) DO UPDATE SET nome = $1, email = $3, role = $4',
-                [nome, cleanCpf, email, role || 'admin']
+                `INSERT INTO portal_users (nome, cpf, email, celular, role) 
+                 VALUES ($1, $2, $3, $4, $5) 
+                 ON CONFLICT (cpf) 
+                 DO UPDATE SET nome = $1, email = $3, celular = $4, role = $5`,
+                [nome, cleanCpf, email, cleanCelular, role || 'admin']
             );
 
             res.json({ success: true, message: 'Usuário administrativo cadastrado/atualizado!' });

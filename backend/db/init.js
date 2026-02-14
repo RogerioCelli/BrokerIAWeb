@@ -106,6 +106,19 @@ async function runMigrations() {
             );
         `).catch(err => console.error('[DB] Erro ao criar portal_admin_tokens:', err));
 
+        // 1.4 Criar Tabela de Link Mágico para WhatsApp
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS magic_links (
+                id SERIAL PRIMARY KEY,
+                uuid UUID UNIQUE NOT NULL DEFAULT gen_random_uuid(),
+                phone_number VARCHAR(20) NOT NULL,
+                cpf VARCHAR(20) NOT NULL,
+                expira_em TIMESTAMP NOT NULL,
+                validado BOOLEAN DEFAULT FALSE,
+                data_criacao TIMESTAMP DEFAULT NOW()
+            );
+        `).catch(err => console.error('[DB] Erro ao criar magic_links:', err));
+
         // 2. Garantir pdf_url na tabela oficial e adicionar dados de contato na organizacoes
         await db.query(`
             DO $$ 
