@@ -1,6 +1,6 @@
 const db = require('../db');
 const redis = require('../utils/redis');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
 // Configuração do Transportador de E-mail (Gmail)
@@ -39,7 +39,7 @@ const magicLinkController = {
             }
 
             const client = clientResult.rows[0];
-            const uuid = uuidv4();
+            const uuid = crypto.randomUUID();
             const expiraEm = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
 
             // 2. Registra o link no banco
