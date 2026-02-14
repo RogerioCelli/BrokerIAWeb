@@ -2,8 +2,17 @@ const Redis = require('ioredis');
 require('dotenv').config();
 
 // Tenta conectar ao Redis. Se não houver REDIS_URL, loga erro mas não trava o server.
-const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-const redis = new Redis(redisUrl, {
+const rawUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+
+// Loga a URL (mascarando a senha se houver)
+try {
+    const logUrl = rawUrl.replace(/:[^:@]+@/, ':****@');
+    console.log(`[REDIS] Tentando conectar em: ${logUrl}`);
+} catch (e) {
+    console.log(`[REDIS] Tentando conectar...`);
+}
+
+const redis = new Redis(rawUrl, {
     maxRetriesPerRequest: 1,
     retryStrategy: (times) => {
         if (times > 3) {
