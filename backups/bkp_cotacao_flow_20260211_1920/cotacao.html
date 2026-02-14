@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broker IA | Solicitar Cotação</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+    <!-- Decorative background elements -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <main class="main-container">
+        <div class="login-card" style="max-width: 650px;">
+            <div class="logo-section">
+                <h1>Solicitar Cotação</h1>
+                <p>Escolha o tipo de serviço e preencha os detalhes para sua proposta.</p>
+            </div>
+
+            <!-- Fluxo de Startup Iniciado por Modal (Request do Usuário) -->
+            <div id="startup-overlay"
+                style="display: flex; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); align-items: center; justify-content: center;">
+                <!-- Etapa 1: Já é cliente? -->
+                <div id="startup-step-1" class="login-card"
+                    style="max-width: 400px; text-align: center; padding: 2.5rem;">
+                    <div class="logo-section">
+                        <i class="fas fa-user-shield"
+                            style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;"></i>
+                        <h2 style="margin-bottom: 1.5rem;">Bem-vindo(a)!</h2>
+                        <p style="margin-bottom: 2rem;">Você já é segurado da Broker IA?</p>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <button onclick="setStartupChoice('isClient', true)" class="btn-login"
+                            style="margin:0; width: 100%;">Sim, sou cliente</button>
+                        <button onclick="setStartupChoice('isClient', false)" class="btn-login"
+                            style="margin:0; width: 100%; background: rgba(255,255,255,0.1);">Não, ainda não</button>
+                    </div>
+                </div>
+
+                <!-- Etapa 2: O que gostaria? -->
+                <div id="startup-step-2" class="login-card"
+                    style="display: none; max-width: 400px; text-align: center; padding: 2.5rem;">
+                    <div class="logo-section">
+                        <i class="fas fa-question-circle"
+                            style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;"></i>
+                        <h2 style="margin-bottom: 1.5rem;">O que gostaria?</h2>
+                        <p style="margin-bottom: 2rem;">Selecione o tipo de atendimento que deseja hoje.</p>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <button onclick="setStartupChoice('goal', 'RENOVACAO')" class="btn-login"
+                            style="margin:0; width: 100%;">Fazer Renovação</button>
+                        <button onclick="setStartupChoice('goal', 'NOVA')" class="btn-login"
+                            style="margin:0; width: 100%; background: rgba(255,255,255,0.1);">Nova Cotação</button>
+                    </div>
+                </div>
+            </div>
+
+            <form id="quoteForm" style="display: none;">
+                <!-- Identificação Básica -->
+                <input type="hidden" name="tipo_cotacao" id="tipo_cotacao" value="NOVA">
+
+                <div class="form-group">
+                    <label for="nome">Nome Completo</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="nome" name="nome" class="premium-input" placeholder="Seu nome" required>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="telefone">WhatsApp / Telefone</label>
+                        <div class="input-wrapper">
+                            <input type="tel" id="telefone" name="telefone" class="premium-input"
+                                placeholder="(XX) XXXXX-XXXX" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="cpf">CPF</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="cpf" name="cpf" class="premium-input" placeholder="000.000.000-00"
+                                required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">E-mail</label>
+                    <div class="input-wrapper">
+                        <input type="email" id="email" name="email" class="premium-input" placeholder="seu@email.com"
+                            required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="categoria_seguro">O que deseja segurar?</label>
+                    <div class="input-wrapper">
+                        <select id="categoria_seguro" name="categoria_seguro" class="premium-input" required>
+                            <option value="" disabled selected>Carregando categorias...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Campos Dinâmicos Detalhados -->
+                <div id="dynamicFields">
+                    <!-- AUTOMÓVEL DETALHADO -->
+                    <div class="dynamic-group" id="fields-auto" style="display: none;">
+                        <h3 style="font-size: 1rem; color: var(--primary); margin: 1.5rem 0 1rem;">Dados do Veículo</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>Placa ou Chassi</label>
+                                <input type="text" name="veiculo_identificacao" class="premium-input"
+                                    placeholder="ABC-1234">
+                            </div>
+                            <div class="form-group">
+                                <label>Ano (Fab/Modelo)</label>
+                                <input type="text" name="veiculo_ano" class="premium-input" placeholder="2024/2025">
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>Marca</label>
+                                <select id="veiculo_marca" name="veiculo_marca" class="premium-input">
+                                    <option value="">Selecione a Marca</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Modelo</label>
+                                <select id="veiculo_modelo" name="veiculo_modelo" class="premium-input" disabled>
+                                    <option value="">Selecione a Marca primeiro</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Dispositivos de Segurança (Alarme, Rastreador, etc.)</label>
+                            <input type="text" name="veiculo_seguranca" class="premium-input" placeholder="Nenhum">
+                        </div>
+
+                        <h3 style="font-size: 1rem; color: var(--primary); margin: 1.5rem 0 1rem;">Uso e Perfil</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>Uso Principal</label>
+                                <select name="veiculo_uso" class="premium-input">
+                                    <option value="lazer">Lazer / Ida ao Trabalho</option>
+                                    <option value="profissional">Profissional (App/Entregas)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>CEP de Pernoite</label>
+                                <input type="text" name="veiculo_cep" class="premium-input" placeholder="00000-000">
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>Garagem em Casa?</label>
+                                <select name="veiculo_garagem" class="premium-input">
+                                    <option value="sim">Sim, fechada</option>
+                                    <option value="nao">Não, na rua</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>KM Diária Estimada</label>
+                                <input type="number" name="veiculo_km_diaria" class="premium-input"
+                                    placeholder="ex: 20">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RESIDENCIAL DETALHADO -->
+                    <div class="dynamic-group" id="fields-residencial" style="display: none;">
+                        <h3 style="font-size: 1rem; color: var(--primary); margin: 1.5rem 0 1rem;">Dados do Imóvel</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>CEP do Imóvel</label>
+                                <input type="text" name="res_cep" class="premium-input" placeholder="00000-000">
+                            </div>
+                            <div class="form-group">
+                                <label>Tipo de Imóvel</label>
+                                <select name="res_tipo" class="premium-input">
+                                    <option value="casa">Casa</option>
+                                    <option value="apartamento">Apartamento</option>
+                                    <option value="sobrado">Sobrado</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>Estrutura</label>
+                                <select name="res_construcao" class="premium-input">
+                                    <option value="alvenaria">Alvenaria</option>
+                                    <option value="madeira">Madeira</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Finalidade</label>
+                                <select name="res_finalidade" class="premium-input">
+                                    <option value="habitual">Morada Habitual</option>
+                                    <option value="veraneio">Veraneio</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Valor Estimado de Reconstrução (R$)</label>
+                            <input type="number" name="res_valor_reconstrucao" class="premium-input"
+                                placeholder="ex: 300000">
+                        </div>
+                    </div>
+
+                    <!-- VIDA DETALHADO -->
+                    <div class="dynamic-group" id="fields-vida" style="display: none;">
+                        <h3 style="font-size: 1rem; color: var(--primary); margin: 1.5rem 0 1rem;">Perfil de Saúde</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>Data de Nascimento</label>
+                                <input type="date" name="vida_nascimento" class="premium-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Peso (kg)</label>
+                                <input type="number" name="vida_peso" class="premium-input" placeholder="ex: 75">
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>Altura (cm)</label>
+                                <input type="number" name="vida_altura" class="premium-input" placeholder="ex: 175">
+                            </div>
+                            <div class="form-group">
+                                <label>Fumante?</label>
+                                <select name="vida_fumante" class="premium-input">
+                                    <option value="nao">Não</option>
+                                    <option value="sim">Sim</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Profissão / Ocupação</label>
+                            <input type="text" name="vida_profissao" class="premium-input"
+                                placeholder="Sua ocupação principal">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Campo de Renovação (Condicional) -->
+                <div id="renewal-fields"
+                    style="display: none; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 2rem; padding-top: 1rem;">
+                    <h3 style="font-size: 1rem; color: var(--primary); margin-bottom: 1rem;">Detalhes da Renovação
+                    </h3>
+
+                    <!-- Novo: Seletor de Apólice Existente (Para clientes autenticados) -->
+                    <div class="form-group" id="policy-selector-group"
+                        style="display: none; margin-bottom: 1.5rem; background: rgba(16, 185, 129, 0.05); padding: 1rem; border-radius: 10px; border: 1px dashed var(--primary);">
+                        <label for="select_apolice">Qual apólice deseja renovar?</label>
+                        <select id="select_apolice" class="premium-input">
+                            <option value="">Selecione uma apólice...</option>
+                        </select>
+                        <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.5rem;">Se sua apólice não aparecer
+                            aqui, preencha os dados manualmente abaixo.</p>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label>Seguradora Atual</label>
+                            <input type="text" id="renovacao_seguradora" name="renovacao_seguradora"
+                                class="premium-input" placeholder="Ex: Porto, Azul...">
+                        </div>
+                        <div class="form-group">
+                            <label>Classe de Bônus (0 a 10)</label>
+                            <input type="number" id="renovacao_bonus" name="renovacao_bonus" class="premium-input"
+                                placeholder="ex: 5">
+                        </div>
+                    </div>
+
+                    <!-- Novo: Link de Download da Apólice Digital -->
+                    <div id="policy-download-container"
+                        style="display: none; margin-top: 1.5rem; border: 1px solid rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.05); padding: 1rem; border-radius: 10px; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 0.85rem; color: #fca5a5;"><i class="fas fa-file-pdf"></i> Apólice
+                            Digital Disponível</span>
+                        <a id="btn_download_apolice" href="#" target="_blank"
+                            style="padding: 8px 16px; background: #ef4444; color: #fff; border-radius: 8px; text-decoration: none; font-size: 0.8rem; font-weight: 600; transition: background 0.2s;"
+                            onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
+                            Baixar Arquivo
+                        </a>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="observacoes">Observações ou Coberturas Adicionais</label>
+                    <div class="input-wrapper">
+                        <textarea id="observacoes" name="observacoes" class="premium-input" rows="3"
+                            placeholder="Algo mais que precisamos saber?"></textarea>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-login" id="submitBtn">Solicitar Orçamento Agora</button>
+            </form>
+
+            <div class="footer-links">
+                <a href="index.html"><i class="fas fa-arrow-left"></i> Voltar para Home</a>
+            </div>
+        </div>
+
+        <!-- Modal de Login 2FA para Clientes -->
+        <div id="loginModal" class="modal"
+            style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); align-items: center; justify-content: center;">
+            <div class="login-card" style="width: 100%; max-width: 400px; margin: 0 20px; position: relative;">
+                <button type="button" onclick="closeLoginModal()"
+                    style="position: absolute; right: 20px; top: 20px; background: none; border: none; color: #64748b; cursor: pointer; font-size: 1.2rem;">
+                    <i class="fas fa-times"></i>
+                </button>
+
+                <div class="logo-section" style="margin-bottom: 2rem;">
+                    <h2 id="loginModalTitle" style="font-family: 'Outfit'; color: #fff;">Validar Acesso</h2>
+                    <p id="loginModalDesc">Identifique-se para carregar seus dados.</p>
+                </div>
+
+                <div id="modalStep1">
+                    <div class="form-group">
+                        <label>CPF ou CNPJ</label>
+                        <input type="text" id="modalIdentifier" class="premium-input" placeholder="000.000.000-00">
+                    </div>
+                    <button type="button" class="btn-login" id="btnModalStep1" onclick="handleModalStep1()">Verificar
+                        Identidade</button>
+                </div>
+
+                <div id="modalStep2" style="display: none;">
+                    <label
+                        style="display: block; margin-bottom: 1rem; color: #94a3b8; font-size: 0.85rem; font-weight: 600; text-transform: uppercase;">Como
+                        deseja receber o código?</label>
+                    <div class="channel-options" style="flex-direction: column; gap:10px;">
+                        <label class="channel-card" style="padding: 1rem;">
+                            <input type="radio" name="modal_channel" value="whatsapp" checked>
+                            <i class="fab fa-whatsapp"></i>
+                            <div class="channel-info">
+                                <span class="channel-name">WhatsApp</span>
+                                <span class="channel-detail" id="modalMaskedPhone"></span>
+                            </div>
+                        </label>
+                        <label class="channel-card" style="padding: 1rem;">
+                            <input type="radio" name="modal_channel" value="email">
+                            <i class="fas fa-envelope"></i>
+                            <div class="channel-info">
+                                <span class="channel-name">E-mail</span>
+                                <span class="channel-detail" id="modalMaskedEmail"></span>
+                            </div>
+                        </label>
+                    </div>
+                    <button type="button" class="btn-login" id="btnModalStep2" onclick="handleModalStep2()"
+                        style="margin-top: 1.5rem;">Receber Código</button>
+                </div>
+
+                <div id="modalStep3" style="display: none;">
+                    <div class="form-group">
+                        <label>Token de Segurança</label>
+                        <input type="text" id="modalToken" class="premium-input" placeholder="000000" maxlength="6"
+                            style="text-align: center; font-size: 1.5rem; letter-spacing: 0.5em;">
+                    </div>
+                    <button type="button" class="btn-login" id="btnModalStep3" onclick="handleModalStep3()">Validar
+                        Código</button>
+                    <button type="button" onclick="resetModalToStep2()"
+                        style="background:none; border:none; color: var(--primary); font-size: 0.8rem; margin-top: 1rem; width:100%; cursor:pointer;">Não
+                        recebi o código</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- Configuração e Elementos DOM ---
+        const API_URL = '/api'; // Versão relativa
+        const ORG_SLUG = 'corretora-demo';
+
+        const categoriaSelect = document.getElementById('categoria_seguro');
+        const dynamicGroups = document.querySelectorAll('.dynamic-group');
+        const veiculoMarcaSelect = document.getElementById('veiculo_marca');
+        const veiculoModeloSelect = document.getElementById('veiculo_modelo');
+        const renewalFields = document.getElementById('renewal-fields');
+        const clientCheck = document.getElementById('client-check');
+        const tipoCotacaoInput = document.getElementById('tipo_cotacao');
+        const quoteForm = document.getElementById('quoteForm');
+
+        let insuranceStructure = [];
+        let modalClientId = null; // Variável para armazenar o client_id do modal
+
+        // --- Inicialização Única ---
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('[PORTAL] Inicializando formulário de cotação...');
+
+            // 1. Limpeza TOTAL inicial (Lousa limpa sem exceções)
+            localStorage.removeItem('broker_ia_token');
+            localStorage.removeItem('broker_ia_user');
+            quoteForm.reset();
+            lockClientFields(false);
+            lockInsuranceFields(false);
+
+            // 2. Carregar Dados de Estrutura
+            loadInsuranceData();
+            setupQuotationTypeSelectors();
+
+            // 3. Verificar se veio do Dashboard "Renovar" (Pode trazer dados da apólice, mas não do cliente)
+            checkRenewalData();
+
+            // 4. Aplicar Máscaras
+            const phoneInput = document.getElementById('telefone');
+            const cpfInput = document.getElementById('cpf');
+
+            phoneInput.addEventListener('input', e => {
+                let v = e.target.value.replace(/\D/g, '');
+                if (v.length > 11) v = v.substring(0, 11);
+                if (v.length > 6) e.target.value = `(${v.substring(0, 2)}) ${v.substring(2, 7)}-${v.substring(7)}`;
+                else if (v.length > 2) e.target.value = `(${v.substring(0, 2)}) ${v.substring(2)}`;
+                else e.target.value = v;
+            });
+
+            cpfInput.addEventListener('input', e => {
+                let v = e.target.value.replace(/\D/g, '');
+                if (v.length > 11) v = v.substring(0, 11);
+                if (v.length > 9) e.target.value = `${v.substring(0, 3)}.${v.substring(3, 6)}.${v.substring(6, 9)}-${v.substring(9)}`;
+                else if (v.length > 6) e.target.value = `${v.substring(0, 3)}.${v.substring(3, 6)}.${v.substring(6)}`;
+                else if (v.length > 3) e.target.value = `${v.substring(0, 3)}.${v.substring(3)}`;
+                else e.target.value = v;
+            });
+        });
+
+        // --- Variáveis de Fluxo ---
+        let startupChoices = { isClient: null, goal: null };
+
+        function setStartupChoice(key, value) {
+            startupChoices[key] = value;
+            if (key === 'isClient') {
+                document.getElementById('startup-step-1').style.display = 'none';
+                document.getElementById('startup-step-2').style.display = 'block';
+            } else if (key === 'goal') {
+                processStartupFlow();
+            }
+        }
+
+        function processStartupFlow() {
+            // Documento oculta o overlay
+            document.getElementById('startup-overlay').style.display = 'none';
+            tipoCotacaoInput.value = startupChoices.goal;
+
+            if (startupChoices.isClient) {
+                // Caso Cliente: Abre Modal 2FA
+                document.getElementById('loginModal').style.display = 'flex';
+                document.getElementById('modalStep1').style.display = 'block';
+            } else {
+                // Caso Não-Cliente: Abre Form Full limpo
+                quoteForm.style.display = 'block';
+                document.querySelector('.footer-links').style.display = 'block';
+                if (startupChoices.goal === 'RENOVACAO') {
+                    renewalFields.style.display = 'block';
+                }
+            }
+        }
+
+        // --- Funções de Lógica ---
+
+        function checkRenewalData() {
+            const raw = localStorage.getItem('renewal_data');
+            if (!raw) return;
+            try {
+                const data = JSON.parse(raw);
+                localStorage.removeItem('renewal_data');
+                const renovacaoRadio = document.querySelector('input[value="RENOVACAO"]');
+                if (renovacaoRadio) {
+                    renovacaoRadio.checked = true;
+                    // O dispatch trigger o setupQuotationTypeSelectors
+                    renovacaoRadio.dispatchEvent(new Event('change'));
+                }
+
+                // Preenche dados técnicos se vierem, mas o NOME/CPF continuam vazios até o login
+                if (data.seguradora) document.getElementById('renovacao_seguradora').value = data.seguradora;
+                if (data.bonus) document.getElementById('renovacao_bonus').value = data.bonus;
+                if (data.placa || data.chassi) {
+                    const el = document.querySelector('input[name="veiculo_identificacao"]');
+                    if (el) el.value = data.placa || data.chassi;
+                }
+                const obs = document.getElementById('observacoes');
+                if (obs) obs.value = `Solicitação de renovação para apólice nº ${data.numero_apolice}. Vigência até ${new Date(data.vigencia_fim).toLocaleDateString('pt-BR')}.`;
+            } catch (e) { console.error('Erro ao carregar dados de renovação:', e); }
+        }
+
+        function setupQuotationTypeSelectors() {
+            const selectors = document.querySelectorAll('input[name="tipo_cotacao_selector"]');
+            const catGroup = document.querySelector('.form-group label[for="categoria_seguro"]').closest('.form-group');
+            const footerLinks = document.querySelector('.footer-links');
+
+            selectors.forEach(s => {
+                s.addEventListener('change', (e) => {
+                    const val = e.target.value;
+                    tipoCotacaoInput.value = val;
+
+                    // Reset TOTAL de visibilidade antes de aplicar lógica
+                    renewalFields.style.display = 'none';
+                    clientCheck.style.display = 'none';
+                    document.getElementById('policy-selector-group').style.display = 'none';
+                    document.getElementById('policy-download-container').style.display = 'none';
+
+                    if (val === 'RENOVACAO') {
+                        // 1. Fluxo de Renovação: Esconder TUDO abaixo do seletor (Mockup CORRETO)
+                        quoteForm.style.display = 'none';
+                        footerLinks.style.display = 'none';
+
+                        // 2. Mostrar APENAS a pergunta de identificação
+                        clientCheck.style.display = 'block';
+
+                        // Limpar campos por segurança
+                        quoteForm.reset();
+                        lockClientFields(false);
+
+                    } else {
+                        // Fluxo de Nova Cotação: Lousa Limpa e Form reaparece
+                        quoteForm.style.display = 'block';
+                        footerLinks.style.display = 'block';
+                        catGroup.style.display = 'block';
+
+                        document.getElementById('nome').value = '';
+                        document.getElementById('cpf').value = '';
+                        document.getElementById('email').value = '';
+                        document.getElementById('telefone').value = '';
+
+                        lockClientFields(false);
+                        lockInsuranceFields(false);
+                        hideAllDynamicFields();
+                        categoriaSelect.value = '';
+
+                        // Limpar campos técnicos de renovação
+                        document.getElementById('renovacao_seguradora').value = '';
+                        document.getElementById('renovacao_bonus').value = '';
+                    }
+                });
+            });
+        }
+
+        function handleIsClient(isClient) {
+            const footerLinks = document.querySelector('.footer-links');
+            if (isClient) {
+                document.getElementById('loginModal').style.display = 'flex';
+                document.getElementById('modalStep1').style.display = 'block';
+                document.getElementById('modalStep2').style.display = 'none';
+                document.getElementById('modalStep3').style.display = 'none';
+                document.getElementById('modalIdentifier').focus();
+            } else {
+                // Caso "Não, ainda não": Mostra o form como Nova Cotação
+                clientCheck.style.display = 'none';
+                quoteForm.style.display = 'block';
+                footerLinks.style.display = 'block';
+
+                const catGroup = document.querySelector('.form-group label[for="categoria_seguro"]').closest('.form-group');
+                catGroup.style.display = 'block';
+
+                // Marca Visualmente como Nova Cotação
+                const novaRadio = document.querySelector('input[value="NOVA"]');
+                if (novaRadio) {
+                    novaRadio.checked = true;
+                    tipoCotacaoInput.value = 'NOVA';
+                }
+            }
+        }
+
+        function closeLoginModal() { document.getElementById('loginModal').style.display = 'none'; }
+
+        async function handleModalStep1() {
+            const identifier = document.getElementById('modalIdentifier').value;
+            const btn = document.getElementById('btnModalStep1');
+            if (!identifier) return alert('Por favor, informe seu CPF ou CNPJ.');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+            try {
+                const res = await fetch(`${API_URL}/auth/request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier, org_slug: ORG_SLUG })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Erro ao identificar segurado');
+                modalClientId = data.client_id;
+                document.getElementById('modalMaskedPhone').textContent = data.masked_phone;
+                document.getElementById('modalMaskedEmail').textContent = data.masked_email;
+                document.getElementById('modalStep1').style.display = 'none';
+                document.getElementById('modalStep2').style.display = 'block';
+                document.getElementById('loginModalDesc').textContent = 'Escolha como receber seu código.';
+            } catch (err) { alert(err.message); } finally {
+                btn.disabled = false;
+                btn.textContent = 'Verificar Identidade';
+            }
+        }
+
+        async function handleModalStep2() {
+            const channel = document.querySelector('input[name="modal_channel"]:checked').value;
+            const identifier = document.getElementById('modalIdentifier').value;
+            const btn = document.getElementById('btnModalStep2');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-paper-plane fa-spin"></i> Enviando...';
+            try {
+                const res = await fetch(`${API_URL}/auth/request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier, org_slug: ORG_SLUG, channel })
+                });
+                if (!res.ok) throw new Error('Erro ao enviar código.');
+                document.getElementById('modalStep2').style.display = 'none';
+                document.getElementById('modalStep3').style.display = 'block';
+                document.getElementById('loginModalDesc').textContent = 'Digite o código de 6 dígitos que enviamos.';
+            } catch (err) { alert(err.message); } finally {
+                btn.disabled = false;
+                btn.textContent = 'Receber Código';
+            }
+        }
+
+        async function handleModalStep3() {
+            const token = document.getElementById('modalToken').value;
+            const btn = document.getElementById('btnModalStep3');
+            if (token.length < 6) return alert('O código deve ter 6 dígitos.');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-shield-alt fa-spin"></i> Validando...';
+            try {
+                const res = await fetch(`${API_URL}/auth/validate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ client_id: modalClientId, token })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Código inválido.');
+
+                // 1. Salvar Sessão
+                localStorage.setItem('broker_ia_token', data.token);
+                localStorage.setItem('broker_ia_user', JSON.stringify(data.user));
+
+                // 2. Preencher Campos
+                document.getElementById('nome').value = data.user.nome || '';
+                document.getElementById('cpf').value = data.user.cpf_cnpj || '';
+                document.getElementById('email').value = data.user.email || '';
+                document.getElementById('telefone').value = data.user.telefone || '';
+
+                lockClientFields(true);
+                closeLoginModal();
+
+                // Mostrar o formulário e rodapé após login (Lógica solicitada)
+                quoteForm.style.display = 'block';
+                document.querySelector('.footer-links').style.display = 'block';
+
+                if (startupChoices.goal === 'RENOVACAO') {
+                    // Mostra o container de renovação
+                    renewalFields.style.display = 'block';
+
+                    // Esconde campos técnicos até carregar/selecionar apólices
+                    const allFormGroups = quoteForm.querySelectorAll('.form-group');
+                    allFormGroups.forEach(g => {
+                        const inputId = g.querySelector('input, select')?.id;
+                        // Mantemos básicos E o seletor de apólices (se existir)
+                        if (['nome', 'cpf', 'email', 'telefone', 'select_apolice'].includes(inputId)) {
+                            g.style.display = 'block';
+                        } else if (g.id === 'policy-selector-group') {
+                            g.style.display = 'block';
+                        } else {
+                            g.style.display = 'none';
+                        }
+                    });
+
+                    loadUserPoliciesForRenewal();
+                } else {
+                    lockInsuranceFields(false);
+                }
+
+                alert(`Olá ${data.user.nome.split(' ')[0]}, reconhecemos seu cadastro. Seus dados básicos foram carregados.`);
+            } catch (err) { alert(err.message); } finally {
+                btn.disabled = false;
+                btn.textContent = 'Validar Código';
+            }
+        }
+
+        function resetModalToStep2() {
+            document.getElementById('modalStep3').style.display = 'none';
+            document.getElementById('modalStep2').style.display = 'block';
+            document.getElementById('loginModalDesc').textContent = 'Escolha como receber seu código.';
+        }
+
+        function lockClientFields(lock) {
+            const fields = ['nome', 'cpf', 'email', 'telefone'];
+            fields.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.readOnly = lock;
+                    el.disabled = lock;
+                    el.style.background = lock ? 'rgba(255,255,255,0.02)' : '';
+                    el.style.cursor = lock ? 'not-allowed' : 'text';
+                }
+            });
+        }
+
+        function lockInsuranceFields(lock) {
+            const inputs = document.querySelectorAll('#dynamicFields input, #dynamicFields select, #renewal-fields input, #renewal-fields select');
+            inputs.forEach(el => {
+                // Manter observações e seletor de apólice sempre abertos para troca
+                if (el.id === 'observacoes' || el.id === 'select_apolice') return;
+
+                if (el.tagName === 'SELECT') el.disabled = lock;
+                else el.readOnly = lock;
+                el.style.background = lock ? 'rgba(255,255,255,0.02)' : '';
+                el.style.cursor = lock ? 'not-allowed' : '';
+            });
+            categoriaSelect.disabled = lock;
+        }
+
+        function showRenewalFieldsAfterSelection() {
+            // Reexibe os campos que foram escondidos durante a fase de login/identificação
+            const allFormGroups = quoteForm.querySelectorAll('.form-group');
+            allFormGroups.forEach(g => {
+                g.style.display = 'block';
+            });
+            // O seletor de apólices continua visível
+            document.getElementById('policy-selector-group').style.display = 'block';
+
+            // Se for renovação de cliente ativo, os campos técnicos de seguro ficam travados
+            lockInsuranceFields(true);
+        }
+
+        async function loadUserPoliciesForRenewal() {
+            const token = localStorage.getItem('broker_ia_token');
+            if (!token) return;
+
+            const group = document.getElementById('policy-selector-group');
+            const select = document.getElementById('select_apolice');
+            const renFields = document.getElementById('renewal-fields');
+            const catGroup = document.querySelector('.form-group label[for="categoria_seguro"]').closest('.form-group');
+
+            try {
+                console.log('[PORTAL] Buscando apólices do cliente...');
+                const res = await fetch(`${API_URL}/policies/my`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const policies = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(policies.error || 'Erro ao buscar apólices no servidor.');
+                }
+
+                if (Array.isArray(policies) && policies.length > 0) {
+                    // Garantir que o container de download comece escondido
+                    const downloadContainer = document.getElementById('policy-download-container');
+                    if (downloadContainer) downloadContainer.style.display = 'none';
+
+                    select.innerHTML = '<option value="">-- Selecione uma apólice para renovar --</option>';
+                    policies.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p.id_apolice;
+                        opt.textContent = `${p.ramo} - ${p.seguradora} (Placa: ${p.placa || 'N/A'})`;
+                        select.appendChild(opt);
+                    });
+
+                    group.style.display = 'block';
+                    catGroup.style.display = 'none';
+                    window.userPolicies = policies;
+
+                    if (policies.length === 1) {
+                        select.value = policies[0].id_apolice;
+                        select.dispatchEvent(new Event('change'));
+                        showRenewalFieldsAfterSelection();
+                    } else {
+                        // Se tiver mais de uma, espera o usuário escolher para mostrar os campos
+                        alert('Encontramos mais de uma apólice em seu nome. Por favor, escolha qual deseja renovar.');
+                    }
+                } else {
+                    // Fallback se for cliente mas não tiver apólice (Raro)
+                    alert('Não encontramos apólices ativas para carregamento automático. Por favor, preencha os dados manualmente.');
+                    showRenewalFieldsAfterSelection();
+                    lockInsuranceFields(false);
+                }
+            } catch (err) {
+                console.error('Erro ao carregar apólices:', err);
+            }
+        }
+
+        function checkPdfLink(link) {
+            if (!link) return false;
+            const normalized = String(link).toLowerCase().trim();
+            return !(normalized === "" || normalized === "null" || normalized === "undefined" || normalized === "none");
+        }
+
+        document.getElementById('select_apolice').addEventListener('change', function () {
+            const policyId = this.value;
+            const downloadContainer = document.getElementById('policy-download-container');
+            const catGroup = document.querySelector('.form-group label[for="categoria_seguro"]').closest('.form-group');
+
+            // Se desmarcou, libera tudo
+            if (!policyId) {
+                lockInsuranceFields(false);
+                hideAllDynamicFields(); // Limpa visual anterior
+                categoriaSelect.value = '';
+                document.getElementById('renovacao_seguradora').value = '';
+                document.getElementById('renovacao_bonus').value = '';
+                downloadContainer.style.display = 'none';
+                return;
+            }
+
+            const p = window.userPolicies.find(pl => pl.id_apolice == policyId);
+            if (!p) return;
+
+            console.log('[PORTAL] Apólice selecionada:', p.numero_apolice);
+
+            // 1. Mapeamento de Categoria
+            const catOpt = [...categoriaSelect.options].find(o =>
+                o.text.toLowerCase().includes(p.ramo.toLowerCase()) ||
+                p.ramo.toLowerCase().includes(o.text.toLowerCase())
+            );
+            if (catOpt) {
+                categoriaSelect.value = catOpt.value;
+                categoriaSelect.dispatchEvent(new Event('change'));
+            }
+
+            // 3. Preencher Dados de Renovação
+            document.getElementById('renovacao_seguradora').value = p.seguradora || '';
+            document.getElementById('renovacao_bonus').value = p.bonus || p.classe_bonus || '';
+            lockInsuranceFields(true);
+            // 3. Preenchimento do Veículo (Se for categoria auto)
+            const placa = document.querySelector('input[name="veiculo_identificacao"]');
+            if (placa) placa.value = p.placa || p.chassi || '';
+
+            // 5. Link de Download (Prioridade para url_link do Google Drive)
+            const pdfUrl = p.url_link || p.link_url_apolice || p.url_pdf;
+            if (checkPdfLink(pdfUrl)) {
+                document.getElementById('btn_download_apolice').href = pdfUrl;
+                downloadContainer.style.display = 'flex';
+            } else {
+                downloadContainer.style.display = 'none';
+            }
+
+            // 5. Trava os campos preenchidos e esconde seletor de categoria
+            catGroup.style.display = 'none';
+            lockInsuranceFields(true);
+
+            // 6. Observação automática (Contexto)
+            const obs = document.getElementById('observacoes');
+            if (obs) {
+                const dataFim = p.data_fim ? new Date(p.data_fim).toLocaleDateString('pt-BR') : 'não informada';
+                obs.value = `Solicitação de renovação para apólice nº ${p.numero_apolice || 'N/A'}. Vigência até ${dataFim}.`;
+            }
+
+            // Se for cliente ativo, os campos de seguro estão bloqueados pelo auto-preenchimento
+            showRenewalFieldsAfterSelection();
+        });
+
+        async function loadInsuranceData() {
+            try {
+                const res = await fetch(`${API_URL}/seguros/estrutura`);
+                insuranceStructure = await res.json();
+                categoriaSelect.innerHTML = '<option value="" disabled selected>Selecione uma categoria</option>';
+                insuranceStructure.forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat.categoria_id; opt.textContent = cat.categoria_nome;
+                    categoriaSelect.appendChild(opt);
+                });
+            } catch (e) { console.error('Erro ao carregar seguros:', e); }
+        }
+
+        function hideAllDynamicFields() {
+            dynamicGroups.forEach(g => g.style.display = 'none');
+        }
+
+        categoriaSelect.addEventListener('change', function () {
+            const catId = this.value;
+            const category = insuranceStructure.find(c => c.categoria_id == catId);
+            if (!category) return;
+            hideAllDynamicFields();
+            const catName = category.categoria_nome.toLowerCase();
+            if (catName.includes('automóvel') || catName.includes('veículo')) {
+                document.getElementById('fields-auto').style.display = 'block';
+                loadVeiculoMarcas('CARRO');
+            } else if (catName.includes('transporte')) {
+                document.getElementById('fields-auto').style.display = 'block';
+                loadVeiculoMarcas('CAMINHAO');
+            } else if (catName.includes('residencial') || catName.includes('patrimoniais')) {
+                document.getElementById('fields-residencial').style.display = 'block';
+            } else if (catName.includes('vida') || catName.includes('pessoas')) {
+                document.getElementById('fields-vida').style.display = 'block';
+            }
+        });
+
+        async function loadVeiculoMarcas(tipo = 'CARRO') {
+            try {
+                veiculoMarcaSelect.innerHTML = '<option value="" disabled selected>Carregando...</option>';
+                const res = await fetch(`${API_URL}/seguros/veiculos/marcas?categoria=${tipo}`);
+                const marcas = await res.json();
+                veiculoMarcaSelect.innerHTML = '<option value="" disabled selected>Selecione a Marca</option>';
+                marcas.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.id; opt.textContent = m.nome;
+                    veiculoMarcaSelect.appendChild(opt);
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        if (veiculoMarcaSelect) { // Adicionado para evitar erro se o elemento não existir
+            veiculoMarcaSelect.addEventListener('change', async function () {
+                const mid = this.value;
+                if (!mid) return;
+                veiculoModeloSelect.disabled = true;
+                veiculoModeloSelect.innerHTML = '<option value="" disabled selected>Carregando...</option>';
+                try {
+                    const res = await fetch(`${API_URL}/seguros/veiculos/modelos/${mid}`);
+                    const models = await res.json();
+                    veiculoModeloSelect.innerHTML = '<option value="" disabled selected>Selecione o Modelo</option>';
+                    models.forEach(mod => {
+                        const opt = document.createElement('option');
+                        opt.value = mod.nome; opt.textContent = mod.nome;
+                        veiculoModeloSelect.appendChild(opt);
+                    });
+                    veiculoModeloSelect.disabled = false;
+                } catch (e) { console.error(e); }
+            });
+        }
+
+        quoteForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const originalText = btn.innerText;
+            btn.innerText = 'Processando...';
+            btn.disabled = true;
+            try {
+                const disabled = e.target.querySelectorAll(':disabled');
+                disabled.forEach(el => el.disabled = false);
+                const formData = new FormData(e.target);
+                disabled.forEach(el => el.disabled = true);
+                if (categoriaSelect.selectedOptions[0]) formData.append('categoria_nome', categoriaSelect.selectedOptions[0].text);
+                const data = Object.fromEntries(formData.entries());
+                const response = await fetch(`${API_URL}/seguros/submit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (response.ok) {
+                    btn.innerText = '✅ Enviado!';
+                    btn.classList.add('success-btn'); // Feedback visual
+                    setTimeout(() => {
+                        alert('✅ Solicitação recebida com sucesso! Nossa equipe entrará em contato em breve.');
+                        window.location.href = 'index.html';
+                    }, 1000);
+                } else {
+                    const resJson = await response.json();
+                    throw new Error(resJson.error || 'Erro ao enviar');
+                }
+            } catch (error) {
+                alert('❌ Erro: ' + error.message);
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+
+</html>
