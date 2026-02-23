@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Prepara próxima etapa (Seleção de Canal)
                 clientId = data.client_id;
-                maskedPhone.textContent = data.masked_phone || 'Não cadastrado';
+                if (maskedPhone) maskedPhone.textContent = data.masked_phone || 'Não cadastrado';
                 maskedEmail.textContent = data.masked_email || 'Não cadastrado';
 
                 identifierGroup.style.display = 'none';
