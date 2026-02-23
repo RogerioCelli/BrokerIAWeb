@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             policiesGrid.style.display = 'block';
             policiesGrid.innerHTML = policies.map(policy => {
                 const icon = getIcon(policy.ramo);
-                const pdfLink = policy.link_url_apolice || policy.url_pdf;
+                const pdfLink = policy.link_url_apolice || policy.url_pdf || policy.url_link;
                 const hasPdf = checkPdfLink(pdfLink);
 
                 return `
@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             </button>
                         </div>
                         ${hasPdf ? `
-                            <a href="${getDownloadLink(pdfLink)}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; text-decoration: none; font-weight: 600;">
+                            <a href="${pdfLink}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; text-decoration: none; font-weight: 600;">
                                 <i class="fas fa-file-pdf"></i> Baixar Apólice Digital
                             </a>
                         ` : '<p style="font-size:0.75rem; color:#64748b; text-align:center;">Documento não disponível</p>'}
@@ -168,7 +168,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
                 const vigencia = `${formatDate(policy.data_inicio || policy.vigencia_inicio)}<br><span style="color: #444;">até</span><br>${formatDate(policy.data_fim || policy.vigencia_fim)}`;
 
-                const pdfLink = policy.link_url_apolice || policy.url_pdf;
+                const pdfLink = policy.link_url_apolice || policy.url_pdf || policy.url_link;
                 const hasPdf = checkPdfLink(pdfLink);
 
                 html += `
@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </td>
                         <td style="padding: 1.2rem; text-align: center;">
                             ${hasPdf ? `
-                                <a href="${getDownloadLink(pdfLink)}" target="_blank" style="color: #ef4444; font-size: 1.4rem; transition: transform 0.2s; display: inline-block;" title="Baixar PDF da Apólice" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
+                                <a href="${pdfLink}" target="_blank" style="color: #ef4444; font-size: 1.4rem; transition: transform 0.2s; display: inline-block;" title="Baixar PDF da Apólice" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
                                     <i class="fas fa-file-pdf"></i>
                                 </a>
                             ` : `
@@ -299,8 +299,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         detailsHtml += `</div>`;
 
-        const currentPdfLink = policy.link_url_apolice || policy.url_pdf;
-        const hasPdf = currentPdfLink && currentPdfLink !== 'undefined' && currentPdfLink !== 'null' && currentPdfLink !== '';
+        const currentPdfLink = policy.link_url_apolice || policy.url_pdf || policy.url_link;
+        const hasPdf = checkPdfLink(currentPdfLink);
 
         detailsHtml += `
             <div style="margin-top: 2.5rem; display: flex; gap: 1rem;">
