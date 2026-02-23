@@ -145,12 +145,25 @@ const magicLinkController = {
 
             console.log(`✅ [MAGIC-LINK] CPF Validado para o telefone: ${phone}`);
 
+            // 📱 Notifica o cliente no WhatsApp que o acesso foi liberado
+            const wahaUrl = process.env.WAHA_URL || 'http://waha:3000';
+            fetch(`${wahaUrl}/api/sendText`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session: 'default',
+                    chatId: `${phone}@c.us`,
+                    text: '✅ *Acesso liberado com sucesso!*\n\nSeu acesso foi confirmado. Por favor, repita o que gostaria de saber sobre seus dados ou apólices. 😊'
+                })
+            }).catch(err => console.error('[WAHA-NOTIFY] Erro ao notificar WhatsApp:', err));
+
             res.json({ success: true, message: 'Acesso autorizado! Você já pode voltar ao WhatsApp.' });
         } catch (error) {
             console.error('[MAGIC-LINK] Erro ao confirmar:', error);
             res.status(500).json({ error: 'Erro ao processar confirmação' });
         }
     }
+
 };
 
 module.exports = magicLinkController;
