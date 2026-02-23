@@ -144,7 +144,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             policies.forEach(policy => {
                 const icon = getIcon(policy.ramo);
-                const vigencia = `${new Date(policy.data_inicio).toLocaleDateString('pt-BR')}<br><span style="color: #444;">até</span><br>${new Date(policy.data_fim).toLocaleDateString('pt-BR')}`;
+                const formatDate = (d) => {
+                    if (!d) return 'N/A';
+                    const dt = new Date(d);
+                    return isNaN(dt.getTime()) ? 'N/A' : dt.toLocaleDateString('pt-BR');
+                };
+                const vigencia = `${formatDate(policy.data_inicio || policy.vigencia_inicio)}<br><span style="color: #444;">até</span><br>${formatDate(policy.data_fim || policy.vigencia_fim)}`;
 
                 const pdfLink = policy.link_url_apolice || policy.url_pdf;
                 const hasPdf = checkPdfLink(pdfLink);
