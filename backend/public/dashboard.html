@@ -7,20 +7,13 @@
     <title>Dashboard - Broker IA</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        @media (max-width: 480px) {
-            .chat-container {
-                width: 100%;
-                height: 100%;
-                bottom: 0;
-                right: 0;
-                border-radius: 0;
-            }
-        }
-    </style>
 </head>
 
+
 <body>
+    <!-- Scroll Progress Bar -->
+    <div id="scrollProgress"></div>
+
     <div class="dashboard-container">
         <header class="header">
             <div class="user-info">
@@ -32,15 +25,15 @@
             </button>
         </header>
 
-        <section>
+        <section class="reveal">
             <h2 class="section-title">
                 <i class="fas fa-shield-halved"></i>
                 Minhas Apólices
             </h2>
             <div class="policies-grid" id="policiesGrid">
                 <!-- Apólices serão carregadas aqui via JS -->
-                <div class="policy-card" style="opacity: 0.5; animation: pulse 1.5s infinite;">
-                    <p>Carregando seguros ativos...</p>
+                <div class="policy-card loading">
+                    <p style="color: var(--text-dim); opacity: 0;">Carregando seguros ativos...</p>
                 </div>
             </div>
         </section>
@@ -97,6 +90,33 @@
     </div>
 
     <script src="dashboard.js"></script>
+
+    <!-- Scroll Progress + Reveal + Sticky Header -->
+    <script>
+        // Scroll progress bar
+        const scrollBar = document.getElementById('scrollProgress');
+        window.addEventListener('scroll', () => {
+            const scrolled = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
+            if (scrollBar) scrollBar.style.width = scrolled + '%';
+
+            // Sticky header glow on scroll
+            const header = document.querySelector('.header');
+            if (header) header.classList.toggle('scrolled', window.scrollY > 20);
+        }, { passive: true });
+
+        // Intersection Observer for reveal animations
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+        document.querySelectorAll('.reveal, .reveal-left, .reveal-right').forEach(el => {
+            revealObserver.observe(el);
+        });
+    </script>
 </body>
 
 </html>
