@@ -147,6 +147,7 @@ const magicLinkController = {
 
             // 📱 Notifica o cliente no WhatsApp que o acesso foi liberado
             const wahaUrl = process.env.WAHA_URL || 'http://waha:3000';
+            console.log(`[WAHA-NOTIFY] Tentando: ${wahaUrl}/api/sendText | chatId: ${phone}@c.us`);
             fetch(`${wahaUrl}/api/sendText`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -155,7 +156,9 @@ const magicLinkController = {
                     chatId: `${phone}@c.us`,
                     text: '✅ *Acesso liberado com sucesso!*\n\nSeu acesso foi confirmado. Por favor, repita o que gostaria de saber sobre seus dados ou apólices. 😊'
                 })
-            }).catch(err => console.error('[WAHA-NOTIFY] Erro ao notificar WhatsApp:', err));
+            })
+                .then(r => console.log(`[WAHA-NOTIFY] ✅ Status: ${r.status}`))
+                .catch(err => console.error(`[WAHA-NOTIFY] ❌ Falhou (${wahaUrl}) | Erro: ${err.message}`));
 
             res.json({ success: true, message: 'Acesso autorizado! Você já pode voltar ao WhatsApp.' });
         } catch (error) {
