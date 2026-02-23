@@ -59,23 +59,64 @@ const policyController = {
         try {
             const { message } = req.body;
             const cleanCpf = req.user.cpf.replace(/\D/g, '');
-            const query = `SELECT numero_apolice, ramo, seguradora, status_apolice as status FROM apolices_brokeria WHERE REPLACE(REPLACE(cpf, '.', ''), '-', '') = $1`;
-            const { rows: policies } = await db.apolicesQuery(query, [cleanCpf]);
 
-            const response = await fetch(process.env.N8N_WEBHOOK_URL, {
+            // Busca dados completos do cliente para enriquecer contexto
+            let clienteInfo = { nome: req.user.nome || 'Cliente', email: '', telefone: '' };
+            try {
+                const clientResult = await db.clientesQuery(
+                    `SELECT nome_completo as nome, email, celular as telefone FROM public.clientes_brokeria WHERE REPLACE(REPLACE(cpf, '.', ''), '-', '') = $1 LIMIT 1`,
+                    [cleanCpf]
+                );
+                if (clientResult.rows.length > 0) clienteInfo = clientResult.rows[0];
+            } catch (e) {
+                console.warn('[CHAT] Não foi possível buscar dados do cliente:', e.message);
+            }
+
+            console.log(`[CHAT-PORTAL] CPF=${cleanCpf} | MSG="${message.slice(0, 80)}"`);
+
+            // Envia para o n8n com campos que o NormalizarEntrada espera
+            const n8nPayload = {
+                action: 'chat_dashboard',
+                // Campos que o NormalizarEntrada do n8n usa:
+                pergunta_cliente: message,
+                message: message,
+                cpf: cleanCpf,
+                identifier: cleanCpf,
+                client_name: clienteInfo.nome,
+                email: clienteInfo.email,
+                telefone: clienteInfo.telefone,
+                target: clienteInfo.telefone,
+                origem: 'PORTAL_WEB'
+            };
+
+            const n8nRes = await fetch(process.env.N8N_WEBHOOK_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'chat_dashboard',
-                    message,
-                    user_cpf: cleanCpf,
-                    policies_context: policies
-                })
+                body: JSON.stringify(n8nPayload)
             });
-            const data = await response.json();
-            res.json(data);
+
+            if (!n8nRes.ok) {
+                const errText = await n8nRes.text();
+                console.error(`[CHAT-PORTAL] n8n HTTP ${n8nRes.status}:`, errText);
+                return res.status(200).json({
+                    response: 'O assistente está temporariamente indisponível. Por favor, tente novamente em instantes.'
+                });
+            }
+
+            const data = await n8nRes.json();
+
+            // Normaliza a resposta — o n8n pode retornar em vários formatos
+            const resposta = data.output || data.response || data.text || data.message
+                || (typeof data === 'string' ? data : null)
+                || 'Não consegui processar sua mensagem. Tente novamente.';
+
+            res.json({ response: resposta });
+
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error('[CHAT-PORTAL-ERROR]', error.message);
+            res.status(200).json({
+                response: 'Ocorreu um erro técnico. O assistente voltará em breve.'
+            });
         }
     },
 

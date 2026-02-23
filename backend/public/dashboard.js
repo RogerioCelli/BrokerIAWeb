@@ -344,63 +344,79 @@ document.addEventListener('DOMContentLoaded', async () => {
         const text = chatInput.value.trim();
         if (!text) return;
 
-        // Adiciona mensagem do usuário
         addMessage('user', text);
         chatInput.value = '';
+        chatInput.disabled = true;
+        sendMessage.disabled = true;
+
+        // Inicia chamada ao n8n IMEDIATAMENTE em paralelo com a animação
+        const n8nPromise = fetch(`${API_URL}/policies/chat`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ message: text })
+        });
+
+        // Animação contextual
+        let statusText = '<i class="fas fa-brain"></i> Consultando Broker IA...';
+        if (/cobertura|guincho|granizo|sinistro/i.test(text)) {
+            statusText = '<i class="fas fa-file-pdf"></i> Analisando apólice...';
+        } else if (/apólice|apolice|venc/i.test(text)) {
+            statusText = '<i class="fas fa-search"></i> Buscando dados da apólice...';
+        } else if (/cotação|cotacao|renovar/i.test(text)) {
+            statusText = '<i class="fas fa-calculator"></i> Preparando informações...';
+        }
+        const agentStatus = showAgentStatus(statusText);
 
         try {
-            // --- Orquestração de Agentes dinâmica ---
-            let statusText = '<i class="fas fa-search"></i> Agente de Busca consultando banco de dados...';
-            if (text.toLowerCase().includes('cobertura') || text.toLowerCase().includes('guincho') || text.toLowerCase().includes('granizo')) {
-                statusText = '<i class="fas fa-file-pdf"></i> Agente de Documentos analisando apólice digitalizada...';
-            }
-
-            const agentStatus = showAgentStatus(statusText);
-
-            // Simula delay de orquestração
-            const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-            await delay(1200);
-
-            if (text.toLowerCase().includes('cobertura') || text.toLowerCase().includes('guincho')) {
-                agentStatus.innerHTML = '<i class="fas fa-microchip"></i> Extraindo cláusulas de assistência 24h...';
-            } else {
-                agentStatus.innerHTML = '<i class="fas fa-brain"></i> Agente de Análise processando apólice...';
-            }
-            await delay(1500);
-
-            agentStatus.innerHTML = '<i class="fas fa-check-circle"></i> Resposta gerada com sucesso';
-            await delay(500);
+            const response = await n8nPromise;
             agentStatus.remove();
-
-            const response = await fetch(`${API_URL}/policies/chat`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token} `,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ message: text })
-            });
-
             const data = await response.json();
-            addMessage('bot', data.response);
-
+            const resposta = data.response || data.output || data.text || 'Não recebi resposta do agente.';
+            addMessageHTML('bot', renderMarkdown(resposta));
         } catch (error) {
             console.error('Erro no chat:', error);
-            const status = document.querySelector('.agent-status');
-            if (status) status.remove();
+            agentStatus.remove();
             addMessage('bot', 'Desculpe, tive um problema técnico. Pode repetir?');
+        } finally {
+            chatInput.disabled = false;
+            sendMessage.disabled = false;
+            chatInput.focus();
         }
     }
 
     sendMessage.addEventListener('click', handleSend);
     chatInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleSend();
+        if (e.key === 'Enter' && !e.shiftKey) handleSend();
     });
+
+    function renderMarkdown(text) {
+        if (!text) return '';
+        return text
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/`(.*?)`/g, '<code style="background:rgba(0,0,0,0.15);padding:2px 5px;border-radius:3px;font-size:0.85em;">$1</code>')
+            .replace(/^[\-\*•] (.+)$/gm, '<li>$1</li>')
+            .replace(/((?:<li>.*<\/li>[\n]?)+)/g, '<ul style="margin:6px 0 6px 16px;padding:0;">$1</ul>')
+            .replace(/\n/g, '<br>');
+    }
 
     function addMessage(type, text) {
         const div = document.createElement('div');
         div.className = `message ${type}`;
         div.textContent = text;
+        chatMessages.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return div;
+    }
+
+    function addMessageHTML(type, html) {
+        const div = document.createElement('div');
+        div.className = `message ${type}`;
+        div.innerHTML = html;
         chatMessages.appendChild(div);
         chatMessages.scrollTop = chatMessages.scrollHeight;
         return div;
