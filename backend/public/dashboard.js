@@ -81,6 +81,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         return true;
     }
 
+    // Converte qualquer link do Google Drive para download direto
+    function getDownloadLink(link) {
+        if (!link) return '#';
+        // Formato: https://drive.google.com/file/d/FILE_ID/view?...
+        const matchFile = link.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        if (matchFile) {
+            return `https://drive.google.com/uc?export=download&id=${matchFile[1]}`;
+        }
+        // Formato: https://drive.google.com/open?id=FILE_ID
+        const matchOpen = link.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+        if (matchOpen) {
+            return `https://drive.google.com/uc?export=download&id=${matchOpen[1]}`;
+        }
+        // Link direto (não é Google Drive) — retorna como está
+        return link;
+    }
+
     function renderPolicies(policies) {
         if (policies.length === 0) {
             policiesGrid.innerHTML = '<p style="text-align: center; color: #64748b; padding: 2rem;">Você ainda não possui apólices cadastradas.</p>';
@@ -116,10 +133,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                             </button>
                         </div>
                         ${hasPdf ? `
-                            <a href="${pdfLink}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; text-decoration: none; font-weight: 600;">
+                            <a href="${getDownloadLink(pdfLink)}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; text-decoration: none; font-weight: 600;">
                                 <i class="fas fa-file-pdf"></i> Baixar Apólice Digital
                             </a>
-                        ` : ''}
+                        ` : '<p style="font-size:0.75rem; color:#64748b; text-align:center;">Documento não disponível</p>'}
                     </div>
                 `;
             }).join('');
@@ -180,11 +197,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </td>
                         <td style="padding: 1.2rem; text-align: center;">
                             ${hasPdf ? `
-                                <a href="${pdfLink}" target="_blank" style="color: #ef4444; font-size: 1.4rem; transition: transform 0.2s; display: inline-block;" title="Baixar PDF Original" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
+                                <a href="${getDownloadLink(pdfLink)}" target="_blank" style="color: #ef4444; font-size: 1.4rem; transition: transform 0.2s; display: inline-block;" title="Baixar PDF da Apólice" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
                                     <i class="fas fa-file-pdf"></i>
                                 </a>
                             ` : `
-                                <i class="fas fa-clock" style="color: #334155; font-size: 1.1rem;" title="Processando Documento"></i>
+                                <span style="color: #475569; font-size: 0.75rem;" title="Documento não vinculado">—</span>
                             `}
                         </td>
                     </tr>
