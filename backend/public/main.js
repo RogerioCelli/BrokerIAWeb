@@ -45,12 +45,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             if (currentStep === 'IDENTIFICATION') {
-                const val = identifierInput.value;
-                const onlyNums = val.replace(/\D/g, '');
+                const val = identifierInput.value.trim();
 
-                // Validação estrita: apenas CPF (11) ou CNPJ (14)
-                if (onlyNums.length !== 11 && onlyNums.length !== 14) {
-                    throw new Error('Por favor, insira um CPF (11 dígitos) ou CNPJ (14 dígitos) válido.');
+                // Regex: CPF (000.000.000-00) ou CNPJ (00.000.000/0000-00)
+                const CPF_REGEX = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
+                const CNPJ_REGEX = /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/;
+
+                if (!CPF_REGEX.test(val) && !CNPJ_REGEX.test(val)) {
+                    throw new Error('Formato inválido. Use CPF (000.000.000-00) ou CNPJ (00.000.000/0000-00).');
                 }
 
                 mainButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';

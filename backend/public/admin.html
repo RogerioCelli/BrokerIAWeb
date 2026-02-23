@@ -419,8 +419,18 @@
         }
 
         async function requestAdminToken() {
-            const id = document.getElementById('admin-id').value;
+            const id = document.getElementById('admin-id').value.trim();
             if (!id) return alert('Insira seu E-mail ou CPF');
+
+            // Se não for e-mail, valida formato CPF ou CNPJ
+            const isEmail = id.includes('@');
+            if (!isEmail) {
+                const CPF_REGEX = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
+                const CNPJ_REGEX = /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/;
+                if (!CPF_REGEX.test(id) && !CNPJ_REGEX.test(id)) {
+                    return alert('Formato inválido. Use CPF (000.000.000-00) ou CNPJ (00.000.000/0000-00).');
+                }
+            }
 
             try {
                 const res = await fetch(`${API_URL}/auth/request`, {
