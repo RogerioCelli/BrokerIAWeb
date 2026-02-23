@@ -36,20 +36,12 @@
                     </div>
                 </div>
 
-                <!-- Nova Etapa: Seleção de Canal -->
+                <!-- Canal fixo: E-mail -->
                 <div class="form-group" id="channelGroup" style="display: none;">
-                    <label>Como deseja receber o seu código?</label>
+                    <label>Código de segurança será enviado para:</label>
                     <div class="channel-options">
-                        <label class="channel-card">
-                            <input type="radio" name="auth_channel" value="whatsapp" checked>
-                            <i class="fab fa-whatsapp"></i>
-                            <div class="channel-info">
-                                <span class="channel-name">WhatsApp</span>
-                                <span class="channel-detail" id="maskedPhone"></span>
-                            </div>
-                        </label>
-                        <label class="channel-card">
-                            <input type="radio" name="auth_channel" value="email">
+                        <label class="channel-card" style="pointer-events: none; opacity: 0.9;">
+                            <input type="radio" name="auth_channel" value="email" checked>
                             <i class="fas fa-envelope"></i>
                             <div class="channel-info">
                                 <span class="channel-name">E-mail</span>
