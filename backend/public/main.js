@@ -1,37 +1,8 @@
+const ORG_SLUG = 'corretora-demo';
+const API_URL = '/api';
+
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
-    const identifierGroup = document.getElementById('identifierGroup');
-    const channelGroup = document.getElementById('channelGroup');
-    const tokenGroup = document.getElementById('tokenGroup');
-    const mainButton = document.getElementById('mainButton');
-
-    const identifierInput = document.getElementById('identifier');
-    const tokenInput = document.getElementById('token');
-    const maskedPhone = document.getElementById('maskedPhone');
-    const maskedEmail = document.getElementById('maskedEmail');
-
-    // Máscara Dinâmica para CPF (11) ou CNPJ (14)
-    identifierInput.addEventListener('input', (e) => {
-        let value = e.target.value.replace(/\D/g, '');
-        if (value.length <= 11) {
-            // CPF: 000.000.000-00
-            value = value.replace(/(\d{3})(\d)/, '$1.$2');
-            value = value.replace(/(\d{3})(\d)/, '$1.$2');
-            value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-        } else {
-            // CNPJ: 00.000.000/0000-00
-            value = value.slice(0, 14);
-            value = value.replace(/^(\d{2})(\d)/, '$1.$2');
-            value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
-            value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
-            value = value.replace(/(\d{4})(\d)/, '$1-$2');
-        }
-        e.target.value = value;
-    });
-
-    const ORG_SLUG = 'corretora-demo';
-    // URL Explícita do Novo Serviço no Projeto Brokeria
-    const API_URL = '/api';
 
     let currentStep = 'IDENTIFICATION'; // IDENTIFICATION, CHANNEL, TOKEN
     let clientId = null;
