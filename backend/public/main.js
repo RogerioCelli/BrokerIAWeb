@@ -148,10 +148,27 @@ const chatInput = document.getElementById('chatInput');
 const sendMessage = document.getElementById('sendMessage');
 
 // Abre/Fecha Chat
-chatFab.addEventListener('click', () => {
+chatFab.addEventListener('click', async () => {
     chatContainer.style.display = 'flex';
     chatFab.style.display = 'none';
     chatInput.focus();
+
+    // Se for a primeira vez que abre (mensagens vazias), dispara o gatilho de boas-vindas
+    if (chatMessages.children.length === 0) {
+        try {
+            const response = await fetch(`${API_URL}/policies/public-chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: '[GATILHO_INICIAL]' })
+            });
+            const data = await response.json();
+            if (data && data.response) {
+                addMessage('bot', data.response);
+            }
+        } catch (error) {
+            console.error('Erro ao iniciar chat:', error);
+        }
+    }
 });
 
 closeChat.addEventListener('click', () => {
