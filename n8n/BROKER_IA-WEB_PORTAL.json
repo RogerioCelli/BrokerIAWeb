@@ -21,7 +21,7 @@
         },
         {
             "parameters": {
-                "jsCode": "const input = $input.first().json;\nconst data = input.body || input;\n\nconst nomeCompleto = data.client_name || \"Visitante\";\nconst emailPortal = data.email || data.target || null;\nconst cpfPortal = (data.cpf || data.identifier || \"\").toString().replace(/\\D/g, '');\nconst telefoneReal = (data.target || data.telefone || \"\").toString().replace(/\\D/g, '');\n\nlet contextoFinal = {\n    nome: nomeCompleto,\n    email_cadastrado: emailPortal,\n    telefone: telefoneReal,\n    cpf_real: cpfPortal,\n    origem: \"PORTAL_WEB\",\n    token_portal: data.token || null,\n    action: data.action || null,\n    token_validado: \"NÃO\"\n};\n\n// Session ID técnico para memória Langchain\nlet sessionID_tecnico = cpfPortal ? \"WEB_\" + cpfPortal : \"WEB_MAIL_\" + (emailPortal || \"ANONIMO\").replace(/[^a-zA-Z0-9]/g, \"\");\n\nlet perguntaFinal = data.pergunta_cliente || data.pergunta || \"Olá\";\n\nif (data.action === \"SEND_2FA_TOKEN\") {\n    perguntaFinal = `[LOGIN PORTAL]: O cliente ${nomeCompleto} solicita acesso via WhatsApp.\n                     DADOS CONFIRMADOS:\n                     - CPF: ${cpfPortal}\n                     - Celular: ${telefoneReal}\n                     - Token Real: ${contextoFinal.token_portal}\n                     \n                     AÇÃO OBRIGATÓRIA (Omnichannel):\n                     1. Saude o cliente: \"Olá, ${nomeCompleto.split(' ')[0]}!\"\n                     2. Informe: \"Enviamos seu código de segurança para o seu WhatsApp.\"\n                     3. CHAME A FERRAMENTA 'enviar_token_seguranca' passando exatamente estes dados: Token: ${contextoFinal.token_portal} e Telefone: ${telefoneReal}`;\n}\n\nreturn [{ json: { pergunta_cliente: perguntaFinal, contexto: contextoFinal, session_id: sessionID_tecnico, telefone: telefoneReal, nome_whatsapp: nomeCompleto, origem: \"PORTAL_WEB\" } }];"
+                "jsCode": "// ====================================================================\n// NORMALIZADOR DE ENTRADA - PORTAL WEB (OMNICHANNEL READY)\n// Aceita campos do policyController.js e do banco de dados\n// ====================================================================\nconst input = $input.first().json;\nconst data = input.body || input;\n\n// Extrai dados do cliente (o backend já enriquece com dados do banco)\nconst nomeCompleto = data.client_name || data.nome || \"Visitante\";\nconst emailPortal = data.email || data.target_email || null;\nconst cpfPortal = (data.cpf || data.identifier || data.user_cpf || \"\").toString().replace(/\\D/g, '');\nconst telefoneReal = (data.telefone || data.target || \"\").toString().replace(/\\D/g, '');\n\n// ====================================================================\n// CHAVE DE SESSÃO OMNICHANNEL\n// CRÍTICO: Usamos o CPF como base da chave — IGUAL ao WhatsApp!\n// No WhatsApp o agente salva memória com a chave baseada no telefone,\n// mas aqui forçamos a mesma lógica usando CPF para unificar.\n// Se o cliente tem telefone, a sessão fica idêntica à do WhatsApp.\n// ====================================================================\nlet sessionKey;\nif (cpfPortal) {\n    // Prioridade: CPF — garante omnichannel entre WhatsApp e Portal\n    sessionKey = \"CPF_\" + cpfPortal;\n} else if (emailPortal) {\n    sessionKey = \"MAIL_\" + emailPortal.replace(/[^a-zA-Z0-9]/g, \"\");\n} else {\n    sessionKey = \"ANON_\" + Date.now();\n}\n\n// Pergunta do cliente\nconst perguntaFinal = data.pergunta_cliente || data.message || data.pergunta || \"Olá\";\n\nconst contextoFinal = {\n    nome: nomeCompleto,\n    email_cadastrado: emailPortal,\n    telefone: telefoneReal,\n    cpf_real: cpfPortal,\n    origem: \"PORTAL_WEB\",\n    token_validado: \"NÃO\" // No portal autenticado via JWT, 2FA já foi feito no login\n};\n\nconsole.log(`[PORTAL] Sessão: ${sessionKey} | CPF: ${cpfPortal} | Msg: ${perguntaFinal.slice(0, 60)}`);\n\nreturn [{ \n    json: { \n        pergunta_cliente: perguntaFinal, \n        contexto: contextoFinal, \n        session_key: sessionKey,\n        telefone: telefoneReal,\n        cpf_real: cpfPortal,\n        nome_cliente: nomeCompleto,\n        origem: \"PORTAL_WEB\"\n    } \n}];"
             },
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
@@ -37,7 +37,7 @@
                 "promptType": "define",
                 "text": "={{ $json.pergunta_cliente }}",
                 "options": {
-                    "systemMessage": "=================================================================\n⚠️ REGRA CRÍTICA DE TOOLS\n=================================================================\nVOCÊ É OBRIGADO A USAR AS TOOLS DISPONÍVEIS.\nSe o cliente pedir dados de cadastro ou de apólices e STATUS 2FA = \"NÃO\":\n1. PARE tudo que está fazendo\n2. CHAME a tool 'enviar_token_seguranca'\n3. OBRIGATÓRIO: Passe para a tool o e-mail e CPF que você já tem ou que acabou de descobrir.\n4. NÃO responda NADA ao cliente até a tool retornar\n5. Após a tool confirmar, diga: \"Código enviado para seu WhatsApp\"\n\n=================================================================\n🛡️ PROTOCOLO OMNICHANNEL (PORTAL WEB)\n=================================================================\nVocê está atendendo via PORTAL WEB.\nCLIENTE: {{ $json.contexto.nome }}\nCPF: {{ $json.contexto.cpf_real }}\n🛡️ STATUS 2FA: {{ $json.contexto.token_validado }}\n\n1. Se o cliente pedir o código (2FA), use 'enviar_token_seguranca'.\n2. Se ele pedir apólices ou documentos, use 'consultar_detalhes_apolices' ou 'enviar_apolice_por_email'.\n\n🔒 LGPD - MASCARAMENTO OBRIGATÓRIO:\n- CPF/CNPJ: SEMPRE use masquaramento. Ex: CPF ***562.880\n- SE STATUS 2FA = \"NÃO\": \n  * VOCÊ ESTÁ PROIBIDO de informar: Número da Apólice, Placa do Veículo, Data exata de Vencimento ou Endereços.\n  * SÓ peça validação 2FA se o cliente EXPLICITAMENTE pedir dados sensíveis.\n\n=================================================================\n📝 REGISTRO DE COTAÇÕES - REGRA OBRIGATÓRIA\n=================================================================\nAo solicitar cotação, chame 'EspecialistaRegistroCotacao' (se disponível) ou informe que o Washington entrará em contato.\n\nSempre use os nomes reais das ferramentas."
+                    "systemMessage": "=================================================================\n⚠️ REGRA CRÍTICA DE IDENTIDADE\n=================================================================\nVocê é o BROKER IA, assistente inteligente de seguros da corretora.\nVocê está atendendo via PORTAL WEB (navegador).\n\nDADOS DO CLIENTE AUTENTICADO:\n- Nome: {{ $json.contexto.nome }}\n- CPF: {{ $json.contexto.cpf_real ? '***.***.***-' + $json.contexto.cpf_real.slice(-2) : 'Não informado' }}\n- E-mail: {{ $json.contexto.email_cadastrado || 'Não informado' }}\n- Telefone: {{ $json.contexto.telefone || 'Não informado' }}\n- Canal: PORTAL WEB (autenticado via Magic Link)\n\n=================================================================\n🔄 PROTOCOLO OMNICHANNEL\n=================================================================\nEste cliente pode ter conversado com você antes pelo WhatsApp!\nA memória da conversa é compartilhada por CPF.\nSe ele mencionar algo que foi discutido antes, você tem acesso.\n\nNO PORTAL WEB:\n- O cliente já se autenticou com Magic Link — identidade CONFIRMADA.\n- Você pode discutir informações gerais de seguros livremente.\n- Para dados SENSÍVEIS (número de apólice, valores, datas exatas),\n  use a tool 'consultar_detalhes_apolices'.\n- Para enviar PDF por e-mail, use 'enviar_apolice_por_email'.\n\n=================================================================\n🛡️ REGRAS DE SEGURANÇA (LGPD)\n=================================================================\n- CPF: SEMPRE mascarado (ex: ***.***.***-80)\n- Placa de veículo: use ***-**** nos 3 primeiros dígitos\n- Dados sensíveis: só via ferramentas autorizadas\n- NUNCA invente informações de apólices\n\n=================================================================\n📝 COTAÇÕES\n=================================================================\nSe o cliente pedir cotação, informe que o corretor responsável\nentrará em contato. Colete: tipo de seguro, dados gerais do item,\ne-mail de contato.\n\nSempre seja prestativo, objetivo e profissional."
                 }
             },
             "type": "@n8n/n8n-nodes-langchain.agent",
@@ -48,6 +48,19 @@
             ],
             "id": "29824c1d-f167-443d-be77-7ef2e85af44d",
             "name": "Portal_Master"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Garante que a resposta saia no formato { response: \"...\" }\n// que o dashboard.js e o policyController.js esperam\nconst agentOutput = $input.first().json;\n\n// O Langchain Agent retorna em output ou text\nconst texto = agentOutput.output || agentOutput.text || agentOutput.response\n    || 'Desculpe, não consegui gerar uma resposta. Tente novamente.';\n\nreturn [{ json: { response: texto } }];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                160,
+                -96
+            ],
+            "id": "f1a2b3c4-d5e6-7890-abcd-ef1234567890",
+            "name": "FormatarResposta"
         },
         {
             "parameters": {
@@ -74,7 +87,7 @@
         {
             "parameters": {
                 "sessionIdType": "customKey",
-                "sessionKey": "={{ $json.telefone + '_v2' }}",
+                "sessionKey": "={{ $('NormalizarEntrada').first().json.session_key }}",
                 "contextWindowLength": 10
             },
             "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
@@ -98,8 +111,8 @@
                 "workflowInputs": {
                     "mappingMode": "defineBelow",
                     "value": {
-                        "token": "={{ $json.token || $json.token_portal || $('NormalizarEntrada').first().json.contexto.token_portal }}",
-                        "cpf": "={{ $json.cpf || $json.cpf_real || $('NormalizarEntrada').first().json.contexto.cpf_real }}",
+                        "token": "={{ $json.token || $('NormalizarEntrada').first().json.contexto.token_portal }}",
+                        "cpf": "={{ $json.cpf || $('NormalizarEntrada').first().json.contexto.cpf_real }}",
                         "telefone_destino": "={{ $json.telefone || $('NormalizarEntrada').first().json.contexto.telefone }}",
                         "email_destino": "={{ $('NormalizarEntrada').first().json.contexto.email_cadastrado }}",
                         "canal": "whatsapp"
@@ -121,7 +134,7 @@
                 "workflowInputs": {
                     "mappingMode": "defineBelow",
                     "value": {
-                        "cpf": "={{ $json.cpf || $json.cpf_real || $('NormalizarEntrada').first().json.contexto.cpf_real }}"
+                        "cpf": "={{ $json.cpf || $('NormalizarEntrada').first().json.contexto.cpf_real }}"
                     }
                 }
             },
@@ -183,7 +196,7 @@
             "main": [
                 [
                     {
-                        "node": "Registrar_Interacao_Portal",
+                        "node": "FormatarResposta",
                         "type": "main",
                         "index": 0
                     }
