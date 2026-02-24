@@ -272,7 +272,10 @@
     </div>
 
     <!-- Reuso do script principal -->
-    <script src="main.js"></script>
+    <!-- Reuso do script principal com cache busting -->
+    <script>
+        document.write('<script src="main.js?v=' + Date.now() + '"><\/script>');
+    </script>
 </body>
 
 </html>
