@@ -99,7 +99,7 @@ const policyController = {
                 const errText = await n8nRes.text();
                 console.error(`[CHAT-PORTAL] n8n HTTP ${n8nRes.status}:`, errText);
                 return res.status(200).json({
-                    response: 'O assistente está temporariamente indisponível. Por favor, tente novamente em instantes.'
+                    response: `Portal n8n retornou erro (${n8nRes.status}). Verifique se o workflow v15 está ativo.`
                 });
             }
 
@@ -123,15 +123,50 @@ const policyController = {
     publicChat: async (req, res) => {
         try {
             const { message } = req.body;
-            const response = await fetch(process.env.N8N_WEBHOOK_URL, {
+            const targetUrl = process.env.N8N_WEBHOOK_URL;
+
+            console.log(`[PUBLIC-CHAT-DEBUG] Iniciando chamada n8n...`);
+            console.log(`[PUBLIC-CHAT-DEBUG] URL: ${targetUrl}`);
+            console.log(`[PUBLIC-CHAT-DEBUG] MSG recebida: "${message}"`);
+
+            if (!targetUrl) {
+                console.error('[PUBLIC-CHAT-ERROR] N8N_WEBHOOK_URL não definida no ambiente!');
+                return res.status(200).json({ response: 'Erro de configuração: Webhook não definido.' });
+            }
+
+            const response = await fetch(targetUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'chat_publico', message })
+                body: JSON.stringify({
+                    action: 'chat_publico',
+                    message: message,
+                    timestamp: new Date().toISOString()
+                })
             });
+
+            console.log(`[PUBLIC-CHAT-DEBUG] Status n8n: ${response.status} ${response.statusText}`);
+
+            if (!response.ok) {
+                const errText = await response.text();
+                console.error(`[PUBLIC-CHAT-ERROR] n8n retornou erro:`, errText);
+                return res.status(200).json({
+                    response: 'O assistente está em manutenção técnica. Por favor, tente pelo WhatsApp por enquanto.'
+                });
+            }
+
             const data = await response.json();
-            res.json(data);
+
+            // Normaliza a resposta
+            const resposta = data.response || data.output || data.text || data.message
+                || (typeof data === 'string' ? data : null)
+                || 'Olá! No momento não consegui processar sua dúvida. Pode tentar de novo?';
+
+            res.json({ response: resposta });
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error('[PUBLIC-CHAT-ERROR]', error.message);
+            res.status(200).json({
+                response: 'Ocorreu um problema ao conectar com o assistente. Tente novamente mais tarde.'
+            });
         }
     }
 };
