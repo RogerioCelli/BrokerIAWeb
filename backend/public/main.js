@@ -153,8 +153,8 @@ chatFab.addEventListener('click', async () => {
     chatFab.style.display = 'none';
     chatInput.focus();
 
-    // Se for a primeira vez que abre (mensagens vazias), dispara o gatilho de boas-vindas
-    if (chatMessages.children.length === 0) {
+    // Se for a primeira vez que abre (mensagens <= 1), dispara o gatilho de boas-vindas
+    if (chatMessages.children.length <= 1) {
         try {
             const response = await fetch(`${API_URL}/policies/public-chat`, {
                 method: 'POST',
@@ -231,7 +231,9 @@ const handleSend = async () => {
         }
 
     } catch (error) {
-        addMessage('bot', 'Ops, tive um probleminha. Tente novamente mais tarde.');
+        console.error('[CHAT-ERROR]', error);
+        alert('DEBUG CHAT ERROR: ' + error.message);
+        addMessage('bot', `ERRO DE CONEXÃO: ${error.message}`);
     }
 };
 

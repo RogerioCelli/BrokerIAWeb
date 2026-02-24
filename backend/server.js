@@ -27,6 +27,12 @@ app.use(cors({
     credentials: true
 }));
 app.use(express.json());
+
+// LOGGER GLOBAL - Para debug total de entrada (Agora com body disponível)
+app.use((req, res, next) => {
+    console.log(`[REQ] ${new Date().toLocaleTimeString()} | ${req.method} ${req.url} | Body: ${JSON.stringify(req.body)}`);
+    next();
+});
 app.use(morgan('dev'));
 
 // Servir Arquivos Estáticos (Frontend movido para public)
