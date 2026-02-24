@@ -102,7 +102,7 @@
             {
               "id": "30a509ba-e3aa-4e6a-b3ce-4f7d1fcbf46f",
               "name": "session_id",
-              "value": "={{ $json.body.session + \u0027 \u0027 + $json.body.payload.from + \u0027 chats\u0027 }}",
+              "value": "={{ $json.body.session + ' ' + $json.body.payload.from + ' chats' }}",
               "type": "string"
             },
             {
@@ -136,7 +136,7 @@
         "resource": "Chatting",
         "operation": "Send Seen",
         "session": "default",
-        "chatId": "={{ $(\u0027DefinirContextoAI\u0027).first().json.contexto.telefone + \u0027@c.us\u0027 }}",
+        "chatId": "={{ $('DefinirContextoAI').first().json.contexto.telefone + '@c.us' }}",
         "messageId": "",
         "requestOptions": {}
       },
@@ -161,8 +161,8 @@
       "parameters": {
         "resource": "Chatting",
         "operation": "Start Typing",
-        "session": "={{ $(\u0027Padronizar Output\u0027).first().json.target_session || \u0027default\u0027 }}",
-        "chatId": "={{ $(\u0027Padronizar Output\u0027).first().json.target_chat_id }}",
+        "session": "={{ $('Padronizar Output').first().json.target_session || 'default' }}",
+        "chatId": "={{ $('Padronizar Output').first().json.target_chat_id }}",
         "requestOptions": {}
       },
       "type": "n8n-nodes-waha.WAHA",
@@ -196,8 +196,8 @@
       "parameters": {
         "resource": "Chatting",
         "operation": "Send Text",
-        "session": "={{ $(\u0027Padronizar Output\u0027).first().json.target_session || \u0027default\u0027 }}",
-        "chatId": "={{ $(\u0027Padronizar Output\u0027).first().json.target_chat_id }}",
+        "session": "={{ $('Padronizar Output').first().json.target_session || 'default' }}",
+        "chatId": "={{ $('Padronizar Output').first().json.target_chat_id }}",
         "reply_to": "=",
         "text": "={{ $json.text }}",
         "requestOptions": {}
@@ -219,7 +219,7 @@
     },
     {
       "parameters": {
-        "url": "={{ (\u0027http://waha:3000/api/\u0027 + $json.session + \u0027/lids/\u0027 + encodeURIComponent(($json.from || \u0027\u0027).trim())).trim() }}\n\n",
+        "url": "={{ ('http://waha:3000/api/' + $json.session + '/lids/' + encodeURIComponent(($json.from || '').trim())).trim() }}\n\n",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -251,19 +251,19 @@
             {
               "id": "custom-field",
               "name": "PhoneNumber",
-              "value": "={{ $json.pn ? $json.pn.split(\u0027@\u0027)[0] : undefined }}",
+              "value": "={{ $json.pn ? $json.pn.split('@')[0] : undefined }}",
               "type": "string"
             },
             {
               "id": "835b86bc-37d1-4742-a421-3247982275a9",
               "name": "LidNumber",
-              "value": "={{ $json.lid ? $json.lid.split(\u0027@\u0027)[0] : undefined }}",
+              "value": "={{ $json.lid ? $json.lid.split('@')[0] : undefined }}",
               "type": "string"
             },
             {
               "id": "92fd4ba6-2d13-4ff9-b215-8895fd828fa2",
               "name": "isGroup",
-              "value": "={{ ($json.pn || \u0027\u0027).endsWith(\u0027@g.us\u0027) }}",
+              "value": "={{ ($json.pn || '').endsWith('@g.us') }}",
               "type": "boolean"
             }
           ]
@@ -283,9 +283,9 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "/* BANCO: brokeria_db | SCHEMA: public */\nSELECT \n  c.id_cliente, \n  c.nome_completo, \n  c.cpf, \n  c.email, \n  c.celular,\n  c.telefone,\n  (\n    SELECT json_agg(a)\n    FROM public.apolices_brokeria a\n    WHERE a.id_cliente::text = c.id_cliente::text  -- ðŸ’¡ Blindagem: forÃ§a comparaÃ§Ã£o entre textos\n  ) as apolices_detalhadas\nFROM public.clientes_brokeria c\nWHERE c.celular = \u0027{{ $node[\"Limpar Telefone\"].json.PhoneNumber }}\u0027\n   OR c.telefone = \u0027{{ $node[\"Limpar Telefone\"].json.PhoneNumber }}\u0027\nLIMIT 1;",
+        "query": "/* BANCO: brokeria_db | SCHEMA: public */\nSELECT \n  c.id_cliente, \n  c.nome_completo, \n  c.cpf, \n  c.email, \n  c.celular,\n  c.telefone,\n  (\n    SELECT json_agg(a)\n    FROM public.apolices_brokeria a\n    WHERE a.id_cliente::text = c.id_cliente::text  -- ðŸ’¡ Blindagem: forÃ§a comparaÃ§Ã£o entre textos\n  ) as apolices_detalhadas\nFROM public.clientes_brokeria c\nWHERE c.celular = '{{ $node[\"Limpar Telefone\"].json.PhoneNumber }}'\n   OR c.telefone = '{{ $node[\"Limpar Telefone\"].json.PhoneNumber }}'\nLIMIT 1;",
         "options": {
-          "queryReplacement": "={{ $(\u0027Limpar Telefone\u0027).item.json.PhoneNumber }}"
+          "queryReplacement": "={{ $('Limpar Telefone').item.json.PhoneNumber }}"
         }
       },
       "type": "n8n-nodes-base.postgres",
@@ -307,7 +307,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const wait = (ms) =\u003e new Promise(resolve =\u003e setTimeout(resolve, ms));\nawait wait(Math.floor(Math.random() * 400)); \n\nlet mensagens = [];\nconst dadosEntrada = $input.first().json; \nconst msgId = dadosEntrada.payload_id; \nconst execId = $execution.id; // âœ… Captura ID exclusivo da execuÃ§Ã£o\n\ntry {\n  const redisItem = $(\"Recuperar_Buffer\").first();\n  if (redisItem \u0026\u0026 redisItem.json) {\n    const conteudoRedis = redisItem.json.Redis_Check_Buffer || redisItem.json.value;\n    if (conteudoRedis \u0026\u0026 typeof conteudoRedis === \u0027string\u0027) {\n      mensagens = JSON.parse(conteudoRedis);\n    }\n  }\n} catch (e) {\n  mensagens = [];\n}\n\nif (!mensagens.some(m =\u003e m.id === msgId)) {\n    mensagens.push({\n        id: msgId,\n        exec_id: execId, // âœ… Salva quem foi o Ãºltimo a escrever\n        texto: dadosEntrada.user_text || \"MIDIA_INPUT\", \n        tipo: dadosEntrada.mediaType || \"chat\"\n    });\n}\n\nreturn {\n    ...dadosEntrada, \n    texto_combinado: mensagens.map(m =\u003e m.texto).join(\u0027 \\n \u0027),\n    lista_raw: JSON.stringify(mensagens),\n    quantidade: mensagens.length\n};"
+        "jsCode": "const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));\nawait wait(Math.floor(Math.random() * 400)); \n\nlet mensagens = [];\nconst dadosEntrada = $input.first().json; \nconst msgId = dadosEntrada.payload_id; \nconst execId = $execution.id; // âœ… Captura ID exclusivo da execuÃ§Ã£o\n\ntry {\n  const redisItem = $(\"Recuperar_Buffer\").first();\n  if (redisItem && redisItem.json) {\n    const conteudoRedis = redisItem.json.Redis_Check_Buffer || redisItem.json.value;\n    if (conteudoRedis && typeof conteudoRedis === 'string') {\n      mensagens = JSON.parse(conteudoRedis);\n    }\n  }\n} catch (e) {\n  mensagens = [];\n}\n\nif (!mensagens.some(m => m.id === msgId)) {\n    mensagens.push({\n        id: msgId,\n        exec_id: execId, // âœ… Salva quem foi o Ãºltimo a escrever\n        texto: dadosEntrada.user_text || \"MIDIA_INPUT\", \n        tipo: dadosEntrada.mediaType || \"chat\"\n    });\n}\n\nreturn {\n    ...dadosEntrada, \n    texto_combinado: mensagens.map(m => m.texto).join(' \\n '),\n    lista_raw: JSON.stringify(mensagens),\n    quantidade: mensagens.length\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -390,8 +390,8 @@
           "conditions": [
             {
               "id": "768c0bd8-dd6a-4825-94af-95a9c9d03ad5",
-              "leftValue": "={{ $node[\"Agrupar_Texto\"].json.payload_id + \u0027_\u0027 + $execution.id }}",
-              "rightValue": "={{ JSON.parse($json.Redis_Check_Final || \"[]\").slice(-1)[0].id + \u0027_\u0027 + JSON.parse($json.Redis_Check_Final || \"[]\").slice(-1)[0].exec_id }}",
+              "leftValue": "={{ $node[\"Agrupar_Texto\"].json.payload_id + '_' + $execution.id }}",
+              "rightValue": "={{ JSON.parse($json.Redis_Check_Final || \"[]\").slice(-1)[0].id + '_' + JSON.parse($json.Redis_Check_Final || \"[]\").slice(-1)[0].exec_id }}",
               "operator": {
                 "type": "string",
                 "operation": "equals"
@@ -416,7 +416,7 @@
       "parameters": {
         "operation": "get",
         "propertyName": "Redis_Check_Buffer",
-        "key": "=buffer:{{ $(\u0027CheckOrigem\u0027).first().json.tecnico.session_id }}",
+        "key": "=buffer:{{ $('CheckOrigem').first().json.tecnico.session_id }}",
         "options": {}
       },
       "type": "n8n-nodes-base.redis",
@@ -522,7 +522,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// ==========================================================\n// 1. RECUPERAÃ‡ÃƒO DO NÃšMERO REAL (Do nÃ³ Consultar WAHA Direto)\n// ==========================================================\nlet phoneReal = \"\";\nlet nomeReal = \"Cliente\";\n\ntry {\n    // Pega o output da consulta que vocÃª fez na API\n    const dadosAPI = $(\u0027Consultar WAHA Direto\u0027).first().json;\n    \n    // O WAHA retorna o nÃºmero real em \u0027pn\u0027, \u0027id.user\u0027 ou \u0027id\u0027 dependendo da versÃ£o\n    const rawPhone = dadosAPI.pn || dadosAPI.id || \"\";\n    phoneReal = typeof rawPhone === \u0027string\u0027 ? rawPhone.split(\u0027@\u0027)[0].replace(/\\D/g, \u0027\u0027) : \"\";\n    \n    // PRIORIDADE DE CAPTURA DO NOME (ordem de preferÃªncia)\n    nomeReal = dadosAPI.pushname || dadosAPI.name || dadosAPI.notifyName || dadosAPI.verifiedName || \"Cliente\";\n} catch (error) {\n    phoneReal = $json.body.payload.from.split(\u0027@\u0027)[0];\n}\n\n// FALLBACK: Se ainda nÃ£o pegou o nome, tenta do payload direto\nif (nomeReal === \"Cliente\") {\n    try {\n        const payload = $json.body.payload || {};\n        const payloadData = payload._data || {};\n        nomeReal = payloadData.notifyName || payload.notifyName || payload.pushname || \"Cliente\";\n    } catch(e) {}\n}\n\n// ==========================================================\n// 2. RECUPERAÃ‡ÃƒO DOS DADOS BRUTOS (Do Webhook/Input)\n// ==========================================================\nconst inputData = $json; \nconst body = inputData.body || inputData;\nconst payload = body.payload || body || {};\n\nconst chatIdTecnico = payload.from || body.from;\nconst isGroup = String(chatIdTecnico).includes(\u0027@g.us\u0027);\n\nlet sessionId = body.session || \u0027default\u0027;\nif (!sessionId || sessionId === phoneReal) sessionId = \u0027default\u0027;\n\nlet userText = payload.body || \"\";\ntry {\n    const buffer = $(\u0027Agrupar_Texto\u0027).first().json;\n    if (buffer \u0026\u0026 buffer.texto_combinado) {\n        userText = buffer.texto_combinado;\n    }\n} catch(e) {}\n\n// ==========================================================\n// 3. MONTAGEM DO JSON FINAL\n// ==========================================================\nreturn {\n  json: {\n    \"tecnico\": {\n      \"session_id\": sessionId,\n      \"chat_id\": chatIdTecnico,\n      \"isGroup\": isGroup,\n      \"source\": body.source || \"api\",\n      \"fromMe\": payload.fromMe || false\n    },\n    \"cliente\": {\n      \"phoneNumber\": phoneReal,\n      \"nome_whatsapp\": nomeReal  // âœ… AGORA COM CAPTURA ROBUSTA\n    },\n    \"input_bruto\": {\n      \"user_text\": userText,\n      \"mediaType\": payload.type || \"chat\",\n      \"payload_id\": payload.id\n    }\n  }\n};"
+        "jsCode": "// ==========================================================\n// 1. RECUPERAÃ‡ÃƒO DO NÃšMERO REAL (Do nÃ³ Consultar WAHA Direto)\n// ==========================================================\nlet phoneReal = \"\";\nlet nomeReal = \"Cliente\";\n\ntry {\n    // Pega o output da consulta que vocÃª fez na API\n    const dadosAPI = $('Consultar WAHA Direto').first().json;\n    \n    // O WAHA retorna o nÃºmero real em 'pn', 'id.user' ou 'id' dependendo da versÃ£o\n    const rawPhone = dadosAPI.pn || dadosAPI.id || \"\";\n    phoneReal = typeof rawPhone === 'string' ? rawPhone.split('@')[0].replace(/\\D/g, '') : \"\";\n    \n    // PRIORIDADE DE CAPTURA DO NOME (ordem de preferÃªncia)\n    nomeReal = dadosAPI.pushname || dadosAPI.name || dadosAPI.notifyName || dadosAPI.verifiedName || \"Cliente\";\n} catch (error) {\n    phoneReal = $json.body.payload.from.split('@')[0];\n}\n\n// FALLBACK: Se ainda nÃ£o pegou o nome, tenta do payload direto\nif (nomeReal === \"Cliente\") {\n    try {\n        const payload = $json.body.payload || {};\n        const payloadData = payload._data || {};\n        nomeReal = payloadData.notifyName || payload.notifyName || payload.pushname || \"Cliente\";\n    } catch(e) {}\n}\n\n// ==========================================================\n// 2. RECUPERAÃ‡ÃƒO DOS DADOS BRUTOS (Do Webhook/Input)\n// ==========================================================\nconst inputData = $json; \nconst body = inputData.body || inputData;\nconst payload = body.payload || body || {};\n\nconst chatIdTecnico = payload.from || body.from;\nconst isGroup = String(chatIdTecnico).includes('@g.us');\n\nlet sessionId = body.session || 'default';\nif (!sessionId || sessionId === phoneReal) sessionId = 'default';\n\nlet userText = payload.body || \"\";\ntry {\n    const buffer = $('Agrupar_Texto').first().json;\n    if (buffer && buffer.texto_combinado) {\n        userText = buffer.texto_combinado;\n    }\n} catch(e) {}\n\n// ==========================================================\n// 3. MONTAGEM DO JSON FINAL\n// ==========================================================\nreturn {\n  json: {\n    \"tecnico\": {\n      \"session_id\": sessionId,\n      \"chat_id\": chatIdTecnico,\n      \"isGroup\": isGroup,\n      \"source\": body.source || \"api\",\n      \"fromMe\": payload.fromMe || false\n    },\n    \"cliente\": {\n      \"phoneNumber\": phoneReal,\n      \"nome_whatsapp\": nomeReal  // âœ… AGORA COM CAPTURA ROBUSTA\n    },\n    \"input_bruto\": {\n      \"user_text\": userText,\n      \"mediaType\": payload.type || \"chat\",\n      \"payload_id\": payload.id\n    }\n  }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -537,7 +537,7 @@
       "parameters": {
         "operation": "get",
         "propertyName": "sessaoExistente",
-        "key": "=status_2fa:{{ $(\u0027Limpar Telefone\u0027).first().json.PhoneNumber }}",
+        "key": "=status_2fa:{{ $('Limpar Telefone').first().json.PhoneNumber }}",
         "options": {
           "dotNotation": true
         }
@@ -560,7 +560,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// =========================================================\n// 1. RECUPERAÃ‡ÃƒO DE DADOS (BANCO + WHATSAPP)\n// =========================================================\nlet cliente = {};\ntry { \n    const busca = $(\"Busca_Cliente\").first();\n    if (busca \u0026\u0026 busca.json \u0026\u0026 busca.json.id_cliente) {\n        cliente = busca.json;\n    }\n} catch(e) {}\n\nlet dadosWhatsApp = {};\ntry {\n    dadosWhatsApp = $(\"CheckOrigem\").first().json.cliente || {};\n} catch(e) {}\n\nconst phoneNumber = dadosWhatsApp.phoneNumber || \"\";\nconst nomeWhatsApp = dadosWhatsApp.nome_whatsapp || \"Cliente\";\nconst isClienteCadastrado = !!(cliente \u0026\u0026 cliente.id_cliente);\n\nlet consolidado = {};\ntry { consolidado = $(\"ConsolidarMensagem\").first().json || {}; } catch(e) {}\n\nlet perguntaAgente = consolidado.mensagem_final;\n\n// BLINDAGEM MASTER\nif (consolidado.teve_erro_ia) {\n    const msgRecomendada = (consolidado.tipo_entrada === \"image\") \n        ? \"Houve um erro tÃ©cnico ao processar a imagem do cliente. PeÃ§a educadamente para ele descrever o que deseja ou reenviar.\"\n        : \"Houve um erro tÃ©cnico ao transcrever o Ã¡udio do cliente. PeÃ§a para ele digitar ou enviar o Ã¡udio novamente.\";\n    perguntaAgente = `[SISTEMA]: ${msgRecomendada}`;\n} \nelse if (!perguntaAgente) {\n    perguntaAgente = (consolidado.tipo_entrada === \"chat\") ? \"OlÃ¡\" : \"...\";\n}\n\nlet isValid = false;\ntry {\n    const nodeRedis = $(\"Buscar_Sessao_Existente\").first();\n    if (nodeRedis \u0026\u0026 nodeRedis.json \u0026\u0026 nodeRedis.json.sessaoExistente === \"VALIDADO\") {\n        isValid = true;\n    }\n} catch (e) { isValid = false; }\n\n// =========================================================\n// 2. PROCESSAMENTO DE APÃ“LICES (V13 INTEGRAL)\n// =========================================================\nlet apolicesRaw = (cliente.apolices_detalhadas || []).filter(ap =\u003e \n    ap \u0026\u0026 ap.status_apolice \u0026\u0026 String(ap.status_apolice).toUpperCase() === \u0027ATIVA\u0027\n);\n\nconst apolicesContexto = apolicesRaw.map(ap =\u003e ({\n    seguradora: ap.seguradora,\n    tipo: ap.ramo,\n    status: ap.status_apolice,\n    apolice: isValid ? ap.numero_apolice : \"(Bloqueado)\",\n    vencimento: isValid ? ap.vigencia_fim : \"(Bloqueado)\",\n    placa: (ap.placa \u0026\u0026 isValid) ? ap.placa : (ap.placa ? \"***-****\" : \"N/A\"),\n    endereco: isValid ? (ap.endereco_apolice || \"NÃ£o informado\") : \"EndereÃ§o Oculto\",\n    cidade: isValid ? (ap.cidade_apolice || \"NÃ£o informado\") : \"Mascarado\",\n    uf: isValid ? (ap.uf_apolice || \"\") : \"\"\n}));\n\n// =========================================================\n// 3. CLASSIFICAÃ‡ÃƒO DE ROTA\n// =========================================================\nconst securityKeywords = /^(3|5|6|seguro|contratado|boleto|financeiro|sinistro|segunda|2a)|apolice|ap[oÃ³]lice|meus dados|minha ap/i;\nconst rota_num = securityKeywords.test(perguntaAgente || \"\") ? 1 : 0;\n\n// =========================================================\n// 4. RETORNO\n// =========================================================\nreturn [{\n    json: {\n        pergunta_cliente: perguntaAgente,\n        rota_num: rota_num,\n        contexto: {\n            nome: cliente.nome_completo || nomeWhatsApp,\n            cpf_real: cliente.cpf || \"\",\n            cpf_exibicao: (cliente.cpf) ? `***.***.***-${cliente.cpf.replace(/\\D/g, \"\").slice(-2)}` : \"NÃ£o informado\",\n            telefone: cliente.celular || phoneNumber,\n            email_cadastrado: cliente.email || \"\",\n            token_validado: isValid ? \"SIM\" : \"NÃƒO\",\n            cadastrado: isClienteCadastrado,\n            id_cliente: cliente.id_cliente || null,\n            input_user: perguntaAgente,\n            resumo_apolices: apolicesContexto,\n            tipo_cliente: isClienteCadastrado ? \"CADASTRADO\" : \"NOVO\",\n            mensagem_sistema: isClienteCadastrado \n                ? \"Cliente encontrado no sistema.\" \n                : \"Cliente novo - nÃ£o encontrado no cadastro.\"\n        }\n    }\n}];"
+        "jsCode": "// =========================================================\n// 1. RECUPERAÃ‡ÃƒO DE DADOS (BANCO + WHATSAPP)\n// =========================================================\nlet cliente = {};\ntry { \n    const busca = $(\"Busca_Cliente\").first();\n    if (busca && busca.json && busca.json.id_cliente) {\n        cliente = busca.json;\n    }\n} catch(e) {}\n\nlet dadosWhatsApp = {};\ntry {\n    dadosWhatsApp = $(\"CheckOrigem\").first().json.cliente || {};\n} catch(e) {}\n\nconst phoneNumber = dadosWhatsApp.phoneNumber || \"\";\nconst nomeWhatsApp = dadosWhatsApp.nome_whatsapp || \"Cliente\";\nconst isClienteCadastrado = !!(cliente && cliente.id_cliente);\n\nlet consolidado = {};\ntry { consolidado = $(\"ConsolidarMensagem\").first().json || {}; } catch(e) {}\n\nlet perguntaAgente = consolidado.mensagem_final;\n\n// BLINDAGEM MASTER\nif (consolidado.teve_erro_ia) {\n    const msgRecomendada = (consolidado.tipo_entrada === \"image\") \n        ? \"Houve um erro tÃ©cnico ao processar a imagem do cliente. PeÃ§a educadamente para ele descrever o que deseja ou reenviar.\"\n        : \"Houve um erro tÃ©cnico ao transcrever o Ã¡udio do cliente. PeÃ§a para ele digitar ou enviar o Ã¡udio novamente.\";\n    perguntaAgente = `[SISTEMA]: ${msgRecomendada}`;\n} \nelse if (!perguntaAgente) {\n    perguntaAgente = (consolidado.tipo_entrada === \"chat\") ? \"OlÃ¡\" : \"...\";\n}\n\nlet isValid = false;\ntry {\n    const nodeRedis = $(\"Buscar_Sessao_Existente\").first();\n    if (nodeRedis && nodeRedis.json && nodeRedis.json.sessaoExistente === \"VALIDADO\") {\n        isValid = true;\n    }\n} catch (e) { isValid = false; }\n\n// =========================================================\n// 2. PROCESSAMENTO DE APÃ“LICES (V13 INTEGRAL)\n// =========================================================\nlet apolicesRaw = (cliente.apolices_detalhadas || []).filter(ap => \n    ap && ap.status_apolice && String(ap.status_apolice).toUpperCase() === 'ATIVA'\n);\n\nconst apolicesContexto = apolicesRaw.map(ap => ({\n    seguradora: ap.seguradora,\n    tipo: ap.ramo,\n    status: ap.status_apolice,\n    apolice: isValid ? ap.numero_apolice : \"(Bloqueado)\",\n    vencimento: isValid ? ap.vigencia_fim : \"(Bloqueado)\",\n    placa: (ap.placa && isValid) ? ap.placa : (ap.placa ? \"***-****\" : \"N/A\"),\n    endereco: isValid ? (ap.endereco_apolice || \"NÃ£o informado\") : \"EndereÃ§o Oculto\",\n    cidade: isValid ? (ap.cidade_apolice || \"NÃ£o informado\") : \"Mascarado\",\n    uf: isValid ? (ap.uf_apolice || \"\") : \"\"\n}));\n\n// =========================================================\n// 3. CLASSIFICAÃ‡ÃƒO DE ROTA\n// =========================================================\nconst securityKeywords = /^(3|5|6|seguro|contratado|boleto|financeiro|sinistro|segunda|2a)|apolice|ap[oÃ³]lice|meus dados|minha ap/i;\nconst rota_num = securityKeywords.test(perguntaAgente || \"\") ? 1 : 0;\n\n// =========================================================\n// 4. RETORNO\n// =========================================================\nreturn [{\n    json: {\n        pergunta_cliente: perguntaAgente,\n        rota_num: rota_num,\n        contexto: {\n            nome: cliente.nome_completo || nomeWhatsApp,\n            cpf_real: cliente.cpf || \"\",\n            cpf_exibicao: (cliente.cpf) ? `***.***.***-${cliente.cpf.replace(/\\D/g, \"\").slice(-2)}` : \"NÃ£o informado\",\n            telefone: cliente.celular || phoneNumber,\n            email_cadastrado: cliente.email || \"\",\n            token_validado: isValid ? \"SIM\" : \"NÃƒO\",\n            cadastrado: isClienteCadastrado,\n            id_cliente: cliente.id_cliente || null,\n            input_user: perguntaAgente,\n            resumo_apolices: apolicesContexto,\n            tipo_cliente: isClienteCadastrado ? \"CADASTRADO\" : \"NOVO\",\n            mensagem_sistema: isClienteCadastrado \n                ? \"Cliente encontrado no sistema.\" \n                : \"Cliente novo - nÃ£o encontrado no cadastro.\"\n        }\n    }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -586,7 +586,7 @@
                 },
                 "conditions": [
                   {
-                    "leftValue": "={{ $(\u0027Dados\u0027).first().json.type || \u0027chat\u0027 }}",
+                    "leftValue": "={{ $('Dados').first().json.type || 'chat' }}",
                     "rightValue": "audio|ptt",
                     "operator": {
                       "type": "string",
@@ -609,7 +609,7 @@
                 "conditions": [
                   {
                     "id": "6b2eacf3-4648-4f87-855c-274503889af2",
-                    "leftValue": "={{ $(\u0027Dados\u0027).first().json.type || \u0027chat\u0027 }}",
+                    "leftValue": "={{ $('Dados').first().json.type || 'chat' }}",
                     "rightValue": "image",
                     "operator": {
                       "type": "string",
@@ -632,7 +632,7 @@
                 "conditions": [
                   {
                     "id": "7102c9ec-2c9e-4121-856c-7e44d524cbb7",
-                    "leftValue": "={{ $(\u0027Dados\u0027).first().json.type || \u0027chat\u0027 }}",
+                    "leftValue": "={{ $('Dados').first().json.type || 'chat' }}",
                     "rightValue": "chat",
                     "operator": {
                       "type": "string",
@@ -660,7 +660,7 @@
     },
     {
       "parameters": {
-        "url": "={{ ($node[\"Dados\"].json.media_url || $node[\"Webhook\"].json.body.payload.url || \"\").replace(/https?:\\/\\/[^\\/]+/, \u0027http://waha:3000\u0027) }}",
+        "url": "={{ ($node[\"Dados\"].json.media_url || $node[\"Webhook\"].json.body.payload.url || \"\").replace(/https?:\\/\\/[^\\/]+/, 'http://waha:3000') }}",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "wahaApi",
         "options": {}
@@ -712,7 +712,7 @@
     },
     {
       "parameters": {
-        "url": "={{ ($node[\"Dados\"].json.media_url || $node[\"Webhook\"].json.body.payload.url || \"\").replace(/https?:\\/\\/[^\\/]+/, \u0027http://waha:3000\u0027) }}",
+        "url": "={{ ($node[\"Dados\"].json.media_url || $node[\"Webhook\"].json.body.payload.url || \"\").replace(/https?:\\/\\/[^\\/]+/, 'http://waha:3000') }}",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "wahaApi",
         "options": {}
@@ -765,7 +765,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// 1. Pega dados de origem para saber o tipo real (chat ou mÃ­dia)\nlet origem = {};\ntry { origem = $(\"CheckOrigem\").first().json; } catch(e) {}\nconst tipoReal = origem.input_bruto?.mediaType || \"chat\";\nconst textoOriginal = origem.input_bruto?.user_text || \"\";\n\nlet transcricao = \"\";\nlet erroIA = false;\n\n// 2. SÃ“ BUSCA ERRO DE IA SE REALMENTE FOR MÃDIA\nif (tipoReal === \"audio\" || tipoReal === \"ptt\") {\n    try {\n        const nodeAudio = $(\"IA_Processar_Audio\").first();\n        if (nodeAudio.json.error || !nodeAudio.json.text || nodeAudio.json.text.includes(\"Erro\")) erroIA = true;\n        else transcricao = nodeAudio.json.text;\n    } catch(e) { erroIA = true; }\n} \nelse if (tipoReal === \"image\") {\n    try {\n        const nodeImagem = $(\"IA_Processar_Imagem\").first();\n        if (nodeImagem.json.error || !nodeImagem.json.text) erroIA = true;\n        else transcricao = nodeImagem.json.text;\n    } catch(e) { erroIA = true; }\n}\n\n// 3. Resultado Final\nlet mensagemFinal = (tipoReal === \"chat\") ? textoOriginal : transcricao;\n\n// Limpeza de placeholders residuais\nif (mensagemFinal === \"MIDIA_INPUT\") mensagemFinal = \"\";\n\nreturn [{\n    json: {\n        mensagem_final: mensagemFinal.trim(),\n        tipo_entrada: tipoReal,\n        teve_erro_ia: erroIA \u0026\u0026 (tipoReal !== \"chat\"),\n        houve_erro_midia: false \n    }\n}];"
+        "jsCode": "// 1. Pega dados de origem para saber o tipo real (chat ou mÃ­dia)\nlet origem = {};\ntry { origem = $(\"CheckOrigem\").first().json; } catch(e) {}\nconst tipoReal = origem.input_bruto?.mediaType || \"chat\";\nconst textoOriginal = origem.input_bruto?.user_text || \"\";\n\nlet transcricao = \"\";\nlet erroIA = false;\n\n// 2. SÃ“ BUSCA ERRO DE IA SE REALMENTE FOR MÃDIA\nif (tipoReal === \"audio\" || tipoReal === \"ptt\") {\n    try {\n        const nodeAudio = $(\"IA_Processar_Audio\").first();\n        if (nodeAudio.json.error || !nodeAudio.json.text || nodeAudio.json.text.includes(\"Erro\")) erroIA = true;\n        else transcricao = nodeAudio.json.text;\n    } catch(e) { erroIA = true; }\n} \nelse if (tipoReal === \"image\") {\n    try {\n        const nodeImagem = $(\"IA_Processar_Imagem\").first();\n        if (nodeImagem.json.error || !nodeImagem.json.text) erroIA = true;\n        else transcricao = nodeImagem.json.text;\n    } catch(e) { erroIA = true; }\n}\n\n// 3. Resultado Final\nlet mensagemFinal = (tipoReal === \"chat\") ? textoOriginal : transcricao;\n\n// Limpeza de placeholders residuais\nif (mensagemFinal === \"MIDIA_INPUT\") mensagemFinal = \"\";\n\nreturn [{\n    json: {\n        mensagem_final: mensagemFinal.trim(),\n        tipo_entrada: tipoReal,\n        teve_erro_ia: erroIA && (tipoReal !== \"chat\"),\n        houve_erro_midia: false \n    }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -866,7 +866,7 @@
     {
       "parameters": {
         "sessionIdType": "customKey",
-        "sessionKey": "={{ (() =\u003e { try { const tel = $(\u0027DefinirContextoAI\u0027).first().json.contexto.telefone; if (tel) return tel + \u0027_v2\u0027; } catch(e) {} try { return $(\u0027MontarContextoPortal\u0027).first().json.session_key; } catch(e) {} return \u0027FALLBACK_\u0027 + Date.now(); })() }}",
+        "sessionKey": "={{ (() => { try { const tel = $('DefinirContextoAI').first().json.contexto.telefone; if (tel) return tel + '_v2'; } catch(e) {} try { return $('MontarContextoPortal').first().json.session_key; } catch(e) {} return 'FALLBACK_' + Date.now(); })() }}",
         "contextWindowLength": 6
       },
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
@@ -889,7 +889,7 @@
         "descriptionType": "manual",
         "toolDescription": "NOME: Validador_Cliente_Brokeria\n\nQUANDO USAR:\n1. Quando um usuÃ¡rio desconhecido (telefone nÃ£o cadastrado) afirma ser cliente e fornece o documento ou e-mail.\n2. Quando um usuÃ¡rio jÃ¡ identificado solicita acesso a dados sensÃ­veis (apÃ³lices, alteraÃ§Ãµes cadastrais) e precisa revalidar a identidade.\n\nINPUT:\nO cliente deve fornecer o CPF (11 dÃ­gitos), CNPJ (14 dÃ­gitos) OU o E-mail cadastrado.\nExemplo JSON: { \"documento\": \"12345678900\" } ou { \"documento\": \"teste@email.com\" }\n\nRETORNO:\nRetorna os dados cadastrais completos do cliente. Retorna vazio se nÃ£o encontrar.",
         "operation": "executeQuery",
-        "query": "SELECT * FROM public.clientes_brokeria\nWHERE cpf = \u0027{{\n  (() =\u003e {\n    const val = $json.documento ? $json.documento.toString() : \"\";\n    if (val.includes(\"@\")) return \"EMAIL_QUERY_BYPASS\";\n    const doc = val.replace(/\\D/g, \"\");\n    if (doc.length !== 11 \u0026\u0026 doc.length !== 14) return \"000\";\n    return doc;\n  })()\n}}\u0027 OR email = \u0027{{ $json.documento }}\u0027;",
+        "query": "SELECT * FROM public.clientes_brokeria\nWHERE cpf = '{{\n  (() => {\n    const val = $json.documento ? $json.documento.toString() : \"\";\n    if (val.includes(\"@\")) return \"EMAIL_QUERY_BYPASS\";\n    const doc = val.replace(/\\D/g, \"\");\n    if (doc.length !== 11 && doc.length !== 14) return \"000\";\n    return doc;\n  })()\n}}' OR email = '{{ $json.documento }}';",
         "options": {}
       },
       "type": "n8n-nodes-base.postgresTool",
@@ -1007,13 +1007,13 @@
             {
               "id": "target_chat",
               "name": "target_chat_id",
-              "value": "={{ $(\u0027DefinirContextoAI\u0027).first().json.contexto.telefone + \u0027@c.us\u0027 }}",
+              "value": "={{ $('DefinirContextoAI').first().json.contexto.telefone + '@c.us' }}",
               "type": "string"
             },
             {
               "id": "target_session",
               "name": "target_session",
-              "value": "={{ $(\u0027CheckOrigem\u0027).first().json.tecnico.session_id }}",
+              "value": "={{ $('CheckOrigem').first().json.tecnico.session_id }}",
               "type": "string"
             }
           ]
@@ -1045,7 +1045,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO public.brokeria_registros_brokeria (\n  telefone_whatsapp, \n  nome_cliente, \n  resumo_conversa, \n  assunto_principal,\n  subtipo_solicitacao,\n  tipo_seguro,\n  prioridade,\n  tipo_cliente,\n  status_atendimento, \n  data_atendimento,\n  canal,\n  qtde_mensagens\n)\nVALUES (\n  \u0027{{ $(\"DefinirContextoAI\").first().json.contexto.telefone }}\u0027,\n  \u0027{{ $(\"DefinirContextoAI\").first().json.contexto.nome }}\u0027,\n  E\u0027[\u0027 || TO_CHAR(NOW() AT TIME ZONE \u0027UTC\u0027 AT TIME ZONE \u0027America/Sao_Paulo\u0027, \u0027HH24:MI, DD/MM/YYYY\u0027) || E\u0027] \u0027 || \u0027{{ $(\"DefinirContextoAI\").first().json.contexto.nome }}\u0027 || E\u0027: \u0027 || \u0027{{ ($(\"DefinirContextoAI\").first().json.contexto.input_user || \"\").replace(/\u0027/g, \"\u0027\u0027\") }}\u0027 || E\u0027\\n\u0027 ||\n  E\u0027[\u0027 || TO_CHAR(NOW() AT TIME ZONE \u0027UTC\u0027 AT TIME ZONE \u0027America/Sao_Paulo\u0027, \u0027HH24:MI, DD/MM/YYYY\u0027) || E\u0027] BrokerIA: \u0027 || \u0027{{ ($json.text || $json.output || \"\").replace(/\u0027/g, \"\u0027\u0027\") }}\u0027 || E\u0027\\n\u0027,\n  \u0027{{ $json.tipo_solicitacao || \"InformaÃ§Ãµes Gerais\" }}\u0027,\n  \u0027{{ $json.subtipo_solicitacao || \"DÃºvidas gerais\" }}\u0027,\n  \u0027{{ $json.tipo_seguro || \"OUTROS\" }}\u0027,\n  \u0027{{ $json.prioridade || \"MÃ©dia\" }}\u0027,\n  \u0027{{ $json.tipo_cliente || \"NÃ£o cliente\" }}\u0027,\n  \u0027PENDENTE\u0027,\n  CURRENT_DATE,\n  \u0027{{ $(\"DefinirContextoAI\").first().json.contexto.origem || \"WHATSAPP\" }}\u0027,\n  1\n)\nON CONFLICT (telefone_whatsapp, data_atendimento) \nDO UPDATE SET \n  resumo_conversa = brokeria_registros_brokeria.resumo_conversa || \n         E\u0027\\n\u0027 ||\n         E\u0027[\u0027 || TO_CHAR(NOW() AT TIME ZONE \u0027UTC\u0027 AT TIME ZONE \u0027America/Sao_Paulo\u0027, \u0027HH24:MI, DD/MM/YYYY\u0027) || E\u0027] \u0027 || EXCLUDED.nome_cliente || E\u0027: \u0027 || \u0027{{ ($(\"DefinirContextoAI\").first().json.contexto.input_user || \"\").replace(/\u0027/g, \"\u0027\u0027\") }}\u0027 || E\u0027\\n\u0027 ||\n         E\u0027[\u0027 || TO_CHAR(NOW() AT TIME ZONE \u0027UTC\u0027 AT TIME ZONE \u0027America/Sao_Paulo\u0027, \u0027HH24:MI, DD/MM/YYYY\u0027) || E\u0027] BrokerIA: \u0027 || \u0027{{ ($json.text || $json.output || \"\").replace(/\u0027/g, \"\u0027\u0027\") }}\u0027 || E\u0027\\n\u0027,\n  qtde_mensagens = COALESCE(brokeria_registros_brokeria.qtde_mensagens, 0) + 1,\n  assunto_principal = EXCLUDED.assunto_principal,\n  subtipo_solicitacao = EXCLUDED.subtipo_solicitacao,\n  prioridade = EXCLUDED.prioridade,\n  data_ultima_atualizacao = NOW();",
+        "query": "INSERT INTO public.brokeria_registros_brokeria (\n  telefone_whatsapp, \n  nome_cliente, \n  resumo_conversa, \n  assunto_principal,\n  subtipo_solicitacao,\n  tipo_seguro,\n  prioridade,\n  tipo_cliente,\n  status_atendimento, \n  data_atendimento,\n  canal,\n  qtde_mensagens\n)\nVALUES (\n  '{{ $(\"DefinirContextoAI\").first().json.contexto.telefone }}',\n  '{{ $(\"DefinirContextoAI\").first().json.contexto.nome }}',\n  E'[' || TO_CHAR(NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo', 'HH24:MI, DD/MM/YYYY') || E'] ' || '{{ $(\"DefinirContextoAI\").first().json.contexto.nome }}' || E': ' || '{{ ($(\"DefinirContextoAI\").first().json.contexto.input_user || \"\").replace(/'/g, \"''\") }}' || E'\\n' ||\n  E'[' || TO_CHAR(NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo', 'HH24:MI, DD/MM/YYYY') || E'] BrokerIA: ' || '{{ ($json.text || $json.output || \"\").replace(/'/g, \"''\") }}' || E'\\n',\n  '{{ $json.tipo_solicitacao || \"InformaÃ§Ãµes Gerais\" }}',\n  '{{ $json.subtipo_solicitacao || \"DÃºvidas gerais\" }}',\n  '{{ $json.tipo_seguro || \"OUTROS\" }}',\n  '{{ $json.prioridade || \"MÃ©dia\" }}',\n  '{{ $json.tipo_cliente || \"NÃ£o cliente\" }}',\n  'PENDENTE',\n  CURRENT_DATE,\n  '{{ $(\"DefinirContextoAI\").first().json.contexto.origem || \"WHATSAPP\" }}',\n  1\n)\nON CONFLICT (telefone_whatsapp, data_atendimento) \nDO UPDATE SET \n  resumo_conversa = brokeria_registros_brokeria.resumo_conversa || \n         E'\\n' ||\n         E'[' || TO_CHAR(NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo', 'HH24:MI, DD/MM/YYYY') || E'] ' || EXCLUDED.nome_cliente || E': ' || '{{ ($(\"DefinirContextoAI\").first().json.contexto.input_user || \"\").replace(/'/g, \"''\") }}' || E'\\n' ||\n         E'[' || TO_CHAR(NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo', 'HH24:MI, DD/MM/YYYY') || E'] BrokerIA: ' || '{{ ($json.text || $json.output || \"\").replace(/'/g, \"''\") }}' || E'\\n',\n  qtde_mensagens = COALESCE(brokeria_registros_brokeria.qtde_mensagens, 0) + 1,\n  assunto_principal = EXCLUDED.assunto_principal,\n  subtipo_solicitacao = EXCLUDED.subtipo_solicitacao,\n  prioridade = EXCLUDED.prioridade,\n  data_ultima_atualizacao = NOW();",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
@@ -1066,7 +1066,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// 1. Coleta a mensagem de todas as fontes possÃ­veis\nlet mensagem = $json.response_text || $json.mensagem_final || $json.output || \"\";\n\n// 2. Se a mensagem ainda estiver vazia, tenta buscar diretamente nos nÃ³s de origem\nif (!mensagem || mensagem === \"\") {\n    try {\n        mensagem = $(\"LimparOutputValidacao\").first().json.mensagem_final;\n    } catch(e) {\n        try {\n            mensagem = $(\"BrokerIA_Master\").first().json.output;\n        } catch(e2) {}\n    }\n}\n\n// 3. Limpeza de logs tÃ©cnicos\nmensagem = mensagem.replace(/\\[Used tools:.*?\\]/gis, \u0027\u0027);\nmensagem = mensagem.replace(/Tool:.*?(?=\\n|$)/gi, \u0027\u0027);\nmensagem = mensagem.replace(/Input:.*?(?=\\n|$)/gi, \u0027\u0027);\nmensagem = mensagem.replace(/Result:.*?(?=\\n|$)/gi, \u0027\u0027);\nmensagem = mensagem.replace(/\\{.*?\"accepted\".*?\\}/gs, \u0027\u0027);\nmensagem = mensagem.replace(/\\n{3,}/g, \u0027\\n\\n\u0027).trim();\n\n// 4. âœ… CORREÃ‡ÃƒO: Fallback adequado baseado no tipo de cliente (Agora via v9)\nif (!mensagem) {\n    try {\n        const contexto = $(\"DefinirContextoAI\").first().json.contexto;\n        const nome = contexto.nome || \"Cliente\";\n        const primeiroNome = nome.split(\u0027 \u0027)[0];\n        const isClienteCadastrado = contexto.cadastrado; \n        \n        if (isClienteCadastrado) {\n            mensagem = `OlÃ¡ ${primeiroNome}! Como posso te ajudar hoje?`;\n        } else {\n            mensagem = `OlÃ¡ ${primeiroNome}! Seja bem-vindo Ã  DWF Seguros! ðŸ˜Š\\n\\nEstou aqui para te ajudar com:\\nâ€¢ CotaÃ§Ãµes de seguros\\nâ€¢ InformaÃ§Ãµes sobre nossos produtos\\nâ€¢ DÃºvidas sobre seguros em geral\\n\\nComo posso te ajudar?`;\n        }\n    } catch(e) {\n        mensagem = \"OlÃ¡! Seja bem-vindo Ã  DWF Seguros! Como posso te ajudar?\";\n    }\n}\n\nreturn {\n  json: {\n    ...$json,\n    text: mensagem\n  }\n}"
+        "jsCode": "// 1. Coleta a mensagem de todas as fontes possÃ­veis\nlet mensagem = $json.response_text || $json.mensagem_final || $json.output || \"\";\n\n// 2. Se a mensagem ainda estiver vazia, tenta buscar diretamente nos nÃ³s de origem\nif (!mensagem || mensagem === \"\") {\n    try {\n        mensagem = $(\"LimparOutputValidacao\").first().json.mensagem_final;\n    } catch(e) {\n        try {\n            mensagem = $(\"BrokerIA_Master\").first().json.output;\n        } catch(e2) {}\n    }\n}\n\n// 3. Limpeza de logs tÃ©cnicos\nmensagem = mensagem.replace(/\\[Used tools:.*?\\]/gis, '');\nmensagem = mensagem.replace(/Tool:.*?(?=\\n|$)/gi, '');\nmensagem = mensagem.replace(/Input:.*?(?=\\n|$)/gi, '');\nmensagem = mensagem.replace(/Result:.*?(?=\\n|$)/gi, '');\nmensagem = mensagem.replace(/\\{.*?\"accepted\".*?\\}/gs, '');\nmensagem = mensagem.replace(/\\n{3,}/g, '\\n\\n').trim();\n\n// 4. âœ… CORREÃ‡ÃƒO: Fallback adequado baseado no tipo de cliente (Agora via v9)\nif (!mensagem) {\n    try {\n        const contexto = $(\"DefinirContextoAI\").first().json.contexto;\n        const nome = contexto.nome || \"Cliente\";\n        const primeiroNome = nome.split(' ')[0];\n        const isClienteCadastrado = contexto.cadastrado; \n        \n        if (isClienteCadastrado) {\n            mensagem = `OlÃ¡ ${primeiroNome}! Como posso te ajudar hoje?`;\n        } else {\n            mensagem = `OlÃ¡ ${primeiroNome}! Seja bem-vindo Ã  DWF Seguros! ðŸ˜Š\\n\\nEstou aqui para te ajudar com:\\nâ€¢ CotaÃ§Ãµes de seguros\\nâ€¢ InformaÃ§Ãµes sobre nossos produtos\\nâ€¢ DÃºvidas sobre seguros em geral\\n\\nComo posso te ajudar?`;\n        }\n    } catch(e) {\n        mensagem = \"OlÃ¡! Seja bem-vindo Ã  DWF Seguros! Como posso te ajudar?\";\n    }\n}\n\nreturn {\n  json: {\n    ...$json,\n    text: mensagem\n  }\n}"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1082,7 +1082,7 @@
         "promptType": "define",
         "text": "={{ $json.pergunta_cliente }}\n\n",
         "options": {
-          "systemMessage": "===================================================================\nðŸ“± FORMATO DE RESPOSTA (ESTILO MENU/URA) - CRÃTICO\n==================================================================\nPara melhorar a experiÃªncia do usuÃ¡rio, sempre que o cliente solicitar algo que tenha categorias ou variantes, APRESENTE AS OPÃ‡Ã•ES EM LISTA NUMERADA.\nO objetivo Ã© permitir que o cliente responda de forma rÃ¡pida e simples (apenas digitando o nÃºmero).\nEXEMPLO DE INTERAÃ‡ÃƒO OBRIGATÃ“RIA:\nCliente: \"Quero uma cotaÃ§Ã£o\"\nVocÃª: \"Ã“timo! Para qual tipo de seguro vocÃª deseja cotaÃ§Ã£o?\n1. AutomÃ³vel ðŸš—\n2. Residencial ðŸ \n3. Vida â¤ï¸\n4. Empresarial ðŸ¢\n5. Outros AssistÃªncias\"\nPRIORIZE SEMPRE esse formato de \"URA Inteligente/Menu\" em vez de perguntas abertas.\n\n=================================================================\nðŸŒ PORTAL DO CLIENTE - ACESSO SEGURO A DADOS\n=================================================================\nQualquer solicitaÃ§Ã£o abaixo DEVE ser respondida com redirecionamento ao portal:\n- Documentos (PDFs de apÃ³lices, cartas verdes, 2Âª via)\n- Dados detalhados alÃ©m do resumo disponÃ­vel no contexto\n- AlteraÃ§Ãµes cadastrais\n\nâœ… RESPOSTA PADRÃƒO para esses casos:\n\"Para acessar seus dados e documentos com seguranÃ§a, acesse nosso portal:\nðŸ”— https://brokeria-api-brokeriaweb.cx0m9g.easypanel.host/login.html\n\nLÃ¡ vocÃª encontra todas as suas informaÃ§Ãµes e pode baixar seus documentos! ðŸ˜Š\"\n\nEXEMPLOS que devem ir ao portal:\n- \"Me envie a 2Âª via da apÃ³lice\" â†’ portal\n- \"Qual o endereÃ§o da minha apÃ³lice?\" â†’ portal\n- \"Quero alterar meu cadastro\" â†’ portal\n\nEXEMPLOS que NÃƒO vÃ£o ao portal (responda com o contexto):\n- \"Qual o nÃºmero da minha apÃ³lice?\" â†’ use resumo_apolices do contexto\n- \"Quando vence meu seguro?\" â†’ use resumo_apolices do contexto\n- \"Qual a placa do meu carro segurado?\" â†’ use resumo_apolices do contexto\n- SaudaÃ§Ãµes e perguntas gerais â†’ responda normalmente\n\n=================================================================\nðŸ“ REGISTRO DE COTAÃ‡Ã•ES - REGRA OBRIGATÃ“RIA\n=================================================================\nQuando o cliente solicitar uma cotaÃ§Ã£o E vocÃª jÃ¡ tiver: Nome, Email e Tipo de seguro:\n1. Chame IMEDIATAMENTE a ferramenta \u0027EspecialistaRegistroCotacao\u0027\n2. Passe: nome, email, tipo_seguro, mensagem\n3. AGUARDE a confirmaÃ§Ã£o da tool\n4. SÃ³ DEPOIS confirme: \"âœ… Sua solicitaÃ§Ã£o foi registrada! O corretor Washington entrarÃ¡ em contato em breve.\"\n\nNUNCA confirme sem a tool retornar sucesso.\n\n-----------------------------------------------------------------\nðŸ”Ž CONTEXTO DINÃ‚MICO\n-----------------------------------------------------------------\n- Cliente: {{ $json.contexto.nome }}\n- CPF: {{ $json.contexto.cpf_exibicao }}\n- Telefone: {{ $json.contexto.telefone }}\n- Email Cadastrado: {{ $json.contexto.email_cadastrado }}\n\nðŸ“± CENÃRIO A: CLIENTE CADASTRADO\n- SaÃºde pelo PRIMEIRO NOME: \"OlÃ¡, {{ $json.contexto.nome }}!\"\n- Dados bÃ¡sicos das apÃ³lices disponÃ­veis no contexto abaixo\n- Para documentos/dados detalhados â†’ portal\n- NÃƒO peÃ§a CPF se jÃ¡ estiver no contexto\n\nðŸ“± CENÃRIO B: TELEFONE NÃƒO CADASTRADO (novo contato)\n- Use o nome do WhatsApp: \"OlÃ¡, {{ $json.contexto.nome }}!\"\n- Se mencionar que Ã‰ cliente, peÃ§a CPF â†’ use QueryPostgresClientes\n- ApÃ³s encontrar: \"Perfeito! Localizei seu cadastro. Como posso ajudar?\"\n\nðŸ“± CENÃRIO C: CLIENTE MENCIONA CPF ESPONTANEAMENTE\n- Use QueryPostgresClientes com { \"documento\": \"CPF_INFORMADO\" }\n- Se encontrar â†’ trate como CENÃRIO A\n\nâš ï¸ SAUDAÃ‡ÃƒO: NUNCA diga \"OlÃ¡, NÃ£o Identificado!\" ou \"OlÃ¡, Cliente!\"\n\nðŸ“Š RESUMO DE APÃ“LICES (dados bÃ¡sicos disponÃ­veis):\n{{ JSON.stringify($json.contexto.resumo_apolices) }}\n\n=================================================================\nðŸ“‹ INFORMAÃ‡Ã•ES INSTITUCIONAIS\n=================================================================\nResponsÃ¡vel: Washington William de Oliveira â€“ Susep: 10.2028529.9\nEmail: contato@dwfseguros.com.br\nWebsite: https://www.dwfseguros.com.br\nTIPOS DE SEGUROS: AutomÃ³vel, Residencial, Vida, SaÃºde, PrevidÃªncia, Frota, Resp. Civil, Transportes, Garantia, etc.\n\n=================================================================\nðŸš« LIMITES E LGPD\n=================================================================\n- COTAÃ‡Ã•ES: NUNCA forneÃ§a valores de prÃªmio. Diga: \"A cotaÃ§Ã£o oficial serÃ¡ feita pelo corretor Washington\".\n- CPF/CNPJ: SEMPRE mascarado. Ex: ***.***.***-22\n- Para dados alÃ©m do contexto â†’ redirecione ao portal\n- Seja formal, consultivo e simpÃ¡tico. Saude sempre pelo primeiro nome.\n- NUNCA invente informaÃ§Ãµes.",
+          "systemMessage": "===================================================================\nðŸ“± FORMATO DE RESPOSTA (ESTILO MENU/URA) - CRÃTICO\n==================================================================\nPara melhorar a experiÃªncia do usuÃ¡rio, sempre que o cliente solicitar algo que tenha categorias ou variantes, APRESENTE AS OPÃ‡Ã•ES EM LISTA NUMERADA.\nO objetivo Ã© permitir que o cliente responda de forma rÃ¡pida e simples (apenas digitando o nÃºmero).\nEXEMPLO DE INTERAÃ‡ÃƒO OBRIGATÃ“RIA:\nCliente: \"Quero uma cotaÃ§Ã£o\"\nVocÃª: \"Ã“timo! Para qual tipo de seguro vocÃª deseja cotaÃ§Ã£o?\n1. AutomÃ³vel ðŸš—\n2. Residencial ðŸ \n3. Vida â¤ï¸\n4. Empresarial ðŸ¢\n5. Outros AssistÃªncias\"\nPRIORIZE SEMPRE esse formato de \"URA Inteligente/Menu\" em vez de perguntas abertas.\n\n=================================================================\nðŸŒ PORTAL DO CLIENTE - ACESSO SEGURO A DADOS\n=================================================================\nQualquer solicitaÃ§Ã£o abaixo DEVE ser respondida com redirecionamento ao portal:\n- Documentos (PDFs de apÃ³lices, cartas verdes, 2Âª via)\n- Dados detalhados alÃ©m do resumo disponÃ­vel no contexto\n- AlteraÃ§Ãµes cadastrais\n\nâœ… RESPOSTA PADRÃƒO para esses casos:\n\"Para acessar seus dados e documentos com seguranÃ§a, acesse nosso portal:\nðŸ”— https://brokeria-api-brokeriaweb.cx0m9g.easypanel.host/login.html\n\nLÃ¡ vocÃª encontra todas as suas informaÃ§Ãµes e pode baixar seus documentos! ðŸ˜Š\"\n\nEXEMPLOS que devem ir ao portal:\n- \"Me envie a 2Âª via da apÃ³lice\" â†’ portal\n- \"Qual o endereÃ§o da minha apÃ³lice?\" â†’ portal\n- \"Quero alterar meu cadastro\" â†’ portal\n\nEXEMPLOS que NÃƒO vÃ£o ao portal (responda com o contexto):\n- \"Qual o nÃºmero da minha apÃ³lice?\" â†’ use resumo_apolices do contexto\n- \"Quando vence meu seguro?\" â†’ use resumo_apolices do contexto\n- \"Qual a placa do meu carro segurado?\" â†’ use resumo_apolices do contexto\n- SaudaÃ§Ãµes e perguntas gerais â†’ responda normalmente\n\n=================================================================\nðŸ“ REGISTRO DE COTAÃ‡Ã•ES - REGRA OBRIGATÃ“RIA\n=================================================================\nQuando o cliente solicitar uma cotaÃ§Ã£o E vocÃª jÃ¡ tiver: Nome, Email e Tipo de seguro:\n1. Chame IMEDIATAMENTE a ferramenta 'EspecialistaRegistroCotacao'\n2. Passe: nome, email, tipo_seguro, mensagem\n3. AGUARDE a confirmaÃ§Ã£o da tool\n4. SÃ³ DEPOIS confirme: \"âœ… Sua solicitaÃ§Ã£o foi registrada! O corretor Washington entrarÃ¡ em contato em breve.\"\n\nNUNCA confirme sem a tool retornar sucesso.\n\n-----------------------------------------------------------------\nðŸ”Ž CONTEXTO DINÃ‚MICO\n-----------------------------------------------------------------\n- Cliente: {{ $json.contexto.nome }}\n- CPF: {{ $json.contexto.cpf_exibicao }}\n- Telefone: {{ $json.contexto.telefone }}\n- Email Cadastrado: {{ $json.contexto.email_cadastrado }}\n\nðŸ“± CENÃRIO A: CLIENTE CADASTRADO\n- SaÃºde pelo PRIMEIRO NOME: \"OlÃ¡, {{ $json.contexto.nome }}!\"\n- Dados bÃ¡sicos das apÃ³lices disponÃ­veis no contexto abaixo\n- Para documentos/dados detalhados â†’ portal\n- NÃƒO peÃ§a CPF se jÃ¡ estiver no contexto\n\nðŸ“± CENÃRIO B: TELEFONE NÃƒO CADASTRADO (novo contato)\n- Use o nome do WhatsApp: \"OlÃ¡, {{ $json.contexto.nome }}!\"\n- Se mencionar que Ã‰ cliente, peÃ§a CPF â†’ use QueryPostgresClientes\n- ApÃ³s encontrar: \"Perfeito! Localizei seu cadastro. Como posso ajudar?\"\n\nðŸ“± CENÃRIO C: CLIENTE MENCIONA CPF ESPONTANEAMENTE\n- Use QueryPostgresClientes com { \"documento\": \"CPF_INFORMADO\" }\n- Se encontrar â†’ trate como CENÃRIO A\n\nâš ï¸ SAUDAÃ‡ÃƒO: NUNCA diga \"OlÃ¡, NÃ£o Identificado!\" ou \"OlÃ¡, Cliente!\"\n\nðŸ“Š RESUMO DE APÃ“LICES (dados bÃ¡sicos disponÃ­veis):\n{{ JSON.stringify($json.contexto.resumo_apolices) }}\n\n=================================================================\nðŸ“‹ INFORMAÃ‡Ã•ES INSTITUCIONAIS\n=================================================================\nResponsÃ¡vel: Washington William de Oliveira â€“ Susep: 10.2028529.9\nEmail: contato@dwfseguros.com.br\nWebsite: https://www.dwfseguros.com.br\nTIPOS DE SEGUROS: AutomÃ³vel, Residencial, Vida, SaÃºde, PrevidÃªncia, Frota, Resp. Civil, Transportes, Garantia, etc.\n\n=================================================================\nðŸš« LIMITES E LGPD\n=================================================================\n- COTAÃ‡Ã•ES: NUNCA forneÃ§a valores de prÃªmio. Diga: \"A cotaÃ§Ã£o oficial serÃ¡ feita pelo corretor Washington\".\n- CPF/CNPJ: SEMPRE mascarado. Ex: ***.***.***-22\n- Para dados alÃ©m do contexto â†’ redirecione ao portal\n- Seja formal, consultivo e simpÃ¡tico. Saude sempre pelo primeiro nome.\n- NUNCA invente informaÃ§Ãµes.",
           "maxIterations": 10
         }
       },
@@ -1162,7 +1162,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// RECUPERA DADOS\nconst contexto = $json.contexto || {};\nconst pergunta = $json.pergunta_cliente || \"\";\nconst perguntaLower = pergunta.toLowerCase();\n\n// ==========================================\n// 1. RAMO DO SEGURO (Mapeamento Inteligente)\n// ==========================================\nlet ramoSeguro = \"OUTROS\";\nif (perguntaLower.match(/auto|carro|veic|moto|placa/)) ramoSeguro = \"AUTOMOVEL\";\nelse if (perguntaLower.match(/casa|resid|apart|lar|home/)) ramoSeguro = \"RESIDENCIAL\";\nelse if (perguntaLower.match(/vida|falec|morte|funeral/)) ramoSeguro = \"VIDA\";\nelse if (perguntaLower.match(/saude|mÃ©dic|plano|hospit/)) ramoSeguro = \"SAUDE\";\nelse if (perguntaLower.match(/empresa|pj|comercial/)) ramoSeguro = \"EMPRESARIAL\";\n\n// ==========================================\n// 2. NÃVEL 1 E NÃVEL 2 (ClassificaÃ§Ã£o)\n// ==========================================\nlet nivel1 = \"InformaÃ§Ãµes Gerais\";\nlet nivel2 = \"DÃºvidas gerais sobre seguros\";\nlet prioridade = \"MÃ©dia\";\n\n// LÃ³gica de ClassificaÃ§Ã£o HierÃ¡rquica\nif (perguntaLower.match(/cotaÃ§Ã£o|cotacao|quanto custa|valor|preÃ§o|contratar/)) {\n    nivel1 = \"Vendas e CotaÃ§Ãµes\";\n    nivel2 = \"CotaÃ§Ã£o de seguro novo\";\n    prioridade = \"Alta\";\n} else if (perguntaLower.match(/sinistro|bati|acidente|roubo|furto|colisÃ£o/)) {\n    nivel1 = \"Sinistros\";\n    nivel2 = \"Aviso de sinistro\";\n    prioridade = \"CrÃ­tica\";\n} else if (perguntaLower.match(/boleto|pagar|parcela|paguei|segunda via|2 via/)) {\n    nivel1 = \"Financeiro\";\n    nivel2 = \"Segunda via de boleto\";\n} else if (perguntaLower.match(/renovar|renovaÃ§Ã£o|vencimento|venceu/)) {\n    nivel1 = \"RenovaÃ§Ã£o\";\n    nivel2 = \"RenovaÃ§Ã£o automÃ¡tica\";\n    prioridade = \"Alta\";\n} else if (perguntaLower.match(/cancelar|cancelamento|desistir/)) {\n    nivel1 = \"Cancelamento\";\n    nivel2 = \"Cancelamento a pedido do cliente\";\n    prioridade = \"Alta\";\n} else if (perguntaLower.match(/apolice|apÃ³lice|documento|certificado|carta/)) {\n    nivel1 = \"Documentos\";\n    nivel2 = \"Segunda via de apÃ³lice\";\n} else if (perguntaLower.match(/mudei|endereÃ§o|troquei|dados|alterar/)) {\n    nivel1 = \"AlteraÃ§Ãµes de ApÃ³lice (Endossos)\";\n    nivel2 = \"AtualizaÃ§Ã£o de dados cadastrais\";\n}\n\n// ==========================================\n// 3. RETORNO FORMATADO PARA O POSTGRES\n// ==========================================\nreturn {\n    json: {\n        telefone: (contexto.telefone || \"\").replace(/\\D/g, \u0027\u0027),\n        nome_whatsapp: (contexto.nome || \"Cliente\"),\n        mensagem_inicial: pergunta,\n        \n        // PadronizaÃ§Ã£o solicitada\n        tipo_solicitacao: nivel1,          // NÃ­vel 1\n        subtipo_solicitacao: nivel2,       // NÃ­vel 2\n        tipo_seguro: ramoSeguro,           // Ramo\n        prioridade: prioridade,            // Prioridade\n        tipo_cliente: contexto.cadastrado ? \"Cliente existente\" : \"NÃ£o cliente\",\n        \n        status_atendimento: \"PENDENTE\",\n        origem: \"WHATSAPP\",\n        data_contato: new Date()\n    }\n};"
+        "jsCode": "// RECUPERA DADOS\nconst contexto = $json.contexto || {};\nconst pergunta = $json.pergunta_cliente || \"\";\nconst perguntaLower = pergunta.toLowerCase();\n\n// ==========================================\n// 1. RAMO DO SEGURO (Mapeamento Inteligente)\n// ==========================================\nlet ramoSeguro = \"OUTROS\";\nif (perguntaLower.match(/auto|carro|veic|moto|placa/)) ramoSeguro = \"AUTOMOVEL\";\nelse if (perguntaLower.match(/casa|resid|apart|lar|home/)) ramoSeguro = \"RESIDENCIAL\";\nelse if (perguntaLower.match(/vida|falec|morte|funeral/)) ramoSeguro = \"VIDA\";\nelse if (perguntaLower.match(/saude|mÃ©dic|plano|hospit/)) ramoSeguro = \"SAUDE\";\nelse if (perguntaLower.match(/empresa|pj|comercial/)) ramoSeguro = \"EMPRESARIAL\";\n\n// ==========================================\n// 2. NÃVEL 1 E NÃVEL 2 (ClassificaÃ§Ã£o)\n// ==========================================\nlet nivel1 = \"InformaÃ§Ãµes Gerais\";\nlet nivel2 = \"DÃºvidas gerais sobre seguros\";\nlet prioridade = \"MÃ©dia\";\n\n// LÃ³gica de ClassificaÃ§Ã£o HierÃ¡rquica\nif (perguntaLower.match(/cotaÃ§Ã£o|cotacao|quanto custa|valor|preÃ§o|contratar/)) {\n    nivel1 = \"Vendas e CotaÃ§Ãµes\";\n    nivel2 = \"CotaÃ§Ã£o de seguro novo\";\n    prioridade = \"Alta\";\n} else if (perguntaLower.match(/sinistro|bati|acidente|roubo|furto|colisÃ£o/)) {\n    nivel1 = \"Sinistros\";\n    nivel2 = \"Aviso de sinistro\";\n    prioridade = \"CrÃ­tica\";\n} else if (perguntaLower.match(/boleto|pagar|parcela|paguei|segunda via|2 via/)) {\n    nivel1 = \"Financeiro\";\n    nivel2 = \"Segunda via de boleto\";\n} else if (perguntaLower.match(/renovar|renovaÃ§Ã£o|vencimento|venceu/)) {\n    nivel1 = \"RenovaÃ§Ã£o\";\n    nivel2 = \"RenovaÃ§Ã£o automÃ¡tica\";\n    prioridade = \"Alta\";\n} else if (perguntaLower.match(/cancelar|cancelamento|desistir/)) {\n    nivel1 = \"Cancelamento\";\n    nivel2 = \"Cancelamento a pedido do cliente\";\n    prioridade = \"Alta\";\n} else if (perguntaLower.match(/apolice|apÃ³lice|documento|certificado|carta/)) {\n    nivel1 = \"Documentos\";\n    nivel2 = \"Segunda via de apÃ³lice\";\n} else if (perguntaLower.match(/mudei|endereÃ§o|troquei|dados|alterar/)) {\n    nivel1 = \"AlteraÃ§Ãµes de ApÃ³lice (Endossos)\";\n    nivel2 = \"AtualizaÃ§Ã£o de dados cadastrais\";\n}\n\n// ==========================================\n// 3. RETORNO FORMATADO PARA O POSTGRES\n// ==========================================\nreturn {\n    json: {\n        telefone: (contexto.telefone || \"\").replace(/\\D/g, ''),\n        nome_whatsapp: (contexto.nome || \"Cliente\"),\n        mensagem_inicial: pergunta,\n        \n        // PadronizaÃ§Ã£o solicitada\n        tipo_solicitacao: nivel1,          // NÃ­vel 1\n        subtipo_solicitacao: nivel2,       // NÃ­vel 2\n        tipo_seguro: ramoSeguro,           // Ramo\n        prioridade: prioridade,            // Prioridade\n        tipo_cliente: contexto.cadastrado ? \"Cliente existente\" : \"NÃ£o cliente\",\n        \n        status_atendimento: \"PENDENTE\",\n        origem: \"WHATSAPP\",\n        data_contato: new Date()\n    }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1176,7 +1176,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT \n    id_atendimento,\n    telefone_whatsapp,\n    nome_cliente,\n    resumo_conversa,\n    assunto_principal,\n    status_atendimento,\n    qtde_mensagens,\n    data_atendimento\nFROM public.brokeria_registros_brokeria\nWHERE telefone_whatsapp = \u0027{{ $json.telefone }}\u0027\n  AND data_atendimento \u003e NOW() - INTERVAL \u002724 hours\u0027\nORDER BY data_atendimento DESC\nLIMIT 1;",
+        "query": "SELECT \n    id_atendimento,\n    telefone_whatsapp,\n    nome_cliente,\n    resumo_conversa,\n    assunto_principal,\n    status_atendimento,\n    qtde_mensagens,\n    data_atendimento\nFROM public.brokeria_registros_brokeria\nWHERE telefone_whatsapp = '{{ $json.telefone }}'\n  AND data_atendimento > NOW() - INTERVAL '24 hours'\nORDER BY data_atendimento DESC\nLIMIT 1;",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
@@ -1210,7 +1210,7 @@
                 },
                 "conditions": [
                   {
-                    "leftValue": "={{ $json.id_atendimento ? String($json.id_atendimento) : \u0027\u0027 }}",
+                    "leftValue": "={{ $json.id_atendimento ? String($json.id_atendimento) : '' }}",
                     "rightValue": "",
                     "operator": {
                       "type": "string",
@@ -1234,7 +1234,7 @@
                 "conditions": [
                   {
                     "id": "32739ffd-b920-42b7-91e3-cc77369defd7",
-                    "leftValue": "={{ $json.id_atendimento ? String($json.id_atendimento) : \u0027\u0027 }}",
+                    "leftValue": "={{ $json.id_atendimento ? String($json.id_atendimento) : '' }}",
                     "rightValue": "",
                     "operator": {
                       "type": "string",
@@ -1263,7 +1263,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO public.brokeria_registros_brokeria (\n    telefone_whatsapp,\n    nome_cliente,\n    resumo_conversa,    -- Ajustado para o padrÃ£o do Dashboard\n    assunto_principal,\n    canal,\n    status_atendimento,\n    qtde_mensagens,\n    recebeu_arquivos,\n    tipos_documentos,\n    etapa_funil,\n    data_atendimento,\n    hora_inicio\n) VALUES (\n    \u0027{{ $(\"Preparar_Registro_Cliente\").first().json.telefone }}\u0027,\n    \u0027{{ $(\"Preparar_Registro_Cliente\").first().json.nome_whatsapp }}\u0027,\n    -- Inicia o log jÃ¡ formatado\n    E\u0027[\u0027 || TO_CHAR(NOW() AT TIME ZONE \u0027UTC\u0027 AT TIME ZONE \u0027America/Sao_Paulo\u0027, \u0027HH24:MI, DD/MM/YYYY\u0027) || E\u0027] \u0027 || \u0027{{ $(\"Preparar_Registro_Cliente\").first().json.nome_whatsapp }}\u0027 || E\u0027: \u0027 || \u0027{{ $(\"Preparar_Registro_Cliente\").first().json.mensagem_inicial.replace(/\u0027/g, \"\u0027\u0027\") }}\u0027 || E\u0027\\n\u0027,\n    \u0027{{ $(\"Preparar_Registro_Cliente\").first().json.tipo_solicitacao }}\u0027,\n    \u0027WHATSAPP\u0027,\n    \u0027PENDENTE\u0027,\n    1,\n    {{ $(\"Preparar_Registro_Cliente\").first().json.recebeu_arquivos || false }},\n    \u0027{{ $(\"Preparar_Registro_Cliente\").first().json.tipos_documentos || \"\" }}\u0027,\n    \u0027PRIMEIRO_CONTATO\u0027,\n    NOW(),\n    NOW()\n)\nRETURNING *;",
+        "query": "INSERT INTO public.brokeria_registros_brokeria (\n    telefone_whatsapp,\n    nome_cliente,\n    resumo_conversa,    -- Ajustado para o padrÃ£o do Dashboard\n    assunto_principal,\n    canal,\n    status_atendimento,\n    qtde_mensagens,\n    recebeu_arquivos,\n    tipos_documentos,\n    etapa_funil,\n    data_atendimento,\n    hora_inicio\n) VALUES (\n    '{{ $(\"Preparar_Registro_Cliente\").first().json.telefone }}',\n    '{{ $(\"Preparar_Registro_Cliente\").first().json.nome_whatsapp }}',\n    -- Inicia o log jÃ¡ formatado\n    E'[' || TO_CHAR(NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo', 'HH24:MI, DD/MM/YYYY') || E'] ' || '{{ $(\"Preparar_Registro_Cliente\").first().json.nome_whatsapp }}' || E': ' || '{{ $(\"Preparar_Registro_Cliente\").first().json.mensagem_inicial.replace(/'/g, \"''\") }}' || E'\\n',\n    '{{ $(\"Preparar_Registro_Cliente\").first().json.tipo_solicitacao }}',\n    'WHATSAPP',\n    'PENDENTE',\n    1,\n    {{ $(\"Preparar_Registro_Cliente\").first().json.recebeu_arquivos || false }},\n    '{{ $(\"Preparar_Registro_Cliente\").first().json.tipos_documentos || \"\" }}',\n    'PRIMEIRO_CONTATO',\n    NOW(),\n    NOW()\n)\nRETURNING *;",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
@@ -1284,7 +1284,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "UPDATE public.brokeria_registros_brokeria\nSET \n    -- Adiciona a nova mensagem do cliente mantendo o formato [HH:MM]\n    resumo_conversa = resumo_conversa || \n        E\u0027\\n\u0027 ||\n        E\u0027[\u0027 || TO_CHAR(NOW() AT TIME ZONE \u0027UTC\u0027 AT TIME ZONE \u0027America/Sao_Paulo\u0027, \u0027HH24:MI, DD/MM/YYYY\u0027) || E\u0027] \u0027 || \u0027{{ $(\"Preparar_Registro_Cliente\").first().json.nome_whatsapp }}\u0027 || E\u0027: \u0027 || \u0027{{ $(\"Preparar_Registro_Cliente\").first().json.mensagem_inicial.replace(/\u0027/g, \"\u0027\u0027\") }}\u0027 || E\u0027\\n\u0027,\n    assunto_principal = \u0027{{ $(\"Preparar_Registro_Cliente\").first().json.tipo_solicitacao }}\u0027,\n    qtde_mensagens = COALESCE(qtde_mensagens, 0) + 1,\n    data_ultima_atualizacao = NOW()\nWHERE id_atendimento = {{ $json.id_atendimento }}\nRETURNING *;",
+        "query": "UPDATE public.brokeria_registros_brokeria\nSET \n    -- Adiciona a nova mensagem do cliente mantendo o formato [HH:MM]\n    resumo_conversa = resumo_conversa || \n        E'\\n' ||\n        E'[' || TO_CHAR(NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo', 'HH24:MI, DD/MM/YYYY') || E'] ' || '{{ $(\"Preparar_Registro_Cliente\").first().json.nome_whatsapp }}' || E': ' || '{{ $(\"Preparar_Registro_Cliente\").first().json.mensagem_inicial.replace(/'/g, \"''\") }}' || E'\\n',\n    assunto_principal = '{{ $(\"Preparar_Registro_Cliente\").first().json.tipo_solicitacao }}',\n    qtde_mensagens = COALESCE(qtde_mensagens, 0) + 1,\n    data_ultima_atualizacao = NOW()\nWHERE id_atendimento = {{ $json.id_atendimento }}\nRETURNING *;",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
@@ -1328,11 +1328,11 @@
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
-            "telefone": "={{ $(\u0027NormalizarEntrada\u0027).first().json.contexto.telefone }}",
-            "nome": "={{ $json.nome || $(\u0027NormalizarEntrada\u0027).first().json.contexto.nome }}",
+            "telefone": "={{ $('NormalizarEntrada').first().json.contexto.telefone }}",
+            "nome": "={{ $json.nome || $('NormalizarEntrada').first().json.contexto.nome }}",
             "email": "={{ $json.email }}",
             "tipo_seguro": "={{ $json.tipo_seguro }}",
-            "mensagem": "={{ $(\u0027NormalizarEntrada\u0027).first().json.pergunta_cliente || $json.mensagem || \u0027SolicitaÃ§Ã£o de cotaÃ§Ã£o via WhatsApp\u0027 }}"
+            "mensagem": "={{ $('NormalizarEntrada').first().json.pergunta_cliente || $json.mensagem || 'SolicitaÃ§Ã£o de cotaÃ§Ã£o via WhatsApp' }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -1402,7 +1402,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// RECUPERA DADOS (Tenta buscar de vÃ¡rias fontes comuns no seu fluxo)\nconst contexto = $json.contexto || {};\nconst inputUser = contexto.input_user || $json.pergunta_cliente || \"\";\nconst perguntaLower = inputUser.toLowerCase();\n\n// ==========================================\n// 1. RAMO DO SEGURO (Mapeamento Inteligente)\n// ==========================================\n// Para clientes existentes, se jÃ¡ tivermos o ramo no contexto, usamos ele.\nlet ramoSeguro = contexto.ramo_seguro || \"OUTROS\";\n\nif (ramoSeguro === \"OUTROS\") {\n    if (perguntaLower.match(/auto|carro|veic|moto|placa/)) ramoSeguro = \"AUTOMOVEL\";\n    else if (perguntaLower.match(/casa|resid|apart|lar|home/)) ramoSeguro = \"RESIDENCIAL\";\n    else if (perguntaLower.match(/vida|falec|morte|funeral/)) ramoSeguro = \"VIDA\";\n    else if (perguntaLower.match(/saude|mÃ©dic|plano|hospit/)) ramoSeguro = \"SAUDE\";\n    else if (perguntaLower.match(/empresa|pj|comercial/)) ramoSeguro = \"EMPRESARIAL\";\n}\n\n// ==========================================\n// 2. NÃVEL 1 E NÃVEL 2 (ClassificaÃ§Ã£o de Chamado)\n// ==========================================\nlet nivel1 = \"InformaÃ§Ãµes Gerais\";\nlet nivel2 = \"DÃºvidas gerais sobre seguros\";\nlet prioridade = \"MÃ©dia\";\n\n// LÃ³gica para Clientes Existentes (Foco em PÃ³s-Venda/ServiÃ§o)\nif (perguntaLower.match(/sinistro|bati|acidente|roubo|furto|colisÃ£o/)) {\n    nivel1 = \"Sinistros\";\n    nivel2 = \"Aviso de sinistro\";\n    prioridade = \"CrÃ­tica\";\n} else if (perguntaLower.match(/boleto|pagar|parcela|paguei|segunda via|2 via/)) {\n    nivel1 = \"Financeiro\";\n    nivel2 = \"Segunda via de boleto\";\n} else if (perguntaLower.match(/renovar|renovaÃ§Ã£o|vencimento|venceu/)) {\n    nivel1 = \"RenovaÃ§Ã£o\";\n    nivel2 = \"RevisÃ£o de valor\";\n    prioridade = \"Alta\";\n} else if (perguntaLower.match(/apolice|apÃ³lice|documento|certificado|carta/)) {\n    nivel1 = \"Documentos\";\n    nivel2 = \"Segunda via de apÃ³lice\";\n} else if (perguntaLower.match(/mudei|endereÃ§o|troquei|dados|alterar/)) {\n    nivel1 = \"AlteraÃ§Ãµes de ApÃ³lice (Endossos)\";\n    nivel2 = \"AtualizaÃ§Ã£o de dados cadastrais\";\n} else if (perguntaLower.match(/cancelar|cancelamento|desistir/)) {\n    nivel1 = \"Cancelamento\";\n    nivel2 = \"Cancelamento a pedido do cliente\";\n    prioridade = \"Alta\";\n} else if (perguntaLower.match(/reclamaÃ§Ã£o|ruim|errado|elogio|queixa/)) {\n    nivel1 = \"PÃ³s-venda e Relacionamento\";\n    nivel2 = \"ReclamaÃ§Ã£o geral\";\n} else if (perguntaLower.match(/cotaÃ§Ã£o|cotacao|seguro novo|outro carro/)) {\n    nivel1 = \"Vendas e CotaÃ§Ãµes\";\n    nivel2 = \"CotaÃ§Ã£o de seguro novo\";\n    prioridade = \"Alta\";\n}\n\n// ==========================================\n// 3. RETORNO PARA O REGISTRO (Com \"Spread\" para manter dados da IA)\n// ==========================================\nreturn {\n    json: {\n        ...$json, // ðŸ‘ˆ ISSO Ã‰ VITAL: MantÃ©m a resposta da IA (output) vinda do FunilRespostas\n        \n        // Seus novos campos padronizados\n        tipo_solicitacao: nivel1,\n        subtipo_solicitacao: nivel2,\n        tipo_seguro: ramoSeguro,\n        prioridade: prioridade,\n        tipo_cliente: \"Cliente existente\",\n        \n        // Dados do Cliente\n        telefone: (contexto.telefone || \"\").replace(/\\D/g, \u0027\u0027),\n        nome_whatsapp: (contexto.nome || \"Cliente\")\n    }\n};"
+        "jsCode": "// RECUPERA DADOS (Tenta buscar de vÃ¡rias fontes comuns no seu fluxo)\nconst contexto = $json.contexto || {};\nconst inputUser = contexto.input_user || $json.pergunta_cliente || \"\";\nconst perguntaLower = inputUser.toLowerCase();\n\n// ==========================================\n// 1. RAMO DO SEGURO (Mapeamento Inteligente)\n// ==========================================\n// Para clientes existentes, se jÃ¡ tivermos o ramo no contexto, usamos ele.\nlet ramoSeguro = contexto.ramo_seguro || \"OUTROS\";\n\nif (ramoSeguro === \"OUTROS\") {\n    if (perguntaLower.match(/auto|carro|veic|moto|placa/)) ramoSeguro = \"AUTOMOVEL\";\n    else if (perguntaLower.match(/casa|resid|apart|lar|home/)) ramoSeguro = \"RESIDENCIAL\";\n    else if (perguntaLower.match(/vida|falec|morte|funeral/)) ramoSeguro = \"VIDA\";\n    else if (perguntaLower.match(/saude|mÃ©dic|plano|hospit/)) ramoSeguro = \"SAUDE\";\n    else if (perguntaLower.match(/empresa|pj|comercial/)) ramoSeguro = \"EMPRESARIAL\";\n}\n\n// ==========================================\n// 2. NÃVEL 1 E NÃVEL 2 (ClassificaÃ§Ã£o de Chamado)\n// ==========================================\nlet nivel1 = \"InformaÃ§Ãµes Gerais\";\nlet nivel2 = \"DÃºvidas gerais sobre seguros\";\nlet prioridade = \"MÃ©dia\";\n\n// LÃ³gica para Clientes Existentes (Foco em PÃ³s-Venda/ServiÃ§o)\nif (perguntaLower.match(/sinistro|bati|acidente|roubo|furto|colisÃ£o/)) {\n    nivel1 = \"Sinistros\";\n    nivel2 = \"Aviso de sinistro\";\n    prioridade = \"CrÃ­tica\";\n} else if (perguntaLower.match(/boleto|pagar|parcela|paguei|segunda via|2 via/)) {\n    nivel1 = \"Financeiro\";\n    nivel2 = \"Segunda via de boleto\";\n} else if (perguntaLower.match(/renovar|renovaÃ§Ã£o|vencimento|venceu/)) {\n    nivel1 = \"RenovaÃ§Ã£o\";\n    nivel2 = \"RevisÃ£o de valor\";\n    prioridade = \"Alta\";\n} else if (perguntaLower.match(/apolice|apÃ³lice|documento|certificado|carta/)) {\n    nivel1 = \"Documentos\";\n    nivel2 = \"Segunda via de apÃ³lice\";\n} else if (perguntaLower.match(/mudei|endereÃ§o|troquei|dados|alterar/)) {\n    nivel1 = \"AlteraÃ§Ãµes de ApÃ³lice (Endossos)\";\n    nivel2 = \"AtualizaÃ§Ã£o de dados cadastrais\";\n} else if (perguntaLower.match(/cancelar|cancelamento|desistir/)) {\n    nivel1 = \"Cancelamento\";\n    nivel2 = \"Cancelamento a pedido do cliente\";\n    prioridade = \"Alta\";\n} else if (perguntaLower.match(/reclamaÃ§Ã£o|ruim|errado|elogio|queixa/)) {\n    nivel1 = \"PÃ³s-venda e Relacionamento\";\n    nivel2 = \"ReclamaÃ§Ã£o geral\";\n} else if (perguntaLower.match(/cotaÃ§Ã£o|cotacao|seguro novo|outro carro/)) {\n    nivel1 = \"Vendas e CotaÃ§Ãµes\";\n    nivel2 = \"CotaÃ§Ã£o de seguro novo\";\n    prioridade = \"Alta\";\n}\n\n// ==========================================\n// 3. RETORNO PARA O REGISTRO (Com \"Spread\" para manter dados da IA)\n// ==========================================\nreturn {\n    json: {\n        ...$json, // ðŸ‘ˆ ISSO Ã‰ VITAL: MantÃ©m a resposta da IA (output) vinda do FunilRespostas\n        \n        // Seus novos campos padronizados\n        tipo_solicitacao: nivel1,\n        subtipo_solicitacao: nivel2,\n        tipo_seguro: ramoSeguro,\n        prioridade: prioridade,\n        tipo_cliente: \"Cliente existente\",\n        \n        // Dados do Cliente\n        telefone: (contexto.telefone || \"\").replace(/\\D/g, ''),\n        nome_whatsapp: (contexto.nome || \"Cliente\")\n    }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1415,7 +1415,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Captura o input do nÃ³ anterior\nconst input = $input.first().json;\n\n// Se o webhook agora envia apenas o body, o \u0027input\u0027 jÃ¡ Ã© o conteÃºdo direto\nconst data = input;\n\nlet perguntaFinal = data.pergunta_cliente || data.pergunta || \"OlÃ¡\";\nlet contextoFinal = data.contexto || {};\n\n// IdentificaÃ§Ã£o robusta: Se tiver \u0027action\u0027 ou \u0027token\u0027 e nÃ£o tiver \u0027contexto\u0027 estruturado, tratamos como Portal Web Inicial\nconst isPortalWebInicial = (data.action || data.token) \u0026\u0026 (!data.contexto || Object.keys(data.contexto).length === 0);\n\nif (isPortalWebInicial) {\n    const rawIdentifier = data.cpf || data.identifier || data.cpf_cnpj || \"\";\n    const cpfLimpo = rawIdentifier.toString().replace(/\\D/g, \u0027\u0027);\n\n    contextoFinal = {\n        nome: data.client_name || data.nome || \"Visitante Web\",\n        email_cadastrado: data.target || data.email || null,\n        cpf_real: cpfLimpo || null, \n        origem: \"PORTAL_WEB\",\n        token_portal: data.token || null, \n        action: data.action || null,\n        tipo_cliente: \"CADASTRADO\",\n        token_validado: \"NÃƒO\"\n    };\n\n    if (data.action === \"SEND_2FA_TOKEN\") {\n        if (!contextoFinal.cpf_real) {\n            perguntaFinal = `[PROTOCOLO DE SEGURANÃ‡A]: O cliente ${contextoFinal.nome} deseja receber seu cÃ³digo no e-mail ${contextoFinal.email_cadastrado}.\\n\\n### ATENÃ‡ÃƒO AGENTE ###\\nO CPF nÃ£o foi enviado pelo portal. VocÃª Ã© OBRIGADO a seguir estes passos:\\n1. Use a tool \u0027Validador_Cliente_Brokeria\u0027 passando o e-mail \u0027${contextoFinal.email_cadastrado}\u0027 no campo \u0027documento\u0027.\\n2. Identifique o CPF retornado pelo banco.\\n3. Agora sim, chame \u0027AgentEnviaToken\u0027 informando o E-mail, o CPF localizado e o Token: ${contextoFinal.token_portal}.`;\n        } else {\n            perguntaFinal = `[PROTOCOLO DE SEGURANÃ‡A]: O cliente ${contextoFinal.nome} deseja receber seu cÃ³digo de acesso.\\n- E-mail: ${contextoFinal.email_cadastrado}\\n- CPF: ${contextoFinal.cpf_real}\\n- CÃ³digo (Token): ${contextoFinal.token_portal}\\n\\nChame a ferramenta AgentEnviaToken IMEDIATAMENTE.`;\n        }\n    } else {\n        contextoFinal.token_validado = \"SIM\";\n    }\n} else {\n    // Fluxo normal (WhatsApp ou Contexto jÃ¡ pronto)\n    contextoFinal.token_validado = contextoFinal.token_validado || \"NÃƒO\";\n}\n\nlet telefoneDb = contextoFinal.telefone || data.telefone || \"VISITANTE_WEB\";\nif (contextoFinal.cpf_real) {\n    telefoneDb = \"WEB_\" + contextoFinal.cpf_real;\n}\n\ncontextoFinal.tipo_cliente = contextoFinal.tipo_cliente || \"CADASTRADO\";\n// CERTO (Ajustado)\n// Se nÃ£o for Portal Web Inicial, e nÃ£o tiver origem, assume WHATSAPP\ncontextoFinal.origem = contextoFinal.origem || \"WHATSAPP\"; \nreturn [{\n    json: {\n        pergunta_cliente: perguntaFinal,\n        contexto: contextoFinal,\n        telefone: telefoneDb,\n        nome_whatsapp: contextoFinal.nome || \"Visitante Web\",\n        origem: contextoFinal.origem // Preserve o valor definido acima\n    }\n}];"
+        "jsCode": "// Captura o input do nÃ³ anterior\nconst input = $input.first().json;\n\n// Se o webhook agora envia apenas o body, o 'input' jÃ¡ Ã© o conteÃºdo direto\nconst data = input;\n\nlet perguntaFinal = data.pergunta_cliente || data.pergunta || \"OlÃ¡\";\nlet contextoFinal = data.contexto || {};\n\n// IdentificaÃ§Ã£o robusta: Se tiver 'action' ou 'token' e nÃ£o tiver 'contexto' estruturado, tratamos como Portal Web Inicial\nconst isPortalWebInicial = (data.action || data.token) && (!data.contexto || Object.keys(data.contexto).length === 0);\n\nif (isPortalWebInicial) {\n    const rawIdentifier = data.cpf || data.identifier || data.cpf_cnpj || \"\";\n    const cpfLimpo = rawIdentifier.toString().replace(/\\D/g, '');\n\n    contextoFinal = {\n        nome: data.client_name || data.nome || \"Visitante Web\",\n        email_cadastrado: data.target || data.email || null,\n        cpf_real: cpfLimpo || null, \n        origem: \"PORTAL_WEB\",\n        token_portal: data.token || null, \n        action: data.action || null,\n        tipo_cliente: \"CADASTRADO\",\n        token_validado: \"NÃƒO\"\n    };\n\n    if (data.action === \"SEND_2FA_TOKEN\") {\n        if (!contextoFinal.cpf_real) {\n            perguntaFinal = `[PROTOCOLO DE SEGURANÃ‡A]: O cliente ${contextoFinal.nome} deseja receber seu cÃ³digo no e-mail ${contextoFinal.email_cadastrado}.\\n\\n### ATENÃ‡ÃƒO AGENTE ###\\nO CPF nÃ£o foi enviado pelo portal. VocÃª Ã© OBRIGADO a seguir estes passos:\\n1. Use a tool 'Validador_Cliente_Brokeria' passando o e-mail '${contextoFinal.email_cadastrado}' no campo 'documento'.\\n2. Identifique o CPF retornado pelo banco.\\n3. Agora sim, chame 'AgentEnviaToken' informando o E-mail, o CPF localizado e o Token: ${contextoFinal.token_portal}.`;\n        } else {\n            perguntaFinal = `[PROTOCOLO DE SEGURANÃ‡A]: O cliente ${contextoFinal.nome} deseja receber seu cÃ³digo de acesso.\\n- E-mail: ${contextoFinal.email_cadastrado}\\n- CPF: ${contextoFinal.cpf_real}\\n- CÃ³digo (Token): ${contextoFinal.token_portal}\\n\\nChame a ferramenta AgentEnviaToken IMEDIATAMENTE.`;\n        }\n    } else {\n        contextoFinal.token_validado = \"SIM\";\n    }\n} else {\n    // Fluxo normal (WhatsApp ou Contexto jÃ¡ pronto)\n    contextoFinal.token_validado = contextoFinal.token_validado || \"NÃƒO\";\n}\n\nlet telefoneDb = contextoFinal.telefone || data.telefone || \"VISITANTE_WEB\";\nif (contextoFinal.cpf_real) {\n    telefoneDb = \"WEB_\" + contextoFinal.cpf_real;\n}\n\ncontextoFinal.tipo_cliente = contextoFinal.tipo_cliente || \"CADASTRADO\";\n// CERTO (Ajustado)\n// Se nÃ£o for Portal Web Inicial, e nÃ£o tiver origem, assume WHATSAPP\ncontextoFinal.origem = contextoFinal.origem || \"WHATSAPP\"; \nreturn [{\n    json: {\n        pergunta_cliente: perguntaFinal,\n        contexto: contextoFinal,\n        telefone: telefoneDb,\n        nome_whatsapp: contextoFinal.nome || \"Visitante Web\",\n        origem: contextoFinal.origem // Preserve o valor definido acima\n    }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1428,7 +1428,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// =========================================================\n// 1. CAPTURA DE DADOS (Diferencia Portal Web de WhatsApp)\n// =========================================================\nconst inputData = $input.first().json;\nlet contexto = inputData.contexto || {};\nlet perguntaCliente = inputData.pergunta_cliente || \"\";\n\n// Se a pergunta estiver vazia, significa que veio do fluxo do WhatsApp\nif (!perguntaCliente) {\n    try {\n        // Busca o contexto gerado internamente pelo nÃ³ anterior do seu fluxo\n        const nodeContexto = $(\"DefinirContextoAI\").first().json;\n        contexto = nodeContexto.contexto || {};\n        perguntaCliente = nodeContexto.pergunta_cliente || \"\";\n    } catch(e) {\n        console.log(\"Aviso: NÃ£o foi possÃ­vel recuperar contexto via nÃ³ DefinirContextoAI\");\n    }\n}\n\n// =========================================================\n// 2. RECUPERAÃ‡ÃƒO DE LOGS (Dados do Registro no Postgres)\n// =========================================================\n// Tenta pegar o histÃ³rico de conversa caso jÃ¡ exista um atendimento aberto\nlet dadosRegistro = {};\ntry {\n    const mergeNode = $(\"Merge_Registro\").first().json;\n    dadosRegistro = mergeNode || {};\n} catch(e) {\n    console.log(\"Aviso: Dados do Merge_Registro nÃ£o encontrados\");\n}\n\n// =========================================================\n// 3. FALLBACK DE PERGUNTA\n// =========================================================\n// Se ainda assim a pergunta estiver vazia, mas houver histÃ³rico no banco, tenta pegar a Ãºltima linha\nif (!perguntaCliente \u0026\u0026 dadosRegistro.resumo_conversa) {\n    const mensagens = dadosRegistro.resumo_conversa.split(\u0027--- Nova mensagem em\u0027);\n    const ultimaMensagem = mensagens[mensagens.length - 1];\n    perguntaCliente = ultimaMensagem\n        .replace(/---/g, \u0027\u0027)\n        .replace(/\\d{4}-\\d{2}-\\d{2}.*?---/g, \u0027\u0027)\n        .trim();\n}\n\n// Fallback final de seguranÃ§a (Garanti que a IA nunca receba vazio)\nif (!perguntaCliente) {\n    perguntaCliente = \"OlÃ¡\";\n}\n\n// =========================================================\n// 4. RETORNO FINAL (O que o seu \"BrokerIA_Master\" vai ler)\n// =========================================================\nreturn {\n    json: {\n        pergunta_cliente: perguntaCliente,\n        contexto: contexto,\n        id_atendimento: dadosRegistro.id_atendimento || null,\n        origem_tecnica: inputData.contexto?.origem || \"WHATSAPP\"\n    }\n};"
+        "jsCode": "// =========================================================\n// 1. CAPTURA DE DADOS (Diferencia Portal Web de WhatsApp)\n// =========================================================\nconst inputData = $input.first().json;\nlet contexto = inputData.contexto || {};\nlet perguntaCliente = inputData.pergunta_cliente || \"\";\n\n// Se a pergunta estiver vazia, significa que veio do fluxo do WhatsApp\nif (!perguntaCliente) {\n    try {\n        // Busca o contexto gerado internamente pelo nÃ³ anterior do seu fluxo\n        const nodeContexto = $(\"DefinirContextoAI\").first().json;\n        contexto = nodeContexto.contexto || {};\n        perguntaCliente = nodeContexto.pergunta_cliente || \"\";\n    } catch(e) {\n        console.log(\"Aviso: NÃ£o foi possÃ­vel recuperar contexto via nÃ³ DefinirContextoAI\");\n    }\n}\n\n// =========================================================\n// 2. RECUPERAÃ‡ÃƒO DE LOGS (Dados do Registro no Postgres)\n// =========================================================\n// Tenta pegar o histÃ³rico de conversa caso jÃ¡ exista um atendimento aberto\nlet dadosRegistro = {};\ntry {\n    const mergeNode = $(\"Merge_Registro\").first().json;\n    dadosRegistro = mergeNode || {};\n} catch(e) {\n    console.log(\"Aviso: Dados do Merge_Registro nÃ£o encontrados\");\n}\n\n// =========================================================\n// 3. FALLBACK DE PERGUNTA\n// =========================================================\n// Se ainda assim a pergunta estiver vazia, mas houver histÃ³rico no banco, tenta pegar a Ãºltima linha\nif (!perguntaCliente && dadosRegistro.resumo_conversa) {\n    const mensagens = dadosRegistro.resumo_conversa.split('--- Nova mensagem em');\n    const ultimaMensagem = mensagens[mensagens.length - 1];\n    perguntaCliente = ultimaMensagem\n        .replace(/---/g, '')\n        .replace(/\\d{4}-\\d{2}-\\d{2}.*?---/g, '')\n        .trim();\n}\n\n// Fallback final de seguranÃ§a (Garanti que a IA nunca receba vazio)\nif (!perguntaCliente) {\n    perguntaCliente = \"OlÃ¡\";\n}\n\n// =========================================================\n// 4. RETORNO FINAL (O que o seu \"BrokerIA_Master\" vai ler)\n// =========================================================\nreturn {\n    json: {\n        pergunta_cliente: perguntaCliente,\n        contexto: contexto,\n        id_atendimento: dadosRegistro.id_atendimento || null,\n        origem_tecnica: inputData.contexto?.origem || \"WHATSAPP\"\n    }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1442,7 +1442,7 @@
     {
       "parameters": {
         "operation": "delete",
-        "key": "==buffer:{{ $(\u0027CheckOrigem\u0027).first().json.tecnico.session_id }}"
+        "key": "==buffer:{{ $('CheckOrigem').first().json.tecnico.session_id }}"
       },
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -1458,129 +1458,6 @@
           "name": "Redis account"
         }
       }
-    },
-    {
-      "parameters": {
-        "resource": "Chatting",
-        "operation": "Send Text",
-        "session": "default",
-        "chatId": "={{ $(\u0027DefinirContextoAI\u0027).item.json.contexto.telefone }}@c.us",
-        "text": "=ðŸ”’ *AutorizaÃ§Ã£o de Acesso Seguro*\n\nPara visualizar seus dados, clique no link abaixo:\nðŸ”— {{ $json.link }}\n\nâ± Este link expira em *15 minutos*.\nApÃ³s clicar, seus dados serÃ£o liberados aqui mesmo no WhatsApp!",
-        "requestOptions": {}
-      },
-      "type": "n8n-nodes-waha.WAHA",
-      "typeVersion": 202411,
-      "position": [
-        3552,
-        5024
-      ],
-      "id": "4531303f-713e-4b21-9b72-4477e33e877b",
-      "name": "Avisa Cliente",
-      "credentials": {
-        "wahaApi": {
-          "id": "RynISmV7FrfCHYOX",
-          "name": "WAHA account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 3
-          },
-          "conditions": [
-            {
-              "id": "f2bec8d6-5b1c-4b1f-b994-6ead7c5765b8",
-              "leftValue": "={{ $json.rota_num }}",
-              "rightValue": 1,
-              "operator": {
-                "type": "number",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        2736,
-        5440
-      ],
-      "id": "4084fc0b-dc1b-4c8a-9cf0-7264627360f9",
-      "name": "If"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://brokeria-api-brokeriaweb.cx0m9g.easypanel.host/api/magic-link/generate",
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "phoneNumber",
-              "value": "={{ $json.contexto.telefone }}"
-            },
-            {
-              "name": "cpf",
-              "value": "={{ $json.contexto.cpf_real }}"
-            },
-            {
-              "name": "email",
-              "value": "={{ $json.contexto.email_cadastrado }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        3360,
-        5024
-      ],
-      "id": "8c03f989-6aca-4f94-af9d-f261c819dabf",
-      "name": "http"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 3
-          },
-          "conditions": [
-            {
-              "id": "1584a886-e46b-43fb-b88d-1007f9267648",
-              "leftValue": "={{ $json.contexto.token_validado === \"SIM\" }}",
-              "rightValue": "",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        2928,
-        5344
-      ],
-      "id": "cc2a7289-e230-4970-9fd3-2bb8045ac73c",
-      "name": "IF-Validado"
     },
     {
       "parameters": {
@@ -1602,7 +1479,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const data = $input.first().json.body || $input.first().json;\nconst cpf = (data.cpf || data.identifier || data.user_cpf || \u0027\u0027).replace(/\\D/g, \u0027\u0027);\nconst nome = data.client_name || data.nome || \u0027Cliente\u0027;\nconst email = data.email || \u0027\u0027;\nconst telefone = (data.telefone || data.target || \u0027\u0027).replace(/\\D/g, \u0027\u0027);\nconst pergunta = data.pergunta_cliente || data.message || data.pergunta || \u0027Ola\u0027;\n// OMNICHANNEL: mesma chave do WhatsApp =\u003e mesma memoria Postgres\nconst sessionKey = telefone ? telefone + \u0027_v2\u0027 : \u0027PORTAL_SEM_FONE_\u0027 + (cpf || Date.now());\nreturn [{ json: { pergunta_cliente: pergunta, session_key: sessionKey, cpf_portal: cpf, email_portal: email, nome_portal: nome, telefone_portal: telefone, contexto: { nome: nome, cpf_real: cpf, cpf_exibicao: cpf ? \u0027***.***.***-\u0027 + cpf.slice(-2) : \u0027Nao informado\u0027, telefone: telefone, email_cadastrado: email, token_validado: \u0027SIM\u0027, cadastrado: true, origem: \u0027PORTAL_WEB\u0027, tipo_cliente: \u0027CADASTRADO\u0027, resumo_apolices: [] } }}];"
+        "jsCode": "const data = $input.first().json.body || $input.first().json;\nconst cpf = (data.cpf || data.identifier || data.user_cpf || '').replace(/\\D/g, '');\nconst nome = data.client_name || data.nome || 'Cliente';\nconst email = data.email || '';\nconst telefone = (data.telefone || data.target || '').replace(/\\D/g, '');\nconst pergunta = data.pergunta_cliente || data.message || data.pergunta || 'Ola';\n// OMNICHANNEL: mesma chave do WhatsApp => mesma memoria Postgres\nconst sessionKey = telefone ? telefone + '_v2' : 'PORTAL_SEM_FONE_' + (cpf || Date.now());\nreturn [{ json: { pergunta_cliente: pergunta, session_key: sessionKey, cpf_portal: cpf, email_portal: email, nome_portal: nome, telefone_portal: telefone, contexto: { nome: nome, cpf_real: cpf, cpf_exibicao: cpf ? '***.***.***-' + cpf.slice(-2) : 'Nao informado', telefone: telefone, email_cadastrado: email, token_validado: 'SIM', cadastrado: true, origem: 'PORTAL_WEB', tipo_cliente: 'CADASTRADO', resumo_apolices: [] } }}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1616,7 +1493,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT c.nome_completo, c.cpf, c.email, c.celular, (SELECT json_agg(a) FROM public.apolices_brokeria a WHERE a.id_cliente::text = c.id_cliente::text AND UPPER(a.status_apolice) = \u0027ATIVA\u0027) as apolices_ativas FROM public.clientes_brokeria c WHERE REPLACE(REPLACE(c.cpf, \u0027.\u0027, \u0027\u0027), \u0027-\u0027, \u0027\u0027) = \u0027{{ $json.cpf_portal }}\u0027 LIMIT 1;",
+        "query": "SELECT c.nome_completo, c.cpf, c.email, c.celular, (SELECT json_agg(a) FROM public.apolices_brokeria a WHERE a.id_cliente::text = c.id_cliente::text AND UPPER(a.status_apolice) = 'ATIVA') as apolices_ativas FROM public.clientes_brokeria c WHERE REPLACE(REPLACE(c.cpf, '.', ''), '-', '') = '{{ $json.cpf_portal }}' LIMIT 1;",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
@@ -1638,7 +1515,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const norm = $(\u0027NormalizarPortal\u0027).first().json;\nconst db = $input.first().json;\n\n// Garante proteção contra retorno vazio do banco e diferencia cliente novo/cadastrado\nconst dbData = db || {};\nconst hasCliente = !!(dbData.nome_completo);\n\nconst nomeFinal = dbData.nome_completo || norm.nome_portal || \u0027Cliente\u0027;\nconst emailFinal = dbData.email || norm.email_portal || \u0027\u0027;\nconst telFinal = (dbData.celular || norm.telefone_portal || \u0027\u0027).toString().replace(/\\D/g, \u0027\u0027);\nconst cpfFinal = norm.cpf_portal || (dbData.cpf ? dbData.cpf.replace(/\\D/g, \u0027\u0027) : \u0027\u0027);\n\nconst apolicesRaw = Array.isArray(dbData.apolices_ativas) ? dbData.apolices_ativas : [];\nconst resumo_apolices = apolicesRaw.map(ap =\u003e ({\n    seguradora: ap.seguradora || \u0027N/A\u0027,\n    tipo: ap.ramo || \u0027N/A\u0027,\n    status: ap.status_apolice || \u0027ATIVA\u0027,\n    apolice: ap.numero_apolice || \u0027N/A\u0027,\n    vencimento: ap.vigencia_fim || \u0027N/A\u0027,\n    placa: ap.placa || \u0027N/A\u0027\n}));\n\nreturn [{\n    json: {\n        pergunta_cliente: norm.pergunta_cliente,\n        session_key: norm.session_key,\n        origem: \u0027PORTAL_WEB\u0027,\n        contexto: {\n            nome: nomeFinal,\n            cpf_real: cpfFinal,\n            cpf_exibicao: cpfFinal ? \u0027***.***.***-\u0027 + cpfFinal.slice(-2) : \u0027Nao informado\u0027,\n            telefone: telFinal,\n            email_cadastrado: emailFinal,\n            token_validado: \u0027SIM\u0027,\n            cadastrado: hasCliente,\n            origem: \u0027PORTAL_WEB\u0027,\n            tipo_cliente: hasCliente ? \u0027CADASTRADO\u0027 : \u0027NOVO\u0027,\n            resumo_apolices: resumo_apolices\n        }\n    }\n}];"
+        "jsCode": "const norm = $('NormalizarPortal').first().json;\nconst db = $input.first().json;\n\n// Garante proteção contra retorno vazio do banco e diferencia cliente novo/cadastrado\nconst dbData = db || {};\nconst hasCliente = !!(dbData.nome_completo);\n\nconst nomeFinal = dbData.nome_completo || norm.nome_portal || 'Cliente';\nconst emailFinal = dbData.email || norm.email_portal || '';\nconst telFinal = (dbData.celular || norm.telefone_portal || '').toString().replace(/\\D/g, '');\nconst cpfFinal = norm.cpf_portal || (dbData.cpf ? dbData.cpf.replace(/\\D/g, '') : '');\n\nconst apolicesRaw = Array.isArray(dbData.apolices_ativas) ? dbData.apolices_ativas : [];\nconst resumo_apolices = apolicesRaw.map(ap => ({\n    seguradora: ap.seguradora || 'N/A',\n    tipo: ap.ramo || 'N/A',\n    status: ap.status_apolice || 'ATIVA',\n    apolice: ap.numero_apolice || 'N/A',\n    vencimento: ap.vigencia_fim || 'N/A',\n    placa: ap.placa || 'N/A'\n}));\n\nreturn [{\n    json: {\n        pergunta_cliente: norm.pergunta_cliente,\n        session_key: norm.session_key,\n        origem: 'PORTAL_WEB',\n        contexto: {\n            nome: nomeFinal,\n            cpf_real: cpfFinal,\n            cpf_exibicao: cpfFinal ? '***.***.***-' + cpfFinal.slice(-2) : 'Nao informado',\n            telefone: telFinal,\n            email_cadastrado: emailFinal,\n            token_validado: 'SIM',\n            cadastrado: hasCliente,\n            origem: 'PORTAL_WEB',\n            tipo_cliente: hasCliente ? 'CADASTRADO' : 'NOVO',\n            resumo_apolices: resumo_apolices\n        }\n    }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1651,7 +1528,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const out = $input.first().json;\nconst texto = out.output || out.text || out.response || \u0027Nao consegui gerar uma resposta. Tente novamente.\u0027;\nreturn [{ json: { response: texto } }];"
+        "jsCode": "const out = $input.first().json;\nconst texto = out.output || out.text || out.response || 'Nao consegui gerar uma resposta. Tente novamente.';\nreturn [{ json: { response: texto } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1674,7 +1551,7 @@
           "conditions": [
             {
               "id": "portal-origin-check-001",
-              "leftValue": "={{ (() => { try { return $(\u0027MontarContextoPortal\u0027).first().json.origem; } catch(e) { return \u0027WHATSAPP\u0027; } })() }}",
+              "leftValue": "={{ (() => { try { return $('MontarContextoPortal').first().json.origem; } catch(e) { return 'WHATSAPP'; } })() }}",
               "rightValue": "PORTAL_WEB",
               "operator": {
                 "type": "string",
@@ -1955,7 +1832,7 @@
       "main": [
         [
           {
-            "node": "If",
+            "node": "NormalizarEntrada",
             "type": "main",
             "index": 0
           }
@@ -2276,53 +2153,6 @@
         [
           {
             "node": "SwitchOrigem",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "If": {
-      "main": [
-        [
-          {
-            "node": "IF-Validado",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "NormalizarEntrada",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "http": {
-      "main": [
-        [
-          {
-            "node": "Avisa Cliente",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF-Validado": {
-      "main": [
-        [
-          {
-            "node": "NormalizarEntrada",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "http",
             "type": "main",
             "index": 0
           }
