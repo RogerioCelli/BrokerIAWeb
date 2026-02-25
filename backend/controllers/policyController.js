@@ -86,7 +86,9 @@ const policyController = {
                 email: clienteInfo.email,
                 telefone: clienteInfo.telefone,
                 target: clienteInfo.telefone,
-                origem: 'PORTAL_WEB'
+                origem: 'PORTAL_WEB',
+                authenticated: true,
+                user_id: req.user.id
             };
 
             const n8nRes = await fetch(process.env.N8N_WEBHOOK_URL, {

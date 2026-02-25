@@ -202,12 +202,7 @@ const handleSend = async () => {
         });
         const data = await response.json();
 
-        // Especial: Se a IA sugerir login ou falar de apólice, dar um destaque
-        if (text.toLowerCase().includes('apólice') || text.toLowerCase().includes('meu seguro')) {
-            addMessage('bot', data.response + " Para ver detalhes agora, basta informar seu CPF ou E-mail acima no portal.");
-        } else {
-            addMessage('bot', data.response);
-        }
+        addMessage('bot', data.response);
 
     } catch (error) {
         console.error('[CHAT-ERROR]', error);
