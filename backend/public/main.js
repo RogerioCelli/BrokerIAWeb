@@ -3,6 +3,15 @@ const API_URL = '/api';
 
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
+    const mainButton = document.getElementById('mainButton');
+    const identifierInput = document.getElementById('identifier');
+    const identifierGroup = document.getElementById('identifierGroup');
+    const channelGroup = document.getElementById('channelGroup');
+    const tokenGroup = document.getElementById('tokenGroup');
+    const maskedEmail = document.getElementById('maskedEmail');
+    const maskedPhone = document.getElementById('maskedPhone');
+    const tokenInput = document.getElementById('token');
+
 
     let currentStep = 'IDENTIFICATION'; // IDENTIFICATION, CHANNEL, TOKEN
     let clientId = null;
@@ -12,18 +21,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (mainButton.disabled) return;
         mainButton.disabled = true;
-        const originalBtnText = mainButton.textContent;
 
         try {
             if (currentStep === 'IDENTIFICATION') {
-                const val = identifierInput.value.trim();
+                let val = identifierInput.value.trim();
 
-                // Regex: CPF (000.000.000-00) ou CNPJ (00.000.000/0000-00)
-                const CPF_REGEX = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
-                const CNPJ_REGEX = /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/;
+                // Allow both formatted (000.000.000-00) and unformatted (digits only)
+                const CPF_REGEX = /^(\d{3}\.\d{3}\.\d{3}-\d{2}|\d{11})$/;
+                const CNPJ_REGEX = /^(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}|\d{14})$/;
 
                 if (!CPF_REGEX.test(val) && !CNPJ_REGEX.test(val)) {
-                    throw new Error('Formato inválido. Use CPF (000.000.000-00) ou CNPJ (00.000.000/0000-00).');
+                    throw new Error('Formato inválido. Use CPF ou CNPJ (apenas números ou com pontos/traços).');
                 }
 
                 mainButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
@@ -32,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        identifier: identifierInput.value,
+                        identifier: val,
                         org_slug: ORG_SLUG
                     })
                 });
@@ -43,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Prepara próxima etapa (Seleção de Canal)
                 clientId = data.client_id;
                 if (maskedPhone) maskedPhone.textContent = data.masked_phone || 'Não cadastrado';
-                maskedEmail.textContent = data.masked_email || 'Não cadastrado';
+                if (maskedEmail) maskedEmail.textContent = data.masked_email || 'Não cadastrado';
 
                 identifierGroup.style.display = 'none';
                 channelGroup.style.display = 'block';
