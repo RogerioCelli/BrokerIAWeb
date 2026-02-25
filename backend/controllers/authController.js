@@ -114,7 +114,7 @@ const authController = {
                 masked_email: maskedEmail,
                 masked_phone: maskedPhone,
                 org_name: org.nome,
-                org_logo: org.logo_url
+                org_logo: org.logo_url || null
             });
 
         } catch (error) {
@@ -182,12 +182,12 @@ const authController = {
                     telefone: user.telefone,
                     org_nome: org.nome,
                     org_logo: org.logo_url,
-                    contatos_org: org.config_json?.contatos || {
-                        endereco: org.config_json?.endereco || "Endereço não informado",
-                        email: org.config_json?.email || "contato@brokeria.com.br",
-                        celular: org.config_json?.celular || "(11) 99999-9999",
-                        fixo: org.config_json?.fixo || "(11) 4004-0000",
-                        site: org.config_json?.site || "www.brokeria.com.br"
+                    contatos_org: {
+                        endereco: org.endereco || "Endereço não informado",
+                        email: org.email_contato || "contato@brokeria.com.br",
+                        celular: org.telefone_celular || "(11) 99999-9999",
+                        fixo: org.telefone_fixo || "(11) 4004-0000",
+                        site: org.website_url || "www.brokeria.com.br"
                     }
                 }
             });
