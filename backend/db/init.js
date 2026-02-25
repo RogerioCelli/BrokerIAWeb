@@ -181,15 +181,16 @@ async function runMigrations() {
             ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS data_criacao TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW();
         `);
 
-        // 3. Atualizar Org Demo com dados de contato
+        // 3. Atualizar Org Demo com dados de contato (Somente se não houver alteração manual)
         await db.query(`
             UPDATE organizacoes SET 
                 slug = COALESCE(slug, 'corretora-demo'),
-                endereco = 'Av. Paulista, 1000 - São Paulo/SP',
-                telefone_fixo = '(11) 4004-0000',
-                telefone_celular = '(11) 99999-9999',
-                email_contato = 'contato@brokeriaweb.com.br',
-                website_url = 'https://brokeriaweb.com.br'
+                nome = COALESCE(nome, 'DWF Seguros'),
+                endereco = COALESCE(NULLIF(endereco, 'Av. Paulista, 1000 - São Paulo/SP'), 'Endereço não informado'),
+                telefone_fixo = COALESCE(NULLIF(telefone_fixo, '(11) 4004-0000'), '5531971012157'),
+                telefone_celular = COALESCE(NULLIF(telefone_celular, '(11) 99999-9999'), '5511970282157'),
+                email_contato = COALESCE(NULLIF(email_contato, 'contato@brokeriaweb.com.br'), 'contato@dwfseguros.com.br'),
+                website_url = COALESCE(NULLIF(website_url, 'https://brokeriaweb.com.br'), 'https://www.dwfseguros.com.br/')
             WHERE slug = 'corretora-demo' OR id = (SELECT id FROM organizacoes LIMIT 1)
         `);
 
