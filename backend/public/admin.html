@@ -424,12 +424,11 @@
 
             // Se não for e-mail, valida formato CPF ou CNPJ
             const isEmail = id.includes('@');
-            if (!isEmail) {
-                const CPF_REGEX = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
-                const CNPJ_REGEX = /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/;
-                if (!CPF_REGEX.test(id) && !CNPJ_REGEX.test(id)) {
-                    return alert('Formato inválido. Use CPF (000.000.000-00) ou CNPJ (00.000.000/0000-00).');
-                }
+            // Allow both formatted (000.000.000-00) and unformatted (digits only)
+            const CPF_REGEX = /^(\d{3}\.\d{3}\.\d{3}-\d{2}|\d{11})$/;
+            const CNPJ_REGEX = /^(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}|\d{14})$/;
+            if (!CPF_REGEX.test(id) && !CNPJ_REGEX.test(id)) {
+                return alert('Formato inválido. Use CPF ou CNPJ (apenas números ou com pontos/traços).');
             }
 
             try {
