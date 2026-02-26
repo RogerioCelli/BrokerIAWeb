@@ -99,9 +99,10 @@ const policyController = {
 
             if (!n8nRes.ok) {
                 const errText = await n8nRes.text();
+                // Se der 404/500, pode ser que o webhook precise do /test ou o workflow esteja desativado
                 console.error(`[CHAT-PORTAL] n8n HTTP ${n8nRes.status}:`, errText);
                 return res.status(200).json({
-                    response: `Portal n8n retornou erro (${n8nRes.status}). Verifique se o workflow v15 está ativo.`
+                    response: `Erro no Assistente (n8n ${n8nRes.status}). Verifique se o workflow v18 está ATIVO e se o Webhook 'portal-web-chat' existe.`
                 });
             }
 
