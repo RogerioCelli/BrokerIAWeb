@@ -1,0 +1,2200 @@
+{
+  "name": "Brokeria-v17",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "waha",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        36080,
+        16912
+      ],
+      "id": "24df0162-b56c-4118-82d1-619e0903e559",
+      "name": "Webhook",
+      "webhookId": "ecb2c459-0f4c-4201-9a1f-67e5c5927290"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "78415b90-064b-46f3-8a36-8489bd14f43a",
+              "name": "event",
+              "value": "={{ $json.body.event }}",
+              "type": "string"
+            },
+            {
+              "id": "6d70d6a1-58d7-416a-a388-7b2aeabd4b85",
+              "name": "session",
+              "value": "={{ $json.body.session || 'default' }}",
+              "type": "string"
+            },
+            {
+              "id": "ff0bd58d-efa1-4e49-9c9c-602aed25a290",
+              "name": "payload_id",
+              "value": "={{ $json.body.payload.id }}",
+              "type": "string"
+            },
+            {
+              "id": "0c990094-4206-417a-be86-008c8156acf8",
+              "name": "from",
+              "value": "={{ $json.body.payload.from }}",
+              "type": "string"
+            },
+            {
+              "id": "d33eb4cc-078e-40b7-9c9c-8fbba1e2aa76",
+              "name": "to",
+              "value": "={{ $json.body.payload.to }}",
+              "type": "string"
+            },
+            {
+              "id": "457f7c13-bf6f-4171-80bc-75620cfda604",
+              "name": "source",
+              "value": "={{ $json.body.payload.source }}",
+              "type": "string"
+            },
+            {
+              "id": "8ce79aa1-5408-48c9-8226-9ac6f875df12",
+              "name": "body",
+              "value": "={{ $json.body.payload.body }}",
+              "type": "string"
+            },
+            {
+              "id": "3fc1bd24-4960-40a3-9a52-5e1fa4365813",
+              "name": "hasMedia",
+              "value": "={{ $json.body.payload.hasMedia }}",
+              "type": "boolean"
+            },
+            {
+              "id": "7437da46-cfce-4e5b-909a-5daf06dfd2ad",
+              "name": "type",
+              "value": "={{ $json.body.payload._data.type }}",
+              "type": "string"
+            },
+            {
+              "id": "f8f215f3-ba00-485e-be98-354baa181f28",
+              "name": "name",
+              "value": "={{ $json.body.payload._data.notifyName }}",
+              "type": "string"
+            },
+            {
+              "id": "6508b08d-4b94-4352-8a94-c55ffd11cc91",
+              "name": "fromMe",
+              "value": "={{ $json.body.payload.fromMe }}",
+              "type": "boolean"
+            },
+            {
+              "id": "3ada40ac-45a0-440a-9e4b-44417caadf9c",
+              "name": "to",
+              "value": "={{ $json.body.payload.to }}",
+              "type": "string"
+            },
+            {
+              "id": "0096fa37-d92b-43ca-8c98-269cc5e1899f",
+              "name": "id",
+              "value": "={{ $json.body.id }}",
+              "type": "string"
+            },
+            {
+              "id": "30a509ba-e3aa-4e6a-b3ce-4f7d1fcbf46f",
+              "name": "session_id",
+              "value": "={{ $json.body.session + ' ' + $json.body.payload.from + ' chats' }}",
+              "type": "string"
+            },
+            {
+              "id": "72d18f99-83a5-4bfb-8621-6af03d231409",
+              "name": "from",
+              "value": "={{ $json.body.payload.from }}",
+              "type": "string"
+            },
+            {
+              "id": "72d18f99-83a5-4bfb-8621-6af03d231410",
+              "name": "pn",
+              "value": "={{ $json.body.payload.from }}",
+              "type": "string"
+            },
+            {
+              "id": "72d18f99-83a5-4bfb-8621-6af03d231409",
+              "name": "user_text",
+              "value": "={{ $json.body.payload.body }}",
+              "type": "string"
+            },
+            {
+              "id": "d1a86623-555b-4571-b71d-b7dc69e0b763",
+              "name": "media_url",
+              "value": "={{ $json.body.payload.media.url || $json.body.payload.url || \"\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        36272,
+        16912
+      ],
+      "id": "b800597e-97c8-42e3-bfb2-d3bdbb9555f9",
+      "name": "Dados"
+    },
+    {
+      "parameters": {
+        "resource": "Chatting",
+        "operation": "Send Seen",
+        "session": "={{ $('Padronizar Output').first().json.target_session || 'default' }}",
+        "chatId": "={{ $('Padronizar Output').first().json.target_chat_id }}",
+        "messageId": "",
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-waha.WAHA",
+      "typeVersion": 202411,
+      "position": [
+        39232,
+        17664
+      ],
+      "id": "2d780b93-a786-4899-84c5-c134c3f81ae0",
+      "name": "Send Seen",
+      "alwaysOutputData": true,
+      "credentials": {
+        "wahaApi": {
+          "id": "RynISmV7FrfCHYOX",
+          "name": "WAHA account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "resource": "Chatting",
+        "operation": "Start Typing",
+        "session": "={{ $('Padronizar Output').first().json.target_session || 'default' }}",
+        "chatId": "={{ $('Padronizar Output').first().json.target_chat_id }}",
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-waha.WAHA",
+      "typeVersion": 202411,
+      "position": [
+        39376,
+        17664
+      ],
+      "id": "574e7432-2124-4b7b-8bd8-1dd33a3f7af5",
+      "name": "Start Typing",
+      "credentials": {
+        "wahaApi": {
+          "id": "RynISmV7FrfCHYOX",
+          "name": "WAHA account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        39520,
+        17664
+      ],
+      "id": "802ae402-cdc7-4889-a28f-459177eb7fdc",
+      "name": "Wait",
+      "webhookId": "8322f7d9-15d2-4cb3-850f-7405eee27591"
+    },
+    {
+      "parameters": {
+        "resource": "Chatting",
+        "operation": "Send Text",
+        "session": "={{ $('Padronizar Output').first().json.target_session || 'default' }}",
+        "chatId": "={{ $('Padronizar Output').first().json.target_chat_id }}",
+        "reply_to": "=",
+        "text": "={{ $json.text }}",
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-waha.WAHA",
+      "typeVersion": 202411,
+      "position": [
+        39824,
+        17664
+      ],
+      "id": "6f643e02-ad85-4f32-b5ca-af52b5c44158",
+      "name": "Send a text message",
+      "credentials": {
+        "wahaApi": {
+          "id": "RynISmV7FrfCHYOX",
+          "name": "WAHA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ ('http://waha:3000/api/' + $json.session + '/lids/' + encodeURIComponent(($json.from || '').trim())).trim() }}\n\n",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Api-Key",
+              "value": "GR15VC0m5ueLygSMQPM6In4A8qfnrLT31ECnIEmZvnfyovsGxjUSfaFcMi1YQ3E1VvR9WjdJijFKGllhKAhkQ6yNYzYstzwtlQODhb06lknx3j8JlfxA7UCbzKCe61nbb"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b5b5266a-0b74-46b4-8c14-a74a136351f6",
+      "name": "Consultar WAHA Direto",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        36976,
+        16688
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "custom-field",
+              "name": "PhoneNumber",
+              "value": "={{ $json.pn ? $json.pn.split('@')[0] : undefined }}",
+              "type": "string"
+            },
+            {
+              "id": "835b86bc-37d1-4742-a421-3247982275a9",
+              "name": "LidNumber",
+              "value": "={{ $json.lid ? $json.lid.split('@')[0] : undefined }}",
+              "type": "string"
+            },
+            {
+              "id": "92fd4ba6-2d13-4ff9-b215-8895fd828fa2",
+              "name": "isGroup",
+              "value": "={{ ($json.pn || '').endsWith('@g.us') }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "5cdbf123-a586-4c8c-9e72-f8c64a7bc355",
+      "name": "Limpar Telefone",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        37136,
+        16688
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  c.id_cliente, \n  c.nome_completo, \n  c.cpf, \n  c.email, \n  c.celular,\n  c.telefone,\n  (\n    SELECT json_agg(a)\n    FROM public.apolices_brokeria a\n    WHERE a.id_cliente::text = c.id_cliente::text\n  ) as apolices_detalhadas\nFROM public.clientes_brokeria c\nWHERE c.celular = $1 \n   OR c.telefone = $1 \n   OR c.cpf = $1\nLIMIT 1;",
+        "options": {
+          "queryReplacement": "={{ $json.PhoneNumber || $json.wa.chatId }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        37920,
+        17184
+      ],
+      "id": "32412c5c-efbd-41f6-ba36-a7b25e31cf90",
+      "name": "Busca_Cliente",
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "credentials": {
+        "postgres": {
+          "id": "xV5DoCDtV27fCFr5",
+          "name": "brokeria_db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// BUSCA DOS DADOS: Pegamos TUDO o que está no Merge\nconst mergeData = $('Merge').first().json;\nconst wa = mergeData.wa || {}; \n\nlet mensagens = [];\ntry {\n  const redisNode = $(\"Recuperar_Buffer\").first();\n  const redis = (redisNode && redisNode.json) ? redisNode.json : {};\n  const conteudo = redis.Redis_Check_Buffer || redis.value;\n  if (conteudo) {\n      const parsed = typeof conteudo === 'string' ? JSON.parse(conteudo) : conteudo;\n      mensagens = (parsed && parsed.msgs) ? parsed.msgs : (Array.isArray(parsed) ? parsed : []);\n  }\n} catch (e) { mensagens = []; }\n\nif (wa.messageId && !mensagens.some(m => m.id === wa.messageId)) {\n    mensagens.push({ id: wa.messageId, texto: wa.text || \"...\", exec_id: $execution.id });\n}\n\nreturn {\n    ...mergeData, // <--- ISSO RECOUPERA OS HEADERS E O PHONENUMBER!\n    wa: wa,\n    texto_combinado: mensagens.map(m => m.texto).join(' \\n '),\n    msgs: mensagens,\n    minha_execucao: $execution.id\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        36736,
+        17184
+      ],
+      "id": "54b3c809-aa40-476c-9bb0-ea48aa0e7338",
+      "name": "Agrupar_Texto"
+    },
+    {
+      "parameters": {
+        "operation": "set",
+        "key": "=buffer:{{ $('CheckOrigem').first().json.wa.chatId }}",
+        "value": "={{ JSON.stringify($json) }}",
+        "expire": true,
+        "ttl": 10
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        36880,
+        17280
+      ],
+      "id": "97e354ad-656f-4c3a-963f-fa7e41e443d4",
+      "name": "Atualizar_Buffer",
+      "credentials": {
+        "redis": {
+          "id": "bTJkLNg8xtKhZJgL",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        37040,
+        17184
+      ],
+      "id": "0cde2dc6-b3e6-4827-a23b-214bb8e1f19f",
+      "name": "Espera_3_Segundos",
+      "webhookId": "0a902838-3e8f-45d8-9b2e-8bc4950a8a84"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "Redis_Check_Final",
+        "key": "=buffer:{{ $('CheckOrigem').first().json.wa.chatId }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        37184,
+        17264
+      ],
+      "id": "ac8811e9-88f9-4b25-8aee-aca9c0e7b962",
+      "name": "Check_Pos_Espera",
+      "alwaysOutputData": true,
+      "credentials": {
+        "redis": {
+          "id": "bTJkLNg8xtKhZJgL",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "Redis_Check_Buffer",
+        "key": "=buffer:{{ $('CheckOrigem').first().json.wa.chatId }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        36576,
+        17296
+      ],
+      "id": "03b9f0fd-4274-44b8-b501-293c11c4921a",
+      "name": "Recuperar_Buffer",
+      "alwaysOutputData": true,
+      "credentials": {
+        "redis": {
+          "id": "bTJkLNg8xtKhZJgL",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "{{ $json.tecnico.isGroup }}",
+                    "rightValue": "false",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "9d8b45b5-c151-4e99-bdaf-6306764ea594"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "27953cd9-b238-4be3-9db8-7f15b5635ba4",
+                    "leftValue": "{{ $json.tecnico.source }}",
+                    "rightValue": "api",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notContains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "ffff129c-9a55-4c12-a18f-e84e087b7a88",
+                    "leftValue": "{{ $json.tecnico.fromMe }}",
+                    "rightValue": "false",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        37744,
+        17168
+      ],
+      "id": "bfd8b526-d9a5-4f29-8506-63e6e39135ce",
+      "name": "SwitchOrigem"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pega os dados que estão chegando no nó agora\nconst input = $input.first().json;\n\n// LÓGICA DE UNIFICAÇÃO\n// Se tiver 'PhoneNumber', sabemos que veio do fluxo do WhatsApp\nconst wa = input.wa || {};\nconst isWhatsApp = !!input.PhoneNumber || wa.provider === 'waha';\n\nif (isWhatsApp) {\n    const pn = input.pn || \"\";\n    return {\n        wa: {\n            provider: \"waha\",\n            session: wa.session || input.session || \"default\",\n            chatId: wa.chatId || (input.PhoneNumber + \"@c.us\"),\n            messageId: wa.messageId || input.payload_id || (\"wa_\" + Date.now()),\n            authenticated: !!wa.authenticated,\n            text: wa.text || input.user_text || \"\"\n        },\n        cliente: {\n            phoneNumber: input.PhoneNumber || pn.split('@')[0],\n            nome_whatsapp: input.name || \"Cliente WhatsApp\"\n        },\n        ...input \n    };\n} else {\n    return {\n        wa: {\n            provider: \"portal\",\n            session: input.session_id || \"portal_user_v2\",\n            chatId: input.chat_id || \"portal_user\",\n            messageId: \"web_\" + Date.now(),\n            text: input.user_text || \"\"\n        },\n        ...input\n    };\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        36400,
+        17184
+      ],
+      "id": "d4811cd9-0be6-4772-a955-cf4aee9dc9c0",
+      "name": "CheckOrigem"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "sessaoExistente",
+        "key": "=status_2fa:{{ $('CheckOrigem').first().json.wa.chatId }}",
+        "options": {
+          "dotNotation": true
+        }
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        38096,
+        17264
+      ],
+      "id": "61706899-6559-4f75-af10-86e4f4a59711",
+      "name": "Buscar_Sessao_Existente",
+      "credentials": {
+        "redis": {
+          "id": "bTJkLNg8xtKhZJgL",
+          "name": "Redis account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "let cliente = {};\ntry { \n    const busca = $(\"Busca_Cliente\").first();\n    if (busca && busca.json && busca.json.id_cliente) { cliente = busca.json; }\n} catch(e) {}\n\nconst wa = $json.wa || {};\nconst chatId = wa.chatId || \"\";\nconst phoneNumber = chatId.replace(\"@c.us\", \"\") || $json.PhoneNumber || \"\";\n\nlet consolidado = {};\ntry { consolidado = $(\"ConsolidarMensagem\").first().json || {}; } catch(e) {}\n\nlet perguntaAgente = consolidado.mensagem_final || wa.text || \"\";\n\n// VERIFICAÇÃO DE SEGURANÇA\nlet isValid = false;\ntry {\n    const nodeRedis = $(\"Buscar_Sessao_Existente\").first();\n    if (nodeRedis && nodeRedis.json && nodeRedis.json.sessaoExistente === \"VALIDADO\") { isValid = true; }\n    if (wa.authenticated === true) { isValid = true; }\n} catch (e) { isValid = false; }\n\n// =========================================================\n// MASCARAMENTO RADICAL (Proteção de Dados Pessoais)\n// =========================================================\nlet apolicesAtivas = (cliente.apolices_detalhadas || []).filter(ap => \n    ap && ap.status_apolice && String(ap.status_apolice).toUpperCase() === 'ATIVA'\n);\n\nconst apolicesSeguras = apolicesAtivas.map(ap => ({\n    seguradora: ap.seguradora,\n    ramo: ap.ramo,\n    status: ap.status_apolice,\n    numero_apolice: isValid ? ap.numero_apolice : \"(Bloqueado)\",\n    vencimento: isValid ? ap.vigencia_fim : \"(Bloqueado)\",\n    placa: (ap.placa && isValid) ? ap.placa : (ap.placa ? \"***-****\" : \"N/A\"),\n    link_download: isValid ? (ap.link_url_apolice || \"Nao disponivel\") : \"(Oculto)\"\n}));\n\nreturn [{\n    json: {\n        pergunta_cliente: perguntaAgente,\n        contexto: {\n            nome: cliente.nome_completo || wa.name || \"Cliente\",\n            // PROTEÇÃO DE DADOS PESSOAIS: Se não for válido, a IA não vê o dado real\n            cpf_real: isValid ? (cliente.cpf || \"\") : \"111.111.111-11\", \n            cpf_exibicao: (cliente.cpf) ? `***.***.***-${cliente.cpf.slice(-2)}` : \"Nao informado\",\n            telefone: isValid ? (cliente.celular || phoneNumber) : \"(Oculto)\",\n            email_cadastrado: isValid ? (cliente.email || \"\") : \"(Oculto)\",\n            \n            token_validado: isValid ? \"SIM\" : \"NAO\",\n            cadastrado: !!cliente.id_cliente,\n            id_cliente: cliente.id_cliente || null,\n            resumo_apolices: apolicesSeguras,\n            tipo_cliente: cliente.id_cliente ? \"CADASTRADO\" : \"NOVO\",\n            origem: wa.provider || \"WHATSAPP\"\n        }\n    }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        39296,
+        17232
+      ],
+      "id": "8bfb3727-831e-4924-bed8-18882575b463",
+      "name": "DefinirContextoAI",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Dados').first().json.type || 'chat' }}",
+                    "rightValue": "audio|ptt",
+                    "operator": {
+                      "type": "string",
+                      "operation": "regex"
+                    },
+                    "id": "0dc49c03-4595-4987-ac0a-3fc9d3a6155c"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "6b2eacf3-4648-4f87-855c-274503889af2",
+                    "leftValue": "={{ $('Dados').first().json.type || 'chat' }}",
+                    "rightValue": "image",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "7102c9ec-2c9e-4121-856c-7e44d524cbb7",
+                    "leftValue": "={{ $('Dados').first().json.type || 'chat' }}",
+                    "rightValue": "chat",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        38256,
+        17168
+      ],
+      "id": "dfe0b769-ecd6-49cf-b273-ccef6500a147",
+      "name": "SwitchMidia"
+    },
+    {
+      "parameters": {
+        "url": "={{ ($node[\"Dados\"].json.media_url || $node[\"Webhook\"].json.body.payload.url || \"\").replace(/https?:\\/\\/[^\\/]+/, 'http://waha:3000') }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "wahaApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        38528,
+        16816
+      ],
+      "id": "78dbf964-28b3-43e8-ba4a-f9f457930d42",
+      "name": "DownloadMidia",
+      "alwaysOutputData": false,
+      "credentials": {
+        "wahaApi": {
+          "id": "RynISmV7FrfCHYOX",
+          "name": "WAHA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.0-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.0-flash"
+        },
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        38704,
+        16816
+      ],
+      "id": "ce362327-b93d-4e3e-924a-75601d0e9093",
+      "name": "IA_Processar_Audio",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "zbgZENLaRF5SxXLc",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "onError": "continueErrorOutput",
+      "notes": "Em caso de erro, prossiga o chat."
+    },
+    {
+      "parameters": {
+        "url": "={{ ($node[\"Dados\"].json.media_url || $node[\"Webhook\"].json.body.payload.url || \"\").replace(/https?:\\/\\/[^\\/]+/, 'http://waha:3000') }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "wahaApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        38528,
+        16976
+      ],
+      "id": "d62ddd32-e6a6-4370-9f15-b9039e607f76",
+      "name": "ImageDownload",
+      "credentials": {
+        "wahaApi": {
+          "id": "RynISmV7FrfCHYOX",
+          "name": "WAHA account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.0-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.0-flash"
+        },
+        "text": "=Analise a imagem e dÃª detalhes do que tem nela:\n  - Se for a imagem de um documento, procure fazer o reconhecimento atravÃ©s do tÃ­tulo ou qualquer coisa permita a correta identificaÃ§Ã£o\n  - Se for a imagem de um veiculo, procure identifica-lo (moto, carro ou caminhÃ£o), alÃ©m de modelo, cor e principalmente se identificado alguma batida etc. \n  - Se for qualquer outro tipo de imagem, analise de forma geral\n\nA pessoa que enviou essa imagem mencionou: {{ $node[\"CheckOrigem\"].json.input_bruto.user_text || \"NÃ£o mencionou nada\" }}",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        38704,
+        16976
+      ],
+      "id": "1e0c7b33-0732-4dd7-a1eb-8292da91c2b0",
+      "name": "IA_Processar_Imagem",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "zbgZENLaRF5SxXLc",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "onError": "continueErrorOutput",
+      "notes": "Em caso de erro, prossiga o chat."
+    },
+    {
+      "parameters": {
+        "jsCode": "let textoAgrupado = \"\";\ntry {\n    const nodeFiltro = $(\"Filtro_Ultima_Execucao\").first();\n    textoAgrupado = nodeFiltro.json.pergunta_cliente || nodeFiltro.json.texto_combinado || \"\";\n} catch(e) {}\n\nconst wa = $json.wa || {};\nconst textoFinal = textoAgrupado || wa.text || $json.pergunta_cliente || \"\";\n\nreturn [{\n    json: {\n        mensagem_final: textoFinal.trim(),\n        tipo_entrada: wa.mediaType || \"chat\",\n        teve_erro_ia: false\n    }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        38960,
+        17216
+      ],
+      "id": "1802e5ba-0461-4e72-af82-a6cc70ba9092",
+      "name": "ConsolidarMensagem",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.houve_erro_midia }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "5280c04a-9876-4f53-a252-2e8fff6d4d73"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "63991c1f-d6e5-45f5-a188-beca30f15b0c",
+                    "leftValue": "={{ $json.houve_erro_midia }}",
+                    "rightValue": "If Boolean is False: Conecte ao nÃ³ DefinirContextoAI.",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        39104,
+        17216
+      ],
+      "id": "2aefe72e-a0f3-44c1-9e7a-311fcfbfa625",
+      "name": "TratamentoErroMidia"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-2.5-flash",
+        "options": {
+          "maxTokens": 2048
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        37936,
+        18192
+      ],
+      "id": "672a7f91-d89b-4d5d-9559-aaa74d05ff25",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "HzPUGkdiTBP5PHtz",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ (() => { try { const tel = $('DefinirContextoAI').first().json.contexto.telefone; if (tel) return tel + '_v2'; } catch(e) {} try { return $('MontarContextoPortal').first().json.session_key; } catch(e) {} return 'FALLBACK_' + Date.now(); })() }}",
+        "contextWindowLength": 6
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        38128,
+        18192
+      ],
+      "id": "c2f38d7f-61ad-4e9e-9cd1-09afff2420b6",
+      "name": "PostgresChatMemory",
+      "credentials": {
+        "postgres": {
+          "id": "5ijVVKEpFAWPNF6w",
+          "name": "brokeria_postgres_geral"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "NOME: Validador_Cliente_Brokeria\n\nQUANDO USAR:\n1. Quando um usuÃ¡rio desconhecido (telefone nÃ£o cadastrado) afirma ser cliente e fornece o documento ou e-mail.\n2. Quando um usuÃ¡rio jÃ¡ identificado solicita acesso a dados sensÃ­veis (apÃ³lices, alteraÃ§Ãµes cadastrais) e precisa revalidar a identidade.\n\nINPUT:\nO cliente deve fornecer o CPF (11 dÃ­gitos), CNPJ (14 dÃ­gitos) OU o E-mail cadastrado.\nExemplo JSON: { \"documento\": \"12345678900\" } ou { \"documento\": \"teste@email.com\" }\n\nRETORNO:\nRetorna os dados cadastrais completos do cliente. Retorna vazio se nÃ£o encontrar.",
+        "operation": "executeQuery",
+        "query": "SELECT * FROM public.clientes_brokeria\nWHERE cpf = '{{\n  (() => {\n    const val = $json.documento ? $json.documento.toString() : \"\";\n    if (val.includes(\"@\")) return \"EMAIL_QUERY_BYPASS\";\n    const doc = val.replace(/\\D/g, \"\");\n    if (doc.length !== 11 && doc.length !== 14) return \"000\";\n    return doc;\n  })()\n}}' OR email = '{{ $json.documento }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        38320,
+        18192
+      ],
+      "id": "49966b7e-9bb5-43e3-9404-6254208854d1",
+      "name": "QueryPostgresClientes",
+      "credentials": {
+        "postgres": {
+          "id": "xV5DoCDtV27fCFr5",
+          "name": "brokeria_db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f13f09b9-af26-4aa3-9761-edc7d76ff32e",
+              "name": "wa.chatId",
+              "value": "={{ $json.PhoneNumber ? $json.PhoneNumber + '@c.us' : $json.wa.chatId }}",
+              "type": "string"
+            },
+            {
+              "id": "fdb1c7bb-c3a8-4a98-a52e-563720599d08",
+              "name": "wa.session",
+              "value": "={{ $json.session || 'default' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        37344,
+        16688
+      ],
+      "id": "295b357d-5208-413d-b2e0-bd55b91e85ec",
+      "name": "FinalizeChatId"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "final_text",
+              "name": "response_text",
+              "value": "={{ $json.mensagem_final || $json.mensagem || $json.output || \"Erro: NÃ£o foi possÃ­vel recuperar a mensagem.\" }}",
+              "type": "string"
+            },
+            {
+              "id": "target_chat",
+              "name": "target_chat_id",
+              "value": "={{ $('CheckOrigem').first().json.wa.chatId }}",
+              "type": "string"
+            },
+            {
+              "id": "target_session",
+              "name": "target_session",
+              "value": "={{ $('CheckOrigem').first().json.wa.session }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        39072,
+        17664
+      ],
+      "id": "3b972d78-2188-472b-9905-46e6ab336dc3",
+      "name": "Padronizar Output"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Este nÃ³ apenas coleta o que chegar e passa adiante\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        38448,
+        17664
+      ],
+      "id": "1e69268b-e7e4-4b76-8783-03e9a140cb3f",
+      "name": "FunilRespostas"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO public.brokeria_registros_brokeria (\n  telefone_whatsapp, \n  nome_cliente, \n  resumo_conversa, \n  assunto_principal,\n  subtipo_solicitacao,\n  tipo_seguro,\n  prioridade,\n  tipo_cliente,\n  status_atendimento, \n  data_atendimento,\n  canal,\n  qtde_mensagens\n)\nVALUES (\n  '{{ $(\"DefinirContextoAI\").first().json.contexto.telefone }}',\n  '{{ $(\"DefinirContextoAI\").first().json.contexto.nome }}',\n  E'[' || TO_CHAR(NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo', 'HH24:MI, DD/MM/YYYY') || E'] ' || '{{ $(\"DefinirContextoAI\").first().json.contexto.nome }}' || E': ' || '{{ ($(\"DefinirContextoAI\").first().json.contexto.input_user || \"\").replace(/'/g, \"''\") }}' || E'\\n' ||\n  E'[' || TO_CHAR(NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo', 'HH24:MI, DD/MM/YYYY') || E'] BrokerIA: ' || '{{ ($json.text || $json.output || \"\").replace(/'/g, \"''\") }}' || E'\\n',\n  '{{ $json.tipo_solicitacao || \"InformaÃ§Ãµes Gerais\" }}',\n  '{{ $json.subtipo_solicitacao || \"DÃºvidas gerais\" }}',\n  '{{ $json.tipo_seguro || \"OUTROS\" }}',\n  '{{ $json.prioridade || \"MÃ©dia\" }}',\n  '{{ $json.tipo_cliente || \"NÃ£o cliente\" }}',\n  'PENDENTE',\n  CURRENT_DATE,\n  '{{ $(\"DefinirContextoAI\").first().json.contexto.origem || \"WHATSAPP\" }}',\n  1\n)\nON CONFLICT (telefone_whatsapp, data_atendimento) \nDO UPDATE SET \n  resumo_conversa = brokeria_registros_brokeria.resumo_conversa || \n         E'\\n' ||\n         E'[' || TO_CHAR(NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo', 'HH24:MI, DD/MM/YYYY') || E'] ' || EXCLUDED.nome_cliente || E': ' || '{{ ($(\"DefinirContextoAI\").first().json.contexto.input_user || \"\").replace(/'/g, \"''\") }}' || E'\\n' ||\n         E'[' || TO_CHAR(NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo', 'HH24:MI, DD/MM/YYYY') || E'] BrokerIA: ' || '{{ ($json.text || $json.output || \"\").replace(/'/g, \"''\") }}' || E'\\n',\n  qtde_mensagens = COALESCE(brokeria_registros_brokeria.qtde_mensagens, 0) + 1,\n  assunto_principal = EXCLUDED.assunto_principal,\n  subtipo_solicitacao = EXCLUDED.subtipo_solicitacao,\n  prioridade = EXCLUDED.prioridade,\n  data_ultima_atualizacao = NOW();",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        39264,
+        17440
+      ],
+      "id": "723219e0-c251-4604-bd19-67704bd4bad0",
+      "name": "Registrar_Interacao",
+      "credentials": {
+        "postgres": {
+          "id": "xV5DoCDtV27fCFr5",
+          "name": "brokeria_db"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Coleta a mensagem de todas as fontes possÃ­veis\nlet mensagem = $json.response_text || $json.mensagem_final || $json.output || \"\";\n\n// 2. Se a mensagem ainda estiver vazia, tenta buscar diretamente nos nÃ³s de origem\nif (!mensagem || mensagem === \"\") {\n    try {\n        mensagem = $(\"LimparOutputValidacao\").first().json.mensagem_final;\n    } catch(e) {\n        try {\n            mensagem = $(\"BrokerIA_Master\").first().json.output;\n        } catch(e2) {}\n    }\n}\n\n// 3. Limpeza de logs tÃ©cnicos\nmensagem = mensagem.replace(/\\[Used tools:.*?\\]/gis, '');\nmensagem = mensagem.replace(/Tool:.*?(?=\\n|$)/gi, '');\nmensagem = mensagem.replace(/Input:.*?(?=\\n|$)/gi, '');\nmensagem = mensagem.replace(/Result:.*?(?=\\n|$)/gi, '');\nmensagem = mensagem.replace(/\\{.*?\"accepted\".*?\\}/gs, '');\nmensagem = mensagem.replace(/\\n{3,}/g, '\\n\\n').trim();\n\n// 4. âœ… CORREÃ‡ÃƒO: Fallback adequado baseado no tipo de cliente (Agora via v9)\nif (!mensagem) {\n    try {\n        const contexto = $(\"DefinirContextoAI\").first().json.contexto;\n        const nome = contexto.nome || \"Cliente\";\n        const primeiroNome = nome.split(' ')[0];\n        const isClienteCadastrado = contexto.cadastrado; \n        \n        if (isClienteCadastrado) {\n            mensagem = `OlÃ¡ ${primeiroNome}! Como posso te ajudar hoje?`;\n        } else {\n            mensagem = `OlÃ¡ ${primeiroNome}! Seja bem-vindo Ã  DWF Seguros! ðŸ˜Š\\n\\nEstou aqui para te ajudar com:\\nâ€¢ CotaÃ§Ãµes de seguros\\nâ€¢ InformaÃ§Ãµes sobre nossos produtos\\nâ€¢ DÃºvidas sobre seguros em geral\\n\\nComo posso te ajudar?`;\n        }\n    } catch(e) {\n        mensagem = \"OlÃ¡! Seja bem-vindo Ã  DWF Seguros! Como posso te ajudar?\";\n    }\n}\n\nreturn {\n  json: {\n    ...$json,\n    text: mensagem\n  }\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        39664,
+        17664
+      ],
+      "id": "ed5f7c2f-a37c-4960-ab51-12c9d5d61acc",
+      "name": "FiltrarResposta"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.pergunta_cliente }}\n\n",
+        "options": {
+          "systemMessage": "===================================================================\n📱 FORMATO DE RESPOSTA (ESTILO MENU/URA) - CRÍTICO\n==================================================================\nPara melhorar a experiência do usuário, sempre que o cliente solicitar algo que tenha categorias ou variantes, APRESENTE AS OPÇÕES EM LISTA NUMERADA.\nO objetivo é permitir que o cliente responda de forma rápida e simples (apenas digitando o número).\n\nEXEMPLO DE INTERAÇÃO OBRIGATÓRIA:\nCliente: \"Quero uma cotação\"\nVocê: \"Ótimo! Para qual tipo de seguro você deseja cotação?\n1. Automóvel 🚗\n2. Residencial 🏠\n3. Vida ❤️\n4. Empresarial 🏢\n5. Outros Assistências\"\n\nPRIORIZE SEMPRE esse formato de \"URA Inteligente/Menu\" em vez de perguntas abertas.\n\n=================================================================\n🌐 PORTAL DO CLIENTE - ACESSO SEGURO A DADOS\n=================================================================\nQualquer solicitação abaixo DEVE ser respondida com redirecionamento ao portal:\n- Documentos (PDFs de apólices, cartas verdes, 2ª via)\n- Dados detalhados além do resumo disponível no contexto\n- Alterações cadastrais\n\n✅ RESPOSTA PADRÃO para esses casos:\n\"Para acessar seus dados e documentos com segurança, acesse nosso portal:\n🔗 https://brokeria-api-brokeriaweb.cx0m9g.easypanel.host/login.html\n\nLá você encontra todas as suas informações e pode baixar seus documentos! 😊\"\n\nEXEMPLOS que devem ir ao portal:\n- \"Me envie a 2ª via da apólice\" → portal\n- \"Qual o endereço da minha apólice?\" → portal\n- \"Quero alterar meu cadastro\" → portal\n\nEXEMPLOS que NÃO vão ao portal (responda com o contexto):\n- \"Qual o número da minha apólice?\" → use resumo_apolices do contexto\n- \"Quando vence meu seguro?\" → use resumo_apolices do contexto\n- \"Qual a placa do meu carro segurado?\" → use resumo_apolices do contexto\n- Saudações e perguntas gerais → responda normalmente\n\n=================================================================\n📋 REGISTRO DE COTAÇÕES - REGRA OBRIGATÓRIA\n=================================================================\nQuando o cliente solicitar uma cotação E você já tiver: Nome, Email e Tipo de seguro:\n1. Chame IMEDIATAMENTE a ferramenta 'EspecialistaRegistroCotacao'\n2. Passe: nome, email, tipo_seguro, mensagem\n3. AGUARDE a confirmação da tool\n4. Só DEPOIS confirme: \"✅ Sua solicitação foi registrada! O corretor Washington entrará em contato em breve.\"\n\nNUNCA confirme sem a tool retornar sucesso.\n\n-----------------------------------------------------------------\n🔍 CONTEXTO DINÂMICO\n-----------------------------------------------------------------\n- Cliente: {{ $json.contexto.nome }}\n- CPF: {{ $json.contexto.cpf_exibicao }}\n- Telefone: {{ $json.contexto.telefone }}\n- Email Cadastrado: {{ $json.contexto.email_cadastrado }}\n\nREGRAS DE OURO:\n1. Sempre use o nome do cliente: {{ $json.contexto.nome }}.\n2. Se o cliente perguntar sobre seguros, ofereca uma cotacao.\n3. Se o cliente for do PORTAL (origem: {{ $json.origem }}), lembre-o que ele pode ver as apolices no menu lateral.\nCONTEXTO DO CLIENTE:\n- Nome: {{ $json.contexto.nome }}\n- Status: {{ $json.contexto.tipo_cliente }}\n- Seguros Ativos: {{ JSON.stringify($json.contexto.resumo_apolices) }}\nINSTRUCAO DE RESPOSTA:\nResponda de forma curta e objetiva. Nao invente informacoes. Se nao souber algo, diga que vai transferir para o corretor Washington.\n\n📱 CENÁRIO A: CLIENTE CADASTRADO\n- Saude pelo PRIMEIRO NOME: \"Olá, {{ $json.contexto.nome }}!\"\n- Dados básicos das apólices disponíveis no contexto abaixo\n- Para documentos/dados detalhados → portal\n- NÃO peça CPF se já estiver no contexto\n\n📱 CENÁRIO B: TELEFONE NÃO CADASTRADO (novo contato)\n- Use o nome do WhatsApp: \"Olá, {{ $json.contexto.nome }}!\"\n- Se mencionar que É cliente, peça CPF → use QueryPostgresClientes\n- Após encontrar: \"Perfeito! Localizei seu cadastro. Como posso ajudar?\"\n\n📱 CENÁRIO C: CLIENTE MENCIONA CPF ESPONTANEAMENTE\n- Use QueryPostgresClientes com { \"documento\": \"CPF_INFORMADO\" }\n- Se encontrar → trate como CENÁRIO A\n\n⚠️ SAUDAÇÃO: NUNCA diga \"Olá, Não Identificado!\" ou \"Olá, Cliente!\"\n\n📊 RESUMO DE APÓLICES (dados básicos disponíveis):\n{{ JSON.stringify($json.contexto.resumo_apolices) }}\n\n=================================================================\n📋 INFORMAÇÕES INSTITUCIONAIS\n=================================================================\nResponsável: Washington William de Oliveira | Susep: 10.2028529.9\nEmail: contato@dwfseguros.com.br\nWebsite: https://www.dwfseguros.com.br\nTIPOS DE SEGUROS: Automóvel, Residencial, Vida, Saúde, Previdência, Frota, Resp. Civil, Transportes, Garantia, etc.\n\n=================================================================\n🚫 LIMITES E LGPD\n=================================================================\n- COTAÇÕES: NUNCA forneça valores de prêmio. Diga: \"A cotação oficial será feita pelo corretor Washington\".\n- CPF/CNPJ: SEMPRE mascarado. Ex: ***.***.***-22\n- Para dados além do contexto → redirecione ao portal\n- Seja formal, consultivo e simpático. Saude sempre pelo primeiro nome.\n- NUNCA invente informações.",
+          "maxIterations": 10
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        38144,
+        17664
+      ],
+      "id": "34199f36-e239-4ec0-b4e7-9760a52db8b6",
+      "name": "BrokerIA_Master",
+      "executeOnce": false,
+      "alwaysOutputData": false,
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.contexto.tipo_cliente }}",
+                    "rightValue": "=NOVO",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "75010c00-aec1-42d3-ae87-3d67526f7c3b"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "d4159ee7-e43a-477d-90f3-a5e7ac29d9d5",
+                    "leftValue": "={{ $json.contexto.tipo_cliente }}",
+                    "rightValue": "=CADASTRADO",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        39680,
+        17232
+      ],
+      "id": "4b5c5aa5-c4f8-4c84-b3f7-7ab4d02947a6",
+      "name": "Check_Cliente_Novo"
+    },
+    {
+      "parameters": {
+        "jsCode": "// RECUPERA DADOS\nconst contexto = $json.contexto || {};\nconst pergunta = $json.pergunta_cliente || \"\";\nconst perguntaLower = pergunta.toLowerCase();\n\n// ==========================================\n// 1. RAMO DO SEGURO (Mapeamento Inteligente)\n// ==========================================\nlet ramoSeguro = \"OUTROS\";\nif (perguntaLower.match(/auto|carro|veic|moto|placa/)) ramoSeguro = \"AUTOMOVEL\";\nelse if (perguntaLower.match(/casa|resid|apart|lar|home/)) ramoSeguro = \"RESIDENCIAL\";\nelse if (perguntaLower.match(/vida|falec|morte|funeral/)) ramoSeguro = \"VIDA\";\nelse if (perguntaLower.match(/saude|mÃ©dic|plano|hospit/)) ramoSeguro = \"SAUDE\";\nelse if (perguntaLower.match(/empresa|pj|comercial/)) ramoSeguro = \"EMPRESARIAL\";\n\n// ==========================================\n// 2. NÃVEL 1 E NÃVEL 2 (ClassificaÃ§Ã£o)\n// ==========================================\nlet nivel1 = \"InformaÃ§Ãµes Gerais\";\nlet nivel2 = \"DÃºvidas gerais sobre seguros\";\nlet prioridade = \"MÃ©dia\";\n\n// LÃ³gica de ClassificaÃ§Ã£o HierÃ¡rquica\nif (perguntaLower.match(/cotaÃ§Ã£o|cotacao|quanto custa|valor|preÃ§o|contratar/)) {\n    nivel1 = \"Vendas e CotaÃ§Ãµes\";\n    nivel2 = \"CotaÃ§Ã£o de seguro novo\";\n    prioridade = \"Alta\";\n} else if (perguntaLower.match(/sinistro|bati|acidente|roubo|furto|colisÃ£o/)) {\n    nivel1 = \"Sinistros\";\n    nivel2 = \"Aviso de sinistro\";\n    prioridade = \"CrÃ­tica\";\n} else if (perguntaLower.match(/boleto|pagar|parcela|paguei|segunda via|2 via/)) {\n    nivel1 = \"Financeiro\";\n    nivel2 = \"Segunda via de boleto\";\n} else if (perguntaLower.match(/renovar|renovaÃ§Ã£o|vencimento|venceu/)) {\n    nivel1 = \"RenovaÃ§Ã£o\";\n    nivel2 = \"RenovaÃ§Ã£o automÃ¡tica\";\n    prioridade = \"Alta\";\n} else if (perguntaLower.match(/cancelar|cancelamento|desistir/)) {\n    nivel1 = \"Cancelamento\";\n    nivel2 = \"Cancelamento a pedido do cliente\";\n    prioridade = \"Alta\";\n} else if (perguntaLower.match(/apolice|apÃ³lice|documento|certificado|carta/)) {\n    nivel1 = \"Documentos\";\n    nivel2 = \"Segunda via de apÃ³lice\";\n} else if (perguntaLower.match(/mudei|endereÃ§o|troquei|dados|alterar/)) {\n    nivel1 = \"AlteraÃ§Ãµes de ApÃ³lice (Endossos)\";\n    nivel2 = \"AtualizaÃ§Ã£o de dados cadastrais\";\n}\n\n// ==========================================\n// 3. RETORNO FORMATADO PARA O POSTGRES\n// ==========================================\nreturn {\n    json: {\n        telefone: (contexto.telefone || \"\").replace(/\\D/g, ''),\n        nome_whatsapp: (contexto.nome || \"Cliente\"),\n        mensagem_inicial: pergunta,\n        \n        // PadronizaÃ§Ã£o solicitada\n        tipo_solicitacao: nivel1,          // NÃ­vel 1\n        subtipo_solicitacao: nivel2,       // NÃ­vel 2\n        tipo_seguro: ramoSeguro,           // Ramo\n        prioridade: prioridade,            // Prioridade\n        tipo_cliente: contexto.cadastrado ? \"Cliente existente\" : \"NÃ£o cliente\",\n        \n        status_atendimento: \"PENDENTE\",\n        origem: \"WHATSAPP\",\n        data_contato: new Date()\n    }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        39808,
+        17072
+      ],
+      "id": "882b6654-9481-4290-8384-76d3229848c6",
+      "name": "Preparar_Registro_Cliente"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n    id_atendimento,\n    telefone_whatsapp,\n    nome_cliente,\n    resumo_conversa,\n    assunto_principal,\n    status_atendimento,\n    qtde_mensagens,\n    data_atendimento\nFROM public.brokeria_registros_brokeria\nWHERE telefone_whatsapp = '{{ $json.telefone }}'\n  AND data_atendimento > NOW() - INTERVAL '24 hours'\nORDER BY data_atendimento DESC\nLIMIT 1;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        40016,
+        17072
+      ],
+      "id": "ae320b07-4c2a-4d20-9632-19a00bd2de99",
+      "name": "Verificar_Registro_Existente",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "xV5DoCDtV27fCFr5",
+          "name": "brokeria_db"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.id_atendimento ? String($json.id_atendimento) : '' }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "empty",
+                      "singleValue": true
+                    },
+                    "id": "f21a439a-8d76-455e-8135-20ce8961a9cd"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "32739ffd-b920-42b7-91e3-cc77369defd7",
+                    "leftValue": "={{ $json.id_atendimento ? String($json.id_atendimento) : '' }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        40224,
+        17072
+      ],
+      "id": "8288b0da-2362-463a-a0d2-a6ebb1c31b7b",
+      "name": "Switch_Registro_Existe"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO public.brokeria_registros_brokeria (\n    telefone_whatsapp,\n    nome_cliente,\n    resumo_conversa,    -- Ajustado para o padrÃ£o do Dashboard\n    assunto_principal,\n    canal,\n    status_atendimento,\n    qtde_mensagens,\n    recebeu_arquivos,\n    tipos_documentos,\n    etapa_funil,\n    data_atendimento,\n    hora_inicio\n) VALUES (\n    '{{ $(\"Preparar_Registro_Cliente\").first().json.telefone }}',\n    '{{ $(\"Preparar_Registro_Cliente\").first().json.nome_whatsapp }}',\n    -- Inicia o log jÃ¡ formatado\n    E'[' || TO_CHAR(NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo', 'HH24:MI, DD/MM/YYYY') || E'] ' || '{{ $(\"Preparar_Registro_Cliente\").first().json.nome_whatsapp }}' || E': ' || '{{ $(\"Preparar_Registro_Cliente\").first().json.mensagem_inicial.replace(/'/g, \"''\") }}' || E'\\n',\n    '{{ $(\"Preparar_Registro_Cliente\").first().json.tipo_solicitacao }}',\n    'WHATSAPP',\n    'PENDENTE',\n    1,\n    {{ $(\"Preparar_Registro_Cliente\").first().json.recebeu_arquivos || false }},\n    '{{ $(\"Preparar_Registro_Cliente\").first().json.tipos_documentos || \"\" }}',\n    'PRIMEIRO_CONTATO',\n    NOW(),\n    NOW()\n)\nRETURNING *;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        40432,
+        16880
+      ],
+      "id": "d2be1ef2-ce8d-46b4-91fb-9d4f636f6bc3",
+      "name": "Inserir_Novo_Registro",
+      "credentials": {
+        "postgres": {
+          "id": "xV5DoCDtV27fCFr5",
+          "name": "brokeria_db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE public.brokeria_registros_brokeria\nSET \n    -- Adiciona a nova mensagem do cliente mantendo o formato [HH:MM]\n    resumo_conversa = resumo_conversa || \n        E'\\n' ||\n        E'[' || TO_CHAR(NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo', 'HH24:MI, DD/MM/YYYY') || E'] ' || '{{ $(\"Preparar_Registro_Cliente\").first().json.nome_whatsapp }}' || E': ' || '{{ $(\"Preparar_Registro_Cliente\").first().json.mensagem_inicial.replace(/'/g, \"''\") }}' || E'\\n',\n    assunto_principal = '{{ $(\"Preparar_Registro_Cliente\").first().json.tipo_solicitacao }}',\n    qtde_mensagens = COALESCE(qtde_mensagens, 0) + 1,\n    data_ultima_atualizacao = NOW()\nWHERE id_atendimento = {{ $json.id_atendimento }}\nRETURNING *;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        40448,
+        17088
+      ],
+      "id": "e1058ee3-b0de-41f0-a288-3b0a9611140a",
+      "name": "Atualizar_Registro_Existente",
+      "credentials": {
+        "postgres": {
+          "id": "xV5DoCDtV27fCFr5",
+          "name": "brokeria_db"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "alwaysOutputData": true,
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        40704,
+        17200
+      ],
+      "id": "be382862-c1b2-4c26-8eef-a9a4fa000903",
+      "name": "Merge_Registro"
+    },
+    {
+      "parameters": {
+        "description": "Use esta ferramenta OBRIGATORIAMENTE quando o cliente solicitar uma cotaÃ§Ã£o de seguro E fornecer nome e-mail e tipo de seguro. Esta tool registra a solicitaÃ§Ã£o no sistema para que o corretor Washington entre em contato. IMPORTANTE: SÃ³ chame esta tool APOS coletar nome e-mail e tipo de seguro do cliente.",
+        "workflowId": {
+          "__rl": true,
+          "value": "jzIUf4Qlnf2bunJx599mp",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/jzIUf4Qlnf2bunJx599mp",
+          "cachedResultName": "EspecialistaRegistroCotacao"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "telefone": "={{ $('NormalizarEntrada').first().json.contexto.telefone }}",
+            "nome": "={{ $json.nome || $('NormalizarEntrada').first().json.contexto.nome }}",
+            "email": "={{ $json.email }}",
+            "tipo_seguro": "={{ $json.tipo_seguro }}",
+            "mensagem": "={{ $('NormalizarEntrada').first().json.pergunta_cliente || $json.mensagem || 'SolicitaÃ§Ã£o de cotaÃ§Ã£o via WhatsApp' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "telefone",
+              "displayName": "telefone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "nome",
+              "displayName": "nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "tipo_seguro",
+              "displayName": "tipo_seguro",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "mensagem",
+              "displayName": "mensagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        38512,
+        18192
+      ],
+      "id": "ac3d2e8a-d039-4ad6-8991-5978b4ed2543",
+      "name": "EspecialistaRegistroCotacao"
+    },
+    {
+      "parameters": {
+        "jsCode": "// RECUPERA DADOS (Tenta buscar de vÃ¡rias fontes comuns no seu fluxo)\nconst contexto = $json.contexto || {};\nconst inputUser = contexto.input_user || $json.pergunta_cliente || \"\";\nconst perguntaLower = inputUser.toLowerCase();\n\n// ==========================================\n// 1. RAMO DO SEGURO (Mapeamento Inteligente)\n// ==========================================\n// Para clientes existentes, se jÃ¡ tivermos o ramo no contexto, usamos ele.\nlet ramoSeguro = contexto.ramo_seguro || \"OUTROS\";\n\nif (ramoSeguro === \"OUTROS\") {\n    if (perguntaLower.match(/auto|carro|veic|moto|placa/)) ramoSeguro = \"AUTOMOVEL\";\n    else if (perguntaLower.match(/casa|resid|apart|lar|home/)) ramoSeguro = \"RESIDENCIAL\";\n    else if (perguntaLower.match(/vida|falec|morte|funeral/)) ramoSeguro = \"VIDA\";\n    else if (perguntaLower.match(/saude|mÃ©dic|plano|hospit/)) ramoSeguro = \"SAUDE\";\n    else if (perguntaLower.match(/empresa|pj|comercial/)) ramoSeguro = \"EMPRESARIAL\";\n}\n\n// ==========================================\n// 2. NÃVEL 1 E NÃVEL 2 (ClassificaÃ§Ã£o de Chamado)\n// ==========================================\nlet nivel1 = \"InformaÃ§Ãµes Gerais\";\nlet nivel2 = \"DÃºvidas gerais sobre seguros\";\nlet prioridade = \"MÃ©dia\";\n\n// LÃ³gica para Clientes Existentes (Foco em PÃ³s-Venda/ServiÃ§o)\nif (perguntaLower.match(/sinistro|bati|acidente|roubo|furto|colisÃ£o/)) {\n    nivel1 = \"Sinistros\";\n    nivel2 = \"Aviso de sinistro\";\n    prioridade = \"CrÃ­tica\";\n} else if (perguntaLower.match(/boleto|pagar|parcela|paguei|segunda via|2 via/)) {\n    nivel1 = \"Financeiro\";\n    nivel2 = \"Segunda via de boleto\";\n} else if (perguntaLower.match(/renovar|renovaÃ§Ã£o|vencimento|venceu/)) {\n    nivel1 = \"RenovaÃ§Ã£o\";\n    nivel2 = \"RevisÃ£o de valor\";\n    prioridade = \"Alta\";\n} else if (perguntaLower.match(/apolice|apÃ³lice|documento|certificado|carta/)) {\n    nivel1 = \"Documentos\";\n    nivel2 = \"Segunda via de apÃ³lice\";\n} else if (perguntaLower.match(/mudei|endereÃ§o|troquei|dados|alterar/)) {\n    nivel1 = \"AlteraÃ§Ãµes de ApÃ³lice (Endossos)\";\n    nivel2 = \"AtualizaÃ§Ã£o de dados cadastrais\";\n} else if (perguntaLower.match(/cancelar|cancelamento|desistir/)) {\n    nivel1 = \"Cancelamento\";\n    nivel2 = \"Cancelamento a pedido do cliente\";\n    prioridade = \"Alta\";\n} else if (perguntaLower.match(/reclamaÃ§Ã£o|ruim|errado|elogio|queixa/)) {\n    nivel1 = \"PÃ³s-venda e Relacionamento\";\n    nivel2 = \"ReclamaÃ§Ã£o geral\";\n} else if (perguntaLower.match(/cotaÃ§Ã£o|cotacao|seguro novo|outro carro/)) {\n    nivel1 = \"Vendas e CotaÃ§Ãµes\";\n    nivel2 = \"CotaÃ§Ã£o de seguro novo\";\n    prioridade = \"Alta\";\n}\n\n// ==========================================\n// 3. RETORNO PARA O REGISTRO (Com \"Spread\" para manter dados da IA)\n// ==========================================\nreturn {\n    json: {\n        ...$json, // ðŸ‘ˆ ISSO Ã‰ VITAL: MantÃ©m a resposta da IA (output) vinda do FunilRespostas\n        \n        // Seus novos campos padronizados\n        tipo_solicitacao: nivel1,\n        subtipo_solicitacao: nivel2,\n        tipo_seguro: ramoSeguro,\n        prioridade: prioridade,\n        tipo_cliente: \"Cliente existente\",\n        \n        // Dados do Cliente\n        telefone: (contexto.telefone || \"\").replace(/\\D/g, ''),\n        nome_whatsapp: (contexto.nome || \"Cliente\")\n    }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        39072,
+        17440
+      ],
+      "id": "45994e6f-fe7b-4834-bc00-d16d0996e6ce",
+      "name": "Preparar_Registro_Cliente_Existente"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Captura o input do nÃ³ anterior\nconst input = $input.first().json;\n\n// Se o webhook agora envia apenas o body, o 'input' jÃ¡ Ã© o conteÃºdo direto\nconst data = input;\n\nlet perguntaFinal = data.pergunta_cliente || data.pergunta || \"OlÃ¡\";\nlet contextoFinal = data.contexto || {};\n\n// IdentificaÃ§Ã£o robusta: Se tiver 'action' ou 'token' e nÃ£o tiver 'contexto' estruturado, tratamos como Portal Web Inicial\nconst isPortalWebInicial = (data.action || data.token) && (!data.contexto || Object.keys(data.contexto).length === 0);\n\nif (isPortalWebInicial) {\n    const rawIdentifier = data.cpf || data.identifier || data.cpf_cnpj || \"\";\n    const cpfLimpo = rawIdentifier.toString().replace(/\\D/g, '');\n\n    contextoFinal = {\n        nome: data.client_name || data.nome || \"Visitante Web\",\n        email_cadastrado: data.target || data.email || null,\n        cpf_real: cpfLimpo || null, \n        origem: \"PORTAL_WEB\",\n        token_portal: data.token || null, \n        action: data.action || null,\n        tipo_cliente: \"CADASTRADO\",\n        token_validado: \"NÃƒO\"\n    };\n\n    if (data.action === \"SEND_2FA_TOKEN\") {\n        if (!contextoFinal.cpf_real) {\n            perguntaFinal = `[PROTOCOLO DE SEGURANÃ‡A]: O cliente ${contextoFinal.nome} deseja receber seu cÃ³digo no e-mail ${contextoFinal.email_cadastrado}.\\n\\n### ATENÃ‡ÃƒO AGENTE ###\\nO CPF nÃ£o foi enviado pelo portal. VocÃª Ã© OBRIGADO a seguir estes passos:\\n1. Use a tool 'Validador_Cliente_Brokeria' passando o e-mail '${contextoFinal.email_cadastrado}' no campo 'documento'.\\n2. Identifique o CPF retornado pelo banco.\\n3. Agora sim, chame 'AgentEnviaToken' informando o E-mail, o CPF localizado e o Token: ${contextoFinal.token_portal}.`;\n        } else {\n            perguntaFinal = `[PROTOCOLO DE SEGURANÃ‡A]: O cliente ${contextoFinal.nome} deseja receber seu cÃ³digo de acesso.\\n- E-mail: ${contextoFinal.email_cadastrado}\\n- CPF: ${contextoFinal.cpf_real}\\n- CÃ³digo (Token): ${contextoFinal.token_portal}\\n\\nChame a ferramenta AgentEnviaToken IMEDIATAMENTE.`;\n        }\n    } else {\n        contextoFinal.token_validado = \"SIM\";\n    }\n} else {\n    // Fluxo normal (WhatsApp ou Contexto jÃ¡ pronto)\n    contextoFinal.token_validado = contextoFinal.token_validado || \"NÃƒO\";\n}\n\nlet telefoneDb = contextoFinal.telefone || data.telefone || \"VISITANTE_WEB\";\nif (contextoFinal.cpf_real) {\n    telefoneDb = \"WEB_\" + contextoFinal.cpf_real;\n}\n\ncontextoFinal.tipo_cliente = contextoFinal.tipo_cliente || \"CADASTRADO\";\n// CERTO (Ajustado)\n// Se nÃ£o for Portal Web Inicial, e nÃ£o tiver origem, assume WHATSAPP\ncontextoFinal.origem = contextoFinal.origem || \"WHATSAPP\"; \nreturn [{\n    json: {\n        pergunta_cliente: perguntaFinal,\n        contexto: contextoFinal,\n        telefone: telefoneDb,\n        nome_whatsapp: contextoFinal.nome || \"Visitante Web\",\n        origem: contextoFinal.origem // Preserve o valor definido acima\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        39504,
+        17232
+      ],
+      "id": "86213b53-e6e2-4566-9fa1-0b8159ae9619",
+      "name": "NormalizarEntrada"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =========================================================\n// 1. CAPTURA DE DADOS (Diferencia Portal Web de WhatsApp)\n// =========================================================\nconst inputData = $input.first().json;\nlet contexto = inputData.contexto || {};\nlet perguntaCliente = \"\";\n\n// PRIORIDADE TOTAL: Busca a pergunta que ja processamos no contexto\ntry {\n    const nodeContexto = $(\"DefinirContextoAI\").first().json;\n    contexto = nodeContexto.contexto || {};\n    perguntaCliente = nodeContexto.pergunta_cliente || \"\";\n} catch(e) {\n    // Se falhar o contexto, tenta o input direto\n    perguntaCliente = inputData.pergunta_cliente || inputData.pergunta || \"\";\n}\n\n// =========================================================\n// 2. RECUPERACAO DE LOGS \n// =========================================================\nlet dadosRegistro = {};\ntry {\n    const mergeNode = $(\"Merge_Registro\").first().json;\n    dadosRegistro = mergeNode || {};\n} catch(e) {}\n\n// =========================================================\n// 3. FALLBACK DE SEGURANÇA\n// =========================================================\n// Se mesmo assim estiver vazio, tenta pegar do registro\nif (!perguntaCliente && dadosRegistro.resumo_conversa) {\n    const mensagens = dadosRegistro.resumo_conversa.split('---');\n    perguntaCliente = mensagens[mensagens.length - 1].trim();\n}\n\n// Se AINDA estiver vazio, ai sim mandamos um Ola\nif (!perguntaCliente || perguntaCliente === \"Olá\" || perguntaCliente === \"Ola\") {\n    perguntaCliente = \"Ola\";\n}\n\n// =========================================================\n// 4. RETORNO FINAL\n// =========================================================\nreturn {\n    json: {\n        pergunta_cliente: perguntaCliente,\n        contexto: contexto,\n        id_atendimento: dadosRegistro.id_atendimento || null,\n        origem_tecnica: contexto.origem || \"WHATSAPP\"\n    }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        37952,
+        17520
+      ],
+      "id": "0d5734e2-79d1-468d-b1ce-ca54ff231579",
+      "name": "Preparar_Input_Agent"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "==buffer:{{ $('CheckOrigem').first().json.wa.chatId }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        37568,
+        17264
+      ],
+      "id": "99e848ff-3b33-47c1-b680-de25c3876577",
+      "name": "Limpar_Buffer_Pos_Execucao",
+      "credentials": {
+        "redis": {
+          "id": "bTJkLNg8xtKhZJgL",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "portal-web-chat",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        36096,
+        17072
+      ],
+      "id": "6a096553-fb66-4da0-b60c-fe018b9044bb",
+      "name": "WebhookPortal",
+      "webhookId": "portal-web-chat"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $('CheckOrigem').first().json.wa.provider === 'portal' ? 'PORTAL' : 'WHATSAPP' }}",
+              "rightValue": "PORTAL",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        38656,
+        17792
+      ],
+      "id": "b30e289e-0796-440a-b1f4-e1f28fd46040",
+      "name": "IF_Portal_Origem"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.wa.provider }}",
+                    "rightValue": "waha",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "provider-waha"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "provider-portal",
+                    "leftValue": "={{ $json.wa.provider }}",
+                    "rightValue": "portal",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        36704,
+        16688
+      ],
+      "id": "cb4038b2-0013-4c1b-9468-b34fe6f37146",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\n// 1. Detecta Origem (WhatsApp vs Portal)\nconst isWhatsApp = !!input.event || !!input.wa_id;\nconst isPortal = input.origem === 'PORTAL_WEB' || !!input.cpf || !!input.identifier;\n\nif (isWhatsApp && !isPortal) {\n    return {\n        wa: {\n            provider: \"waha\",\n            session: input.session || \"default\",\n            messageId: input.payload_id || \"wa_\" + Date.now(),\n            chatId: input.from || input.wa_id,\n            authenticated: false,\n            text: input.user_text || input.message || \"\"\n        },\n        ...input\n    };\n}\n\n// 2. Trata como Portal\nreturn {\n    wa: {\n        provider: \"portal\",\n        session: input.session_id || (input.identifier || input.cpf || \"portal_user\") + \"_v2\",\n        messageId: \"web_\" + Date.now(),\n        chatId: input.chat_id || input.identifier || input.cpf || \"portal_user\",\n        authenticated: !!input.authenticated,\n        text: input.message || input.pergunta_cliente || input.user_text || \"\"\n    },\n    ...input\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        36528,
+        16912
+      ],
+      "id": "26a89c44-334a-4d8e-9e14-21c71851e7e6",
+      "name": "NormalizeInbound"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Recupere a resposta da IA e formate para o portal\nconst aiOutput = $json.output || $json.text || \"\";\nconst context = ($('DefinirContextoAI').first().json.contexto) || {};\n\nreturn {\n    response: aiOutput,\n    client_name: context.nome || \"Cliente\"\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        39072,
+        17952
+      ],
+      "id": "ad2f96ea-058b-41e5-aae9-07c1248e8f95",
+      "name": "FormatarRespostaPortal1"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "numberInputs": 3,
+        "options": {
+          "includeUnpaired": true
+        }
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        37584,
+        16928
+      ],
+      "id": "c298972d-4ac9-4864-a08e-d5a68e04cc5e",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "let redisData = {};\ntry {\n    redisData = JSON.parse($json.Redis_Check_Final || \"{}\");\n} catch(e) { redisData = {}; }\n\nconst ultimaExecId = String(redisData.minha_execucao || \"\").trim();\nconst idExecAtual = String($execution.id).trim();\n\nif (idExecAtual === ultimaExecId) {\n    const wa = $json.wa || {};\n    return {\n        ...$json, \n        ...redisData, \n        pergunta_cliente: redisData.texto_combinado || wa.text || $json.pergunta_cliente || \"\"\n    };\n} else {\n    return null; \n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        37360,
+        17184
+      ],
+      "id": "62031c32-7ecc-418d-8f4b-ced207a1ca51",
+      "name": "Filtro_Ultima_Execucao"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dados": {
+      "main": [
+        [
+          {
+            "node": "NormalizeInbound",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Seen": {
+      "main": [
+        [
+          {
+            "node": "Start Typing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Typing": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "FiltrarResposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar WAHA Direto": {
+      "main": [
+        [
+          {
+            "node": "Limpar Telefone",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limpar Telefone": {
+      "main": [
+        [
+          {
+            "node": "FinalizeChatId",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca_Cliente": {
+      "main": [
+        [
+          {
+            "node": "Buscar_Sessao_Existente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agrupar_Texto": {
+      "main": [
+        [
+          {
+            "node": "Atualizar_Buffer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualizar_Buffer": {
+      "main": [
+        [
+          {
+            "node": "Espera_3_Segundos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Espera_3_Segundos": {
+      "main": [
+        [
+          {
+            "node": "Check_Pos_Espera",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check_Pos_Espera": {
+      "main": [
+        [
+          {
+            "node": "Filtro_Ultima_Execucao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recuperar_Buffer": {
+      "main": [
+        [
+          {
+            "node": "Agrupar_Texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckOrigem": {
+      "main": [
+        [
+          {
+            "node": "Recuperar_Buffer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SwitchOrigem": {
+      "main": [
+        [
+          {
+            "node": "Busca_Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Busca_Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Busca_Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar_Sessao_Existente": {
+      "main": [
+        [
+          {
+            "node": "SwitchMidia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SwitchMidia": {
+      "main": [
+        [
+          {
+            "node": "DownloadMidia",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ImageDownload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ConsolidarMensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DownloadMidia": {
+      "main": [
+        [
+          {
+            "node": "IA_Processar_Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ImageDownload": {
+      "main": [
+        [
+          {
+            "node": "IA_Processar_Imagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DefinirContextoAI": {
+      "main": [
+        [
+          {
+            "node": "NormalizarEntrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IA_Processar_Audio": {
+      "main": [
+        [
+          {
+            "node": "ConsolidarMensagem",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ConsolidarMensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IA_Processar_Imagem": {
+      "main": [
+        [
+          {
+            "node": "ConsolidarMensagem",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ConsolidarMensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ConsolidarMensagem": {
+      "main": [
+        [
+          {
+            "node": "TratamentoErroMidia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TratamentoErroMidia": {
+      "main": [
+        [],
+        [
+          {
+            "node": "DefinirContextoAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "BrokerIA_Master",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostgresChatMemory": {
+      "ai_memory": [
+        [
+          {
+            "node": "BrokerIA_Master",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QueryPostgresClientes": {
+      "ai_tool": [
+        [
+          {
+            "node": "BrokerIA_Master",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Padronizar Output": {
+      "main": [
+        [
+          {
+            "node": "Send Seen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FunilRespostas": {
+      "main": [
+        [
+          {
+            "node": "IF_Portal_Origem",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Preparar_Registro_Cliente_Existente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FiltrarResposta": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BrokerIA_Master": {
+      "main": [
+        [
+          {
+            "node": "FunilRespostas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check_Cliente_Novo": {
+      "main": [
+        [
+          {
+            "node": "Preparar_Registro_Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge_Registro",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Preparar_Registro_Cliente": {
+      "main": [
+        [
+          {
+            "node": "Verificar_Registro_Existente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar_Registro_Existente": {
+      "main": [
+        [
+          {
+            "node": "Switch_Registro_Existe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch_Registro_Existe": {
+      "main": [
+        [
+          {
+            "node": "Inserir_Novo_Registro",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Atualizar_Registro_Existente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inserir_Novo_Registro": {
+      "main": [
+        [
+          {
+            "node": "Merge_Registro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualizar_Registro_Existente": {
+      "main": [
+        [
+          {
+            "node": "Merge_Registro",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge_Registro": {
+      "main": [
+        [
+          {
+            "node": "Preparar_Input_Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EspecialistaRegistroCotacao": {
+      "ai_tool": [
+        [
+          {
+            "node": "BrokerIA_Master",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar_Registro_Cliente_Existente": {
+      "main": [
+        [
+          {
+            "node": "Registrar_Interacao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NormalizarEntrada": {
+      "main": [
+        [
+          {
+            "node": "Check_Cliente_Novo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FinalizeChatId": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar_Input_Agent": {
+      "main": [
+        [
+          {
+            "node": "BrokerIA_Master",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limpar_Buffer_Pos_Execucao": {
+      "main": [
+        [
+          {
+            "node": "SwitchOrigem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WebhookPortal": {
+      "main": [
+        [
+          {
+            "node": "NormalizeInbound",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF_Portal_Origem": {
+      "main": [
+        [
+          {
+            "node": "FormatarRespostaPortal1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Padronizar Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Consultar WAHA Direto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "NormalizeInbound": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "CheckOrigem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtro_Ultima_Execucao": {
+      "main": [
+        [
+          {
+            "node": "Limpar_Buffer_Pos_Execucao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "28a0fc16-20ec-4713-a13b-d416d0707114",
+  "meta": {
+    "instanceId": "6d0cb3eea1c119e43144d997ea344d5015b9ba9f4a6acb5364cecf80271874e3"
+  },
+  "id": "eckFy5TBoHkMnah_qyEo7",
+  "tags": []
+}
