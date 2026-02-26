@@ -1,7 +1,7 @@
 const db = require('../db');
 
 /**
- * Controller de Apólices - Versão 1.2.0 (PRODUÇÃO - MULTI-V10)
+ * Controller de Apólices - Versão 1.6.5 (PRODUÇÃO - MULTI-V10)
  * Conectado ao banco 'apolices-brokeria' conforme ambiente de produção.
  */
 const policyController = {
