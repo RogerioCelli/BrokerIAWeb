@@ -1084,7 +1084,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// RECUPERA DADOS\nconst contexto = $json.contexto || {};\nconst pergunta = $json.pergunta_cliente || \"\";\nconst perguntaLower = pergunta.toLowerCase();\n\n// ==========================================\n// 1. RAMO DO SEGURO (Mapeamento Inteligente)\n// ==========================================\nlet ramoSeguro = \"OUTROS\";\nif (perguntaLower.match(/auto|carro|veic|moto|placa/)) ramoSeguro = \"AUTOMOVEL\";\nelse if (perguntaLower.match(/casa|resid|apart|lar|home/)) ramoSeguro = \"RESIDENCIAL\";\nelse if (perguntaLower.match(/vida|falec|morte|funeral/)) ramoSeguro = \"VIDA\";\nelse if (perguntaLower.match(/saude|mÃ©dic|plano|hospit/)) ramoSeguro = \"SAUDE\";\nelse if (perguntaLower.match(/empresa|pj|comercial/)) ramoSeguro = \"EMPRESARIAL\";\n\n// ==========================================\n// 2. NÃVEL 1 E NÃVEL 2 (ClassificaÃ§Ã£o)\n// ==========================================\nlet nivel1 = \"InformaÃ§Ãµes Gerais\";\nlet nivel2 = \"DÃºvidas gerais sobre seguros\";\nlet prioridade = \"MÃ©dia\";\n\n// LÃ³gica de ClassificaÃ§Ã£o HierÃ¡rquica\nif (perguntaLower.match(/cotaÃ§Ã£o|cotacao|quanto custa|valor|preÃ§o|contratar/)) {\n    nivel1 = \"Vendas e CotaÃ§Ãµes\";\n    nivel2 = \"CotaÃ§Ã£o de seguro novo\";\n    prioridade = \"Alta\";\n} else if (perguntaLower.match(/sinistro|bati|acidente|roubo|furto|colisÃ£o/)) {\n    nivel1 = \"Sinistros\";\n    nivel2 = \"Aviso de sinistro\";\n    prioridade = \"CrÃ­tica\";\n} else if (perguntaLower.match(/boleto|pagar|parcela|paguei|segunda via|2 via/)) {\n    nivel1 = \"Financeiro\";\n    nivel2 = \"Segunda via de boleto\";\n} else if (perguntaLower.match(/renovar|renovaÃ§Ã£o|vencimento|venceu/)) {\n    nivel1 = \"RenovaÃ§Ã£o\";\n    nivel2 = \"RenovaÃ§Ã£o automÃ¡tica\";\n    prioridade = \"Alta\";\n} else if (perguntaLower.match(/cancelar|cancelamento|desistir/)) {\n    nivel1 = \"Cancelamento\";\n    nivel2 = \"Cancelamento a pedido do cliente\";\n    prioridade = \"Alta\";\n} else if (perguntaLower.match(/apolice|apÃ³lice|documento|certificado|carta/)) {\n    nivel1 = \"Documentos\";\n    nivel2 = \"Segunda via de apÃ³lice\";\n} else if (perguntaLower.match(/mudei|endereÃ§o|troquei|dados|alterar/)) {\n    nivel1 = \"AlteraÃ§Ãµes de ApÃ³lice (Endossos)\";\n    nivel2 = \"AtualizaÃ§Ã£o de dados cadastrais\";\n}\n\n// ==========================================\n// 3. RETORNO FORMATADO PARA O POSTGRES\n// ==========================================\nreturn {\n    json: {\n        telefone: (contexto.telefone || \"\").replace(/\\D/g, ''),\n        nome_whatsapp: (contexto.nome || \"Cliente\"),\n        mensagem_inicial: pergunta,\n        \n        // PadronizaÃ§Ã£o solicitada\n        tipo_solicitacao: nivel1,          // NÃ­vel 1\n        subtipo_solicitacao: nivel2,       // NÃ­vel 2\n        tipo_seguro: ramoSeguro,           // Ramo\n        prioridade: prioridade,            // Prioridade\n        tipo_cliente: contexto.cadastrado ? \"Cliente existente\" : \"NÃ£o cliente\",\n        \n        status_atendimento: \"PENDENTE\",\n        origem: \"WHATSAPP\",\n        data_contato: new Date()\n    }\n};"
+        "jsCode": "// RECUPERA DADOS\nconst contexto = $json.contexto || {};\nconst pergunta = $json.pergunta_cliente || \"\";\nconst perguntaLower = pergunta.toLowerCase();\n\n// ==========================================\n// 1. RAMO DO SEGURO (Mapeamento Inteligente)\n// ==========================================\nlet ramoSeguro = \"OUTROS\";\nif (perguntaLower.match(/auto|carro|veic|moto|placa/)) ramoSeguro = \"AUTOMOVEL\";\nelse if (perguntaLower.match(/casa|resid|apart|lar|home/)) ramoSeguro = \"RESIDENCIAL\";\nelse if (perguntaLower.match(/vida|falec|morte|funeral/)) ramoSeguro = \"VIDA\";\nelse if (perguntaLower.match(/saude|mÃ©dic|plano|hospit/)) ramoSeguro = \"SAUDE\";\nelse if (perguntaLower.match(/empresa|pj|comercial/)) ramoSeguro = \"EMPRESARIAL\";\n\n// ==========================================\n// 2. NÃ VEL 1 E NÃ VEL 2 (ClassificaÃ§Ã£o)\n// ==========================================\nlet nivel1 = \"InformaÃ§Ãµes Gerais\";\nlet nivel2 = \"DÃºvidas gerais sobre seguros\";\nlet prioridade = \"MÃ©dia\";\n\n// LÃ³gica de ClassificaÃ§Ã£o HierÃ¡rquica\nif (perguntaLower.match(/cotaÃ§Ã£o|cotacao|quanto custa|valor|preÃ§o|contratar/)) {\n    nivel1 = \"Vendas e CotaÃ§Ãµes\";\n    nivel2 = \"CotaÃ§Ã£o de seguro novo\";\n    prioridade = \"Alta\";\n} else if (perguntaLower.match(/sinistro|bati|acidente|roubo|furto|colisÃ£o/)) {\n    nivel1 = \"Sinistros\";\n    nivel2 = \"Aviso de sinistro\";\n    prioridade = \"CrÃ­tica\";\n} else if (perguntaLower.match(/boleto|pagar|parcela|paguei|segunda via|2 via/)) {\n    nivel1 = \"Financeiro\";\n    nivel2 = \"Segunda via de boleto\";\n} else if (perguntaLower.match(/renovar|renovaÃ§Ã£o|vencimento|venceu/)) {\n    nivel1 = \"RenovaÃ§Ã£o\";\n    nivel2 = \"RenovaÃ§Ã£o automÃ¡tica\";\n    prioridade = \"Alta\";\n} else if (perguntaLower.match(/cancelar|cancelamento|desistir/)) {\n    nivel1 = \"Cancelamento\";\n    nivel2 = \"Cancelamento a pedido do cliente\";\n    prioridade = \"Alta\";\n} else if (perguntaLower.match(/apolice|apÃ³lice|documento|certificado|carta/)) {\n    nivel1 = \"Documentos\";\n    nivel2 = \"Segunda via de apÃ³lice\";\n} else if (perguntaLower.match(/mudei|endereÃ§o|troquei|dados|alterar/)) {\n    nivel1 = \"AlteraÃ§Ãµes de ApÃ³lice (Endossos)\";\n    nivel2 = \"AtualizaÃ§Ã£o de dados cadastrais\";\n}\n\n// ==========================================\n// 3. RETORNO FORMATADO PARA O POSTGRES\n// ==========================================\nconst wa = $json.wa || {};\nconst origemFinal = wa.provider === 'portal' ? 'PORTAL' : 'WHATSAPP';\n\nreturn {\n    json: {\n        telefone: (contexto.telefone || \"\").replace(/\\D/g, ''),\n        nome_whatsapp: (contexto.nome || \"Cliente\"),\n        mensagem_inicial: pergunta,\n        \n        // PadronizaÃ§Ã£o solicitada\n        tipo_solicitacao: nivel1,          // NÃ­vel 1\n        subtipo_solicitacao: nivel2,       // NÃ­vel 2\n        tipo_seguro: ramoSeguro,           // Ramo\n        prioridade: prioridade,            // Prioridade\n        tipo_cliente: contexto.cadastrado ? \"Cliente existente\" : \"NÃ£o cliente\",\n        \n        status_atendimento: \"PENDENTE\",\n        origem: origemFinal,\n        data_contato: new Date()\n    }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1226,11 +1226,10 @@
     },
     {
       "parameters": {
-        "numberInputs": 3
+        "jsCode": "// Consolida inputs de inserção/atualização de registro\nconst allInputs = $input.all();\nlet output = {};\n\nallInputs.forEach(item => {\n    if (item.json) {\n        output = { ...output, ...item.json };\n    }\n});\n\nreturn output;"
       },
-      "alwaysOutputData": true,
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3.2,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         40704,
         17200
@@ -1365,7 +1364,7 @@
     {
       "parameters": {
         "operation": "delete",
-        "key": "==buffer:{{ $('CheckOrigem').first().json.wa.chatId }}"
+        "key": "==buffer:{{ $json.wa ? $json.wa.chatId : 'portal_chat' }}"
       },
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -1410,7 +1409,7 @@
           },
           "conditions": [
             {
-              "leftValue": "={{ $('CheckOrigem').first().json.wa.provider === 'portal' ? 'PORTAL' : 'WHATSAPP' }}",
+              "leftValue": "={{ ($json.wa && $json.wa.provider === 'portal') ? 'PORTAL' : 'WHATSAPP' }}",
               "rightValue": "PORTAL",
               "operator": {
                 "type": "string",
