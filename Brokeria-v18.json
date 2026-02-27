@@ -501,7 +501,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Pega os dados que estão chegando no nó agora\nconst inputItem = $input.first();\nif (!inputItem || !inputItem.json) return { wa: { provider: \"unknown\" } };\n\nconst input = inputItem.json;\nconst wa = input.wa || {};\nconst isWhatsApp = !!input.PhoneNumber || wa.provider === 'waha';\n\nif (isWhatsApp) {\n    const pn = input.pn || \"\";\n    return {\n        wa: {\n            provider: \"waha\",\n            session: wa.session || input.session || \"default\",\n            chatId: wa.chatId || (input.PhoneNumber + \"@c.us\"),\n            messageId: wa.messageId || input.payload_id || (\"wa_\" + Date.now()),\n            authenticated: !!wa.authenticated,\n            text: wa.text || input.user_text || \"\"\n        },\n        cliente: {\n            phoneNumber: input.PhoneNumber || pn.split('@')[0],\n            nome_whatsapp: input.name || \"Cliente WhatsApp\"\n        },\n        ...input \n    };\n} else {\n    return {\n        wa: {\n            provider: \"portal\",\n            session: input.session_id || \"portal_user_v2\",\n            chatId: input.chat_id || \"portal_user\",\n            messageId: \"web_\" + Date.now(),\n            text: input.user_text || \"\"\n        },\n        ...input\n    };\n}\n"
+        "jsCode": "// Pega os dados que estão chegando no nó agora\nconst inputItem = $input.first();\nif (!inputItem || !inputItem.json) return [{ json: { wa: { provider: \"unknown\" } } }];\n\nconst input = inputItem.json;\nconst wa = input.wa || {};\nconst isWhatsApp = !!input.PhoneNumber || wa.provider === 'waha';\n\nif (isWhatsApp) {\n    const pn = input.pn || \"\";\n    return [{\n        json: {\n            wa: {\n                provider: \"waha\",\n                session: wa.session || input.session || \"default\",\n                chatId: wa.chatId || (input.PhoneNumber + \"@c.us\"),\n                messageId: wa.messageId || input.payload_id || (\"wa_\" + Date.now()),\n                authenticated: !!wa.authenticated,\n                text: wa.text || input.user_text || \"\"\n            },\n            cliente: {\n                phoneNumber: input.PhoneNumber || pn.split('@')[0],\n                nome_whatsapp: input.name || \"Cliente WhatsApp\"\n            },\n            ...input \n        }\n    }];\n} else {\n    return [{\n        json: {\n            wa: {\n                provider: \"portal\",\n                session: input.session_id || \"portal_user_v2\",\n                chatId: input.chat_id || \"portal_user\",\n                messageId: \"web_\" + Date.now(),\n                text: input.user_text || \"\"\n            },\n            ...input\n        }\n    }];\n}"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1226,7 +1226,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Consolida inputs de inserção/atualização de registro\nconst allInputs = $input.all();\nlet output = {};\n\nallInputs.forEach(item => {\n    if (item.json) {\n        output = { ...output, ...item.json };\n    }\n});\n\nreturn output;"
+        "jsCode": "// Consolida inputs de inserção/atualização de registro\nconst allInputs = $input.all();\nlet output = {};\n\nallInputs.forEach(item => {\n    if (item.json) {\n        output = { ...output, ...item.json };\n    }\n});\n\nreturn [{ json: output }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1494,7 +1494,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const input = ($input.all() && $input.all().length > 0) ? $input.first().json : {};\n\n// 1. Detecta Origem (WhatsApp vs Portal)\nconst isWhatsApp = (input.event !== undefined || input.wa_id !== undefined);\n\nif (isWhatsApp) {\n    return {\n        wa: {\n            provider: \"waha\",\n            session: input.session || \"default\",\n            messageId: input.payload_id || \"wa_\" + Date.now(),\n            chatId: input.from || input.wa_id,\n            authenticated: false,\n            text: input.user_text || input.message || \"\"\n        },\n        ...input\n    };\n}\n\n// 2. Trata como Portal\nreturn {\n    wa: {\n        provider: \"portal\",\n        session: input.session_id || (input.identifier || input.cpf || \"portal_user\") + \"_v2\",\n        messageId: \"web_\" + Date.now(),\n        chatId: input.chat_id || input.identifier || input.cpf || \"portal_user\",\n        authenticated: !!input.authenticated,\n        text: input.message || input.pergunta_cliente || input.user_text || \"\"\n    },\n    ...input\n};\n"
+        "jsCode": "const input = ($input.all() && $input.all().length > 0) ? $input.first().json : {};\n\n// 1. Detecta Origem (WhatsApp vs Portal)\nconst isWhatsApp = (input.event !== undefined || input.wa_id !== undefined);\n\nif (isWhatsApp) {\n    return [{\n        json: {\n            wa: {\n                provider: \"waha\",\n                session: input.session || \"default\",\n                messageId: input.payload_id || \"wa_\" + Date.now(),\n                chatId: input.from || input.wa_id,\n                authenticated: false,\n                text: input.user_text || input.message || \"\"\n            },\n            ...input\n        }\n    }];\n}\n\n// 2. Trata como Portal\nreturn [{\n    json: {\n        wa: {\n            provider: \"portal\",\n            session: input.session_id || (input.identifier || input.cpf || \"portal_user\") + \"_v2\",\n            messageId: \"web_\" + Date.now(),\n            chatId: input.chat_id || input.identifier || input.cpf || \"portal_user\",\n            authenticated: !!input.authenticated,\n            text: input.message || input.pergunta_cliente || input.user_text || \"\"\n        },\n        ...input\n    }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1507,7 +1507,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Recupere a resposta da IA e formate para o portal\nconst aiOutput = $json.output || $json.text || \"\";\nconst context = ($('DefinirContextoAI').first().json.contexto) || {};\n\nreturn {\n    response: aiOutput,\n    client_name: context.nome || \"Cliente\"\n};"
+        "jsCode": "// Recupere a resposta da IA e formate para o portal\nconst aiOutput = $json.output || $json.text || \"\";\nconst context = ($('DefinirContextoAI').first().json.contexto) || {};\n\nreturn [{\n    json: {\n        response: aiOutput,\n        client_name: context.nome || \"Cliente\"\n    }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1520,7 +1520,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Consolida todos os inputs que chegarem (seja do WhatsApp, Portal ou Lookup)\nconst allInputs = $input.all();\nlet output = {};\n\nallInputs.forEach(item => {\n    if (item.json) {\n        output = { ...output, ...item.json };\n    }\n});\n\nreturn output;"
+        "jsCode": "// Consolida todos os inputs que chegarem (seja do WhatsApp, Portal ou Lookup)\nconst allInputs = $input.all();\nlet output = {};\n\nallInputs.forEach(item => {\n    if (item.json) {\n        output = { ...output, ...item.json };\n    }\n});\n\nreturn [{ json: output }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
