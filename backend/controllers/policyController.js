@@ -91,26 +91,42 @@ const policyController = {
                 user_id: req.user.id
             };
 
-            const n8nRes = await fetch(process.env.N8N_WEBHOOK_URL, {
+            const targetUrl = process.env.N8N_WEBHOOK_URL;
+
+            console.log(`[CHAT-PORTAL-DEBUG] Iniciando chamada n8n...`);
+            console.log(`[CHAT-PORTAL-DEBUG] URL: ${targetUrl}`);
+            console.log(`[CHAT-PORTAL-DEBUG] CPF: ${cleanCpf}`);
+
+            if (!targetUrl) {
+                console.error('[CHAT-PORTAL-ERROR] N8N_WEBHOOK_URL não definida!');
+                return res.status(200).json({ response: 'Erro de configuração no servidor.' });
+            }
+
+            const n8nRes = await fetch(targetUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(n8nPayload)
+                body: JSON.stringify({
+                    ...n8nPayload,
+                    timestamp: new Date().toISOString()
+                })
             });
+
+            console.log(`[CHAT-PORTAL-DEBUG] Status n8n: ${n8nRes.status} ${n8nRes.statusText}`);
 
             if (!n8nRes.ok) {
                 const errText = await n8nRes.text();
-                console.error(`[CHAT-PORTAL] n8n ERROR ${n8nRes.status}:`, errText);
+                console.error(`[CHAT-PORTAL-ERROR] n8n retornou erro:`, errText);
                 return res.status(200).json({
-                    response: `Erro no Assistente (n8n ${n8nRes.status}). Detalhes: ${errText.slice(0, 100)}... Verifique o log de execuções no n8n.`
+                    response: 'O assistente está em manutenção rápida. Tente novamente em alguns segundos.'
                 });
             }
 
             const data = await n8nRes.json();
 
-            // Normaliza a resposta — o n8n pode retornar em vários formatos
-            const resposta = data.output || data.response || data.text || data.message
+            // Normaliza a resposta
+            const resposta = data.response || data.output || data.text || data.message
                 || (typeof data === 'string' ? data : null)
-                || 'Não consegui processar sua mensagem. Tente novamente.';
+                || 'Não consegui processar sua mensagem agora. Pode repetir?';
 
             res.json({ response: resposta });
 

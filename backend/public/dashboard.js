@@ -328,10 +328,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     const chatMessages = document.getElementById('chatMessages');
 
     // Abre/Fecha Chat
-    chatFab.addEventListener('click', () => {
+    chatFab.addEventListener('click', async () => {
         chatContainer.style.display = 'flex';
         chatFab.style.display = 'none';
         chatInput.focus();
+
+        // Se for a primeira vez que abre, dispara o gatilho de boas-vindas
+        if (chatMessages.children.length <= 1) {
+            try {
+                const response = await fetch(`${API_URL}/policies/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: '[GATILHO_INICIAL]' })
+                });
+                const data = await response.json();
+                if (data && data.response) {
+                    addMessageHTML('bot', renderMarkdown(data.response));
+                }
+            } catch (error) {
+                console.error('Erro ao iniciar chat dashboard:', error);
+            }
+        }
     });
 
     closeChat.addEventListener('click', () => {
