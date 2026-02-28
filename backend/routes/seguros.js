@@ -79,4 +79,28 @@ router.get('/veiculos/modelos/:parentId', async (req, res) => {
  */
 router.post('/submit', quoteController.submitQuote);
 
+// Rota temporária para forçar a carga de dados (Será removida após o uso)
+router.get('/admin/force-import', async (req, res) => {
+    try {
+        const { spawn } = require('child_process');
+        const path = require('path');
+        const scriptPath = path.join(__dirname, '..', 'scripts', 'full_import.js');
+
+        console.log('[FORCE-IMPORT] Iniciando processo em background...');
+        const child = spawn('node', [scriptPath], {
+            detached: true,
+            stdio: 'inherit'
+        });
+        child.unref();
+
+        res.json({
+            success: true,
+            message: 'Importação iniciada em background. Verifique os logs do servidor para o progresso.'
+        });
+    } catch (error) {
+        console.error('[FORCE-IMPORT] Erro:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 module.exports = router;
