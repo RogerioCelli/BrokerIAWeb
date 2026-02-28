@@ -70,10 +70,16 @@ app.listen(PORT, async () => {
     // Listar rotas registradas para debug
     console.log('🛣️  Rotas de API registradas:');
     app._router.stack.forEach(r => {
-        if (r.route && r.route.path) console.log(`   - ${Object.keys(r.route.methods).join(',').toUpperCase()} ${r.route.path}`);
-        else if (r.name === 'router') r.handle.stack.forEach(sr => {
-            if (sr.route) console.log(`   - ${Object.keys(sr.route.methods).join(',').toUpperCase()} ${sr.regexp} -> ${sr.route.path}`);
-        });
+        if (r.route && r.route.path) {
+            console.log(`   - [ROOT] ${Object.keys(r.route.methods).join(',').toUpperCase()} ${r.route.path}`);
+        } else if (r.name === 'router') {
+            const prefix = r.regexp.toString().replace('/^\\', '').replace('\\/?$/i', '').replace('\\/', '/');
+            r.handle.stack.forEach(sr => {
+                if (sr.route) {
+                    console.log(`   - [SUB] ${Object.keys(sr.route.methods).join(',').toUpperCase()} ${prefix}${sr.route.path}`);
+                }
+            });
+        }
     });
 
     const packageJson = require('./package.json');
