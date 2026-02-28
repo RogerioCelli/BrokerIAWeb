@@ -61,8 +61,10 @@ async function migrate() {
         await db.query("DELETE FROM categorias_seguros WHERE nome = 'Automóvel e Transporte'");
 
         const estruturaSeguros = {
-            "Automóvel": ["Carro Passeio", "Pesados", "Moto", "App/Uber"],
-            "Transporte": ["Carga", "Logística", "Transporte de Carga"],
+            "Automóvel": ["Carro Passeio", "App/Uber"],
+            "Motos": ["Moto"],
+            "Transporte": ["Caminhão", "Logística", "Transporte de Carga"],
+            "Náutica": ["Lancha", "Jet Ski", "Veleiro"],
             "Patrimoniais": ["Residencial", "Condomínio", "Empresarial"],
             "Vida": ["Vida Individual", "Vida em Grupo", "Saúde"],
             "Responsabilidade Civil": ["RC Profissional", "RC Geral"],
@@ -71,11 +73,13 @@ async function migrate() {
 
         const categoriasOrdem = {
             "Automóvel": 1,
-            "Transporte": 2,
-            "Patrimoniais": 3,
-            "Vida": 4,
-            "Responsabilidade Civil": 5,
-            "Financeiros": 6
+            "Motos": 2,
+            "Transporte": 3,
+            "Náutica": 4,
+            "Patrimoniais": 5,
+            "Vida": 6,
+            "Responsabilidade Civil": 7,
+            "Financeiros": 8
         };
 
         for (const [categoria, tipos] of Object.entries(estruturaSeguros)) {

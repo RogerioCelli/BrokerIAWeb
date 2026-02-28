@@ -71,6 +71,8 @@ router.get('/veiculos/modelos/:parentId', async (req, res) => {
     }
 });
 
+// Rota de importação administrativa removida após conclusão da carga de dados.
+
 /**
  * POST /api/seguros/submit
  * Recebe e registra uma nova solicitação de cotação.

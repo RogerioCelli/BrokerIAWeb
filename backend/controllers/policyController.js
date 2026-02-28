@@ -88,6 +88,7 @@ const policyController = {
                 target: clienteInfo.telefone,
                 origem: 'PORTAL_WEB',
                 authenticated: true,
+                token_validado: 'SIM',
                 user_id: req.user.id
             };
 

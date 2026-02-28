@@ -915,12 +915,20 @@
             if (!category) return;
             hideAllDynamicFields();
             const catName = category.categoria_nome.toLowerCase();
+
+            // Lógica para mostrar campos de veículo e carregar marcas corretas
             if (catName.includes('automóvel') || catName.includes('veículo')) {
                 document.getElementById('fields-auto').style.display = 'block';
                 loadVeiculoMarcas('CARRO');
+            } else if (catName.includes('moto')) {
+                document.getElementById('fields-auto').style.display = 'block';
+                loadVeiculoMarcas('MOTO');
             } else if (catName.includes('transporte')) {
                 document.getElementById('fields-auto').style.display = 'block';
                 loadVeiculoMarcas('CAMINHAO');
+            } else if (catName.includes('náutica') || catName.includes('nautica') || catName.includes('embarcação')) {
+                document.getElementById('fields-auto').style.display = 'block';
+                loadVeiculoMarcas('NAUTICA');
             } else if (catName.includes('residencial') || catName.includes('patrimoniais')) {
                 document.getElementById('fields-residencial').style.display = 'block';
             } else if (catName.includes('vida') || catName.includes('pessoas')) {
