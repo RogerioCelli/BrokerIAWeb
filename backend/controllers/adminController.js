@@ -245,8 +245,8 @@ const adminController = {
             }
 
             const rawPhone = (cliente.telefone || "").replace(/\D/g, '');
-            let clienteCelular = (cliente.celular || "").replace(/\D/g, '');
-            let clienteTelefone = (cliente.telefone_fixo || "").replace(/\D/g, '');
+            let clienteCelular = (cliente.celular || cliente.contatos?.celular || "").replace(/\D/g, '');
+            let clienteTelefone = (cliente.telefone_fixo || cliente.contatos?.telefone_fixo_residencial || "").replace(/\D/g, '');
 
             if (rawPhone && !clienteCelular && !clienteTelefone) {
                 let phoneBody = rawPhone.startsWith('55') ? rawPhone.slice(2) : rawPhone;
@@ -288,7 +288,7 @@ const adminController = {
                         cep = COALESCE($13, cep)
                     WHERE id_cliente = $14
                 `, [
-                    cliente.nome, cliente.email, clienteCelular, clienteTelefone,
+                    cliente.nome || cliente.nome_completo, cliente.email, clienteCelular, clienteTelefone,
                     clienteCpf, clienteCnpj, clienteNomeEmpresa, cliente.data_nascimento,
                     cliente.endereco, cliente.bairro, cliente.cidade, cliente.estado, cliente.cep,
                     clienteId
@@ -302,7 +302,7 @@ const adminController = {
                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
                     RETURNING id_cliente
                 `, [
-                    cliente.nome, clienteCpf, clienteCnpj, cliente.email, clienteCelular, clienteTelefone,
+                    cliente.nome || cliente.nome_completo, clienteCpf, clienteCnpj, cliente.email, clienteCelular, clienteTelefone,
                     clienteNomeEmpresa, cliente.data_nascimento, cliente.endereco, cliente.bairro,
                     cliente.cidade, cliente.estado, cliente.cep
                 ]);
@@ -310,6 +310,7 @@ const adminController = {
             }
 
             // 2. Upsert APOLICE com Máximo de Dados
+            // Nota: Campos como RG, Profissao, Renda, NumeroParcelas, etc serão salvos no dados_adicionais_json
             await db.apolicesQuery(`
                 INSERT INTO apolices_brokeria (
                     numero_apolice, seguradora, ramo, produto, chassi, premio_total, forma_pagamento,
@@ -332,27 +333,26 @@ const adminController = {
                     cnpj = EXCLUDED.cnpj,
                     placa = COALESCE(EXCLUDED.placa, apolices_brokeria.placa),
                     id_cliente = EXCLUDED.id_cliente,
-                    dados_adicionais_json = COALESCE(EXCLUDED.dados_adicionais_json, apolices_brokeria.dados_adicionais_json),
+                    dados_adicionais_json = EXCLUDED.dados_adicionais_json,
                     data_ultima_atualizacao = NOW()
             `, [
-                apolice.numero_apolice,
-                apolice.seguradora,
+                apolice.numero_apolice || apolice.numero_apolice,
+                apolice.seguradora || apolice.seguradora?.nome,
                 apolice.ramo,
-                apolice.produto || null,
-                apolice.chassi || null,
-                apolice.premio_total || null,
+                apolice.produto || apolice.nome_produto || null,
+                apolice.chassi || detalhes_especificos?.chassi || null,
+                apolice.premio_total || apolice.valor_premio_total || null,
                 apolice.forma_pagamento || null,
-                apolice.data_inicio,
-                apolice.data_fim,
+                apolice.data_inicio || apolice.vigencia_inicio,
+                apolice.data_fim || apolice.vigencia_fim,
                 apolice.status || 'ATIVA',
                 clienteCpf,
                 clienteCnpj,
                 detalhes_especificos?.placa || null,
                 clienteId,
                 JSON.stringify({
-                    cliente_detalhes: cliente,
-                    veiculo_detalhes: detalhes_especificos,
-                    apolice_detalhes: apolice
+                    ...req.body,
+                    ingestion_timestamp: new Date().toISOString()
                 })
             ]);
 
