@@ -231,8 +231,13 @@ const adminController = {
     normalizeData: (raw) => {
         let data = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
+        // n8n frequentemente envia um array com um objeto dentro
+        if (Array.isArray(data)) {
+            data = data[0];
+        }
+
         // Suporte para o wrapper "OrganizaDados" do n8n
-        if (data.OrganizaDados) {
+        if (data && data.OrganizaDados) {
             data = data.OrganizaDados;
         }
 
