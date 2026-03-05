@@ -127,12 +127,14 @@ async function migrate() {
                 premio_total DECIMAL(10,2),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 telefone_capital VARCHAR(50),
-                telefone_0800 VARCHAR(50)
+                telefone_0800 VARCHAR(50),
+                site_url TEXT
             );
             
             -- Garante que as colunas existam caso a tabela já tenha sido criada antes
             ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS telefone_capital VARCHAR(50);
             ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS telefone_0800 VARCHAR(50);
+            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS site_url TEXT;
         `);
 
         // 7. Tabela de Cotações
