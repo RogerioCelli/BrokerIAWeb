@@ -13,10 +13,10 @@ async function importFull() {
         console.log('Lendo arquivo SQL...');
         const sql = fs.readFileSync(sqlPath, 'utf8');
 
-        // Uma forma mais robusta de dividir o SQL por ponto e vírgula, 
-        // mas mantendo a integridade das instruções. 
-        // O banco de dados (PostgreSQL) lida bem com comentários dentro da string enviada.
+        // Forma robusta: Remove quebras de linha que quebram o comando no meio 
+        // mas mantêm o ponto e vírgula como delimitador
         const statements = sql
+            .replace(/\r?\n/g, ' ') // Transforma tudo em uma linha única para não quebrar no meio do INSERT
             .split(';')
             .map(s => s.trim())
             .filter(s => s.length > 0);
