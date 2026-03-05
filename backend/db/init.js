@@ -303,6 +303,20 @@ async function runMigrations() {
             } else {
                 console.log('✅ [DB] Tabela apolices_brokeria já existe.');
             }
+
+            // 6. Tabela de Staging (Importações Pendentes)
+            await db.query(`
+                CREATE TABLE IF NOT EXISTS public.importacoes_pendentes (
+                    id SERIAL PRIMARY KEY,
+                    dados_json JSONB NOT NULL,
+                    status VARCHAR(20) DEFAULT 'PENDENTE',
+                    tipo_documento VARCHAR(50),
+                    nome_segurado VARCHAR(255),
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                )
+            `);
+            console.log('✅ [DB] Tabela importacoes_pendentes garantida.');
+
         } catch (errAutoFix) {
             console.error('❌ [DB-AUTOFIX-ERROR] Falha ao tentar criar tabela:', errAutoFix.message);
         }

@@ -226,39 +226,144 @@ const adminController = {
         }
     },
 
+    // --- ÁREA DE STAGING (IMPORTAÇÕES PENDENTES) ---
+
+    saveToStaging: async (req, res) => {
+        try {
+            const data = req.body;
+            const cliente = data.Segurado || data.cliente || {};
+            const apolice = data.DadosApolice || data.apolice || {};
+
+            const nomeSegurado = cliente.NomeCompleto || cliente.nome || "Não Identificado";
+            const tipoDoc = apolice.Ramo || data.Identificacao?.TipoDocumento || "Documento";
+
+            await db.query(`
+                INSERT INTO importacoes_pendentes (dados_json, tipo_documento, nome_segurado)
+                VALUES ($1, $2, $3)
+            `, [JSON.stringify(data), tipoDoc, nomeSegurado]);
+
+            res.json({ success: true, message: 'Dados enviados para validação com sucesso!' });
+        } catch (error) {
+            console.error('[STAGING-SAVE-ERR]', error);
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    getPendingImports: async (req, res) => {
+        try {
+            const result = await db.query(`
+                SELECT id, nome_segurado, tipo_documento, created_at, status 
+                FROM importacoes_pendentes 
+                WHERE status = 'PENDENTE'
+                ORDER BY created_at DESC
+            `);
+            res.json(result.rows);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    getPendingImportDetail: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const result = await db.query('SELECT * FROM importacoes_pendentes WHERE id = $1', [id]);
+            if (result.rows.length === 0) return res.status(404).json({ error: 'Importação não encontrada' });
+            res.json(result.rows[0]);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    bulkDeleteImports: async (req, res) => {
+        try {
+            const { ids } = req.body; // Array de IDs
+            if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: 'Nenhum ID fornecido' });
+
+            await db.query('DELETE FROM importacoes_pendentes WHERE id = ANY($1)', [ids]);
+            res.json({ success: true, message: `${ids.length} registros removidos.` });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    bulkApproveImports: async (req, res) => {
+        const { ids } = req.body;
+        if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: 'Nenhum ID fornecido' });
+
+        const results = { success: 0, errors: 0 };
+
+        for (const id of ids) {
+            try {
+                const importRes = await db.query('SELECT dados_json FROM importacoes_pendentes WHERE id = $1', [id]);
+                if (importRes.rows.length > 0) {
+                    const data = importRes.rows[0].dados_json;
+
+                    // Simula uma requisição interna para reaproveitar a lógica de ingestão
+                    const mockReq = { body: data };
+                    const mockRes = {
+                        json: () => { results.success++; },
+                        status: () => ({ json: () => { results.errors++; } })
+                    };
+
+                    // Use 'adminController' para chamar o método existente
+                    await adminController.ingestPolicyData(mockReq, mockRes);
+                    // Marca como processado ou remove
+                    await db.query('DELETE FROM importacoes_pendentes WHERE id = $1', [id]);
+                }
+            } catch (err) {
+                console.error(`[BULK-APP-ERR] Erro no ID ${id}:`, err);
+                results.errors++;
+            }
+        }
+
+        res.json({
+            success: true,
+            message: `Processamento concluído. Sucesso: ${results.success}, Erros: ${results.errors}`,
+            details: results
+        });
+    },
+
+
     ingestPolicyData: async (req, res) => {
         try {
-            const { cliente, apolice, detalhes_especificos } = req.body;
-            console.log("[INGEST] Recebendo dados para ingestão:", cliente?.nome, apolice?.numero_apolice);
+            const data = req.body;
+            console.log("[INGEST] Recebendo dados para ingestão...");
 
-            if (!cliente?.cpf_cnpj || !apolice?.numero_apolice) {
-                return res.status(400).json({ error: 'Dados obrigatórios ausentes (CPF ou Número da Apólice)' });
+            // --- Normalização da Estrutura (Compatibilidade com formato hierárquico) ---
+            const cliente = data.Segurado || data.cliente || {};
+            const apolice = data.DadosApolice || data.apolice || {};
+            const item = data.ItemSegurado || data.detalhes_especificos || {};
+            const seguradora = data.Seguradora || {};
+
+            // Mapeamento de campos internos (Extraindo do novo padrão)
+            const nomeCli = cliente.NomeCompleto || cliente.nome || cliente.nome_completo;
+            const docCli = cliente.CPF || cliente.CNPJ || cliente.cpf_cnpj;
+            const numApo = apolice.NumeroApolice || apolice.numero_apolice;
+
+            if (!docCli || !numApo) {
+                return res.status(400).json({ error: 'Dados obrigatórios ausentes (CPF/CNPJ ou Número da Apólice)' });
             }
 
-            const rawIdentifier = (cliente.cpf_cnpj || "").replace(/\D/g, '');
+            const rawIdentifier = String(docCli).replace(/\D/g, '');
             const isCnpj = rawIdentifier.length === 14;
             const clienteCpf = !isCnpj ? rawIdentifier : null;
             const clienteCnpj = isCnpj ? rawIdentifier : null;
 
-            if (!rawIdentifier || !apolice?.numero_apolice) {
-                return res.status(400).json({ error: 'Dados obrigatórios ausentes (Identificador ou Número da Apólice)' });
-            }
+            // Tratamento de Telefones (Múltiplos campos no novo padrão)
+            const contatos = cliente.Contatos || {};
+            const emailCli = cliente.Email || contatos.Email || cliente.email || null;
+            let clienteCelular = (contatos.Celular || cliente.celular || "").replace(/\D/g, '');
+            let clienteTelefone = (contatos.TelefoneFixoResidencial || contatos.TelefoneFixoComercial || cliente.telefone_fixo || cliente.telefone || "").replace(/\D/g, '');
 
-            const rawPhone = (cliente.telefone || "").replace(/\D/g, '');
-            let clienteCelular = (cliente.celular || cliente.contatos?.celular || "").replace(/\D/g, '');
-            let clienteTelefone = (cliente.telefone_fixo || cliente.contatos?.telefone_fixo_residencial || "").replace(/\D/g, '');
+            // Endereço (Novo padrão objeto vs antigo flat)
+            const end = cliente.EnderecoCompleto || {};
+            const enderecoStr = end.Logradouro ? `${end.Logradouro}${end.Numero ? ', ' + end.Numero : ''}` : (cliente.endereco || null);
+            const bairro = end.Bairro || cliente.bairro || null;
+            const cidade = end.Cidade || cliente.cidade || null;
+            const estado = end.Estado || cliente.estado || null;
+            const cep = end.CEP ? String(end.CEP).replace(/\D/g, '') : (cliente.cep ? String(cliente.cep).replace(/\D/g, '') : null);
 
-            if (rawPhone && !clienteCelular && !clienteTelefone) {
-                let phoneBody = rawPhone.startsWith('55') ? rawPhone.slice(2) : rawPhone;
-                const isMobile = (phoneBody.length === 11 && phoneBody[2] === '9') || phoneBody.startsWith('9');
-                if (isMobile) {
-                    clienteCelular = rawPhone.startsWith('55') ? rawPhone : '55' + rawPhone;
-                } else {
-                    clienteTelefone = rawPhone.startsWith('55') ? rawPhone : '55' + rawPhone;
-                }
-            }
-
-            const clienteNomeEmpresa = isCnpj ? (cliente.nome_empresa || cliente.nome) : null;
+            const clienteNomeEmpresa = isCnpj ? (cliente.nome_empresa || cliente.nome || cliente.NomeCompleto) : null;
 
             // 1. Buscar ou Criar Cliente
             const existingClient = await db.clientesQuery(`
@@ -288,9 +393,9 @@ const adminController = {
                         cep = COALESCE($13, cep)
                     WHERE id_cliente = $14
                 `, [
-                    cliente.nome || cliente.nome_completo, cliente.email, clienteCelular, clienteTelefone,
-                    clienteCpf, clienteCnpj, clienteNomeEmpresa, cliente.data_nascimento,
-                    cliente.endereco, cliente.bairro, cliente.cidade, cliente.estado, cliente.cep,
+                    nomeCli, cliente.email || cliente.Email, clienteCelular, clienteTelefone,
+                    clienteCpf, clienteCnpj, clienteNomeEmpresa, cliente.data_nascimento || cliente.DataNascimento,
+                    enderecoStr, bairro, cidade, estado, cep,
                     clienteId
                 ]);
             } else {
@@ -302,9 +407,9 @@ const adminController = {
                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
                     RETURNING id_cliente
                 `, [
-                    cliente.nome || cliente.nome_completo, clienteCpf, clienteCnpj, cliente.email, clienteCelular, clienteTelefone,
-                    clienteNomeEmpresa, cliente.data_nascimento, cliente.endereco, cliente.bairro,
-                    cliente.cidade, cliente.estado, cliente.cep
+                    nomeCli, clienteCpf, clienteCnpj, cliente.email || cliente.Email, clienteCelular, clienteTelefone,
+                    clienteNomeEmpresa, cliente.data_nascimento || cliente.DataNascimento, enderecoStr, bairro,
+                    cidade, estado, cep
                 ]);
                 clienteId = insertRes.rows[0].id_cliente;
             }
@@ -336,19 +441,19 @@ const adminController = {
                     dados_adicionais_json = EXCLUDED.dados_adicionais_json,
                     data_ultima_atualizacao = NOW()
             `, [
-                apolice.numero_apolice || apolice.numero_apolice,
-                apolice.seguradora || apolice.seguradora?.nome,
-                apolice.ramo,
-                apolice.produto || apolice.nome_produto || null,
-                apolice.chassi || detalhes_especificos?.chassi || null,
-                apolice.premio_total || apolice.valor_premio_total || null,
-                apolice.forma_pagamento || null,
-                apolice.data_inicio || apolice.vigencia_inicio,
-                apolice.data_fim || apolice.vigencia_fim,
+                numApo,
+                seguradora.Nome || apolice.seguradora || apolice.seguradora?.nome || "Não informada",
+                apolice.Ramo || apolice.ramo,
+                apolice.NomeProduto || apolice.produto || apolice.nome_produto || null,
+                apolice.Chassi || item.Chassi || apolice.chassi || null,
+                apolice.ValorPremioTotal || apolice.premio_total || apolice.valor_premio_total || null,
+                apolice.FormaPagamento || apolice.forma_pagamento || null,
+                apolice.VigenciaInicio || apolice.data_inicio || apolice.vigencia_inicio,
+                apolice.VigenciaFim || apolice.data_fim || apolice.vigencia_fim,
                 apolice.status || 'ATIVA',
                 clienteCpf,
                 clienteCnpj,
-                detalhes_especificos?.placa || null,
+                item.Placa || item.placa || null,
                 clienteId,
                 JSON.stringify({
                     ...req.body,

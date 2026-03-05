@@ -16,6 +16,13 @@ router.get('/cleanup-links', isAdmin, adminController.cleanupInvalidLinks);
 router.post('/sync-drive', isAdmin, adminController.syncDriveWithN8N);
 router.post('/ingest', isAdmin, adminController.ingestPolicyData);
 
+// --- Rotas de Staging (Área de Validação de Importação) ---
+router.post('/staging/save', adminController.saveToStaging); // Aberta para n8n/extração
+router.get('/staging/list', isAdmin, adminController.getPendingImports);
+router.get('/staging/detail/:id', isAdmin, adminController.getPendingImportDetail);
+router.post('/staging/bulk-approve', isAdmin, adminController.bulkApproveImports);
+router.post('/staging/bulk-delete', isAdmin, adminController.bulkDeleteImports);
+
 // --- Gestão de Usuários (Restrita ao MASTER) ---
 router.get('/users', isMaster, adminController.getPortalUsers);
 router.post('/users', isMaster, adminController.createPortalUser);

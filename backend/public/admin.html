@@ -282,6 +282,32 @@
             border-radius: 6px;
             cursor: pointer;
         }
+
+        /* Alerta de Importações Pendentes */
+        .pending-alert {
+            background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            animation: slideDown 0.5s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 
@@ -317,29 +343,22 @@
     </div>
 
     <div class="header">
-        <div>
-            <h1>Painel de Dados - Multi-Database <span id="master-badge"
-                    style="display:none; background: #fbbf24; color: #000; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; vertical-align: middle; margin-left: 10px;">MASTER</span>
-            </h1>
-            <p style="color: var(--text-secondary)">Bem-vindo, <span id="admin-name"
-                    style="color: var(--accent); font-weight: 600;">-</span>
-                <span id="last-sync-header"
-                    style="margin-left: 15px; font-size: 0.85rem; color: #10b981; font-weight: 500;"></span>
-            </p>
-        </div>
-        <div style="display: flex; gap: 10px; align-items: center;">
-            <div id="sync-summary" style="text-align: right; margin-right: 10px; display: none;">
-                <div style="font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase;">Última
-                    Sincronização</div>
-                <div id="sync-time-val" style="font-size: 0.9rem; font-weight: 600; color: #10b981;">-</div>
+        <!-- ... (cabeçalho atual) ... -->
+    </div>
+
+    <!-- Alerta de Importações -->
+    <div id="pending-import-alert" class="pending-alert">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <i class="fas fa-file-import fa-lg"></i>
+            <div>
+                <strong id="pending-count">Existem 0 importações pendentes</strong>
+                <p style="font-size: 0.8rem; opacity: 0.9;">Novos dados foram extraídos dos PDFs e aguardam sua revisão.
+                </p>
             </div>
-            <button id="sync-btn" class="refresh-btn" style="border-color: #10b981; color: #10b981;"
-                onclick="triggerSync()">
-                <i class="fas fa-sync"></i> Sincronizar Arquivos do Drive
-            </button>
-            <button class="refresh-btn" onclick="loadAllData()">Atualizar Dados</button>
-            <button class="refresh-btn" style="border-color: #ef4444; color: #ef4444;" onclick="logout()">Sair</button>
         </div>
+        <a href="valida_importacao.html" class="btn-admin"
+            style="width: auto; background: white; color: #1d4ed8; padding: 0.6rem 1.2rem; text-decoration: none;">Acessar
+            Validação</a>
     </div>
 
     <div class="tabs">
@@ -548,6 +567,7 @@
                 await Promise.all([
                     loadClients(),
                     loadPolicies(),
+                    checkPendingImports(),
                     user.role === 'master' ? loadUsers() : Promise.resolve()
                 ]);
 
@@ -560,6 +580,22 @@
                 btn.style.opacity = '1';
                 btn.style.cursor = 'pointer';
             }
+        }
+
+        async function checkPendingImports() {
+            try {
+                const res = await fetchWithAuth(`${API_URL}/staging/list`);
+                const data = await res.json();
+                const alertBox = document.getElementById('pending-import-alert');
+                const countText = document.getElementById('pending-count');
+
+                if (data.length > 0) {
+                    countText.innerText = `Existem ${data.length} importações pendentes aguardando revisão`;
+                    alertBox.style.display = 'flex';
+                } else {
+                    alertBox.style.display = 'none';
+                }
+            } catch (err) { console.warn('Erro ao verificar pendências', err); }
         }
 
         async function loadClients() {
