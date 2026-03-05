@@ -158,7 +158,7 @@ chatFab.addEventListener('click', async () => {
             });
             const data = await response.json();
             if (data && data.response) {
-                addMessage('bot', data.response);
+                addMessageHTML('bot', renderMarkdown(data.response));
             }
         } catch (error) {
             console.error('Erro ao iniciar chat:', error);
@@ -171,23 +171,44 @@ closeChat.addEventListener('click', () => {
     chatFab.style.display = 'flex';
 });
 
-const addMessage = (type, text) => {
+function renderMarkdown(text) {
+    if (!text) return '';
+    return text
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`(.*?)`/g, '<code style="background:rgba(0,0,0,0.15);padding:2px 5px;border-radius:3px;font-size:0.85em;">$1</code>')
+        .replace(/^[\-\*•] (.+)$/gm, '<li>$1</li>')
+        .replace(/((?:<li>.*<\/li>[\n]?)+)/g, '<ul style="margin:6px 0 6px 16px;padding:0;">$1</ul>')
+        .replace(/\n/g, '<br>');
+}
+
+function addMessage(type, text) {
     const div = document.createElement('div');
     div.className = `message ${type}`;
     div.textContent = text;
     chatMessages.appendChild(div);
     chatMessages.scrollTop = chatMessages.scrollHeight;
     return div;
-};
+}
 
-const showAgentStatus = (html) => {
+function addMessageHTML(type, html) {
+    const div = document.createElement('div');
+    div.className = `message ${type}`;
+    div.innerHTML = html;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return div;
+}
+
+function showAgentStatus(html) {
     const div = document.createElement('div');
     div.className = 'agent-status';
     div.innerHTML = html;
     chatMessages.appendChild(div);
     chatMessages.scrollTop = chatMessages.scrollHeight;
     return div;
-};
+}
 
 const handleSend = async () => {
     const text = chatInput.value.trim();
@@ -195,37 +216,45 @@ const handleSend = async () => {
 
     addMessage('user', text);
     chatInput.value = '';
+    chatInput.disabled = true;
+    sendMessage.disabled = true;
+
+    // Inicia chamada ao n8n IMEDIATAMENTE em paralelo com a animação
+    const n8nPromise = fetch(`${API_URL}/policies/public-chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            message: text,
+            session_id: getChatSessionId()
+        })
+    });
+
+    // Animação contextual (Copiado do Dashboard)
+    let statusText = '<i class="fas fa-brain"></i> Consultando Broker IA...';
+    if (/cobertura|guincho|granizo|sinistro/i.test(text)) {
+        statusText = '<i class="fas fa-file-pdf"></i> Analisando apólice...';
+    } else if (/apólice|apolice|venc/i.test(text)) {
+        statusText = '<i class="fas fa-search"></i> Buscando dados da apólice...';
+    } else if (/cotação|cotacao|renovar/i.test(text)) {
+        statusText = '<i class="fas fa-calculator"></i> Preparando informações...';
+    }
+    const agentStatus = showAgentStatus(statusText);
 
     try {
-        // --- Orquestração de Agentes dinâmica (Auditiva/Visual) ---
-        let statusText = '<i class="fas fa-search"></i> Agente Local buscando informações gerais...';
-        if (text.toLowerCase().includes('apólice') || text.toLowerCase().includes('seguro') || text.toLowerCase().includes('meu')) {
-            statusText = '<i class="fas fa-user-lock"></i> Identificando intenção de acesso privado...';
-        }
-
-        const agentStatus = showAgentStatus(statusText);
-        const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-        await delay(1000);
-        agentStatus.innerHTML = '<i class="fas fa-brain"></i> IA processando resposta personalizada...';
-        await delay(1200);
+        const response = await n8nPromise;
         agentStatus.remove();
-
-        const response = await fetch(`${API_URL}/policies/public-chat`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                message: text,
-                session_id: getChatSessionId()
-            })
-        });
         const data = await response.json();
-
-        addMessage('bot', data.response);
+        const resposta = data.response || 'Não recebi resposta do agente.';
+        addMessageHTML('bot', renderMarkdown(resposta));
 
     } catch (error) {
         console.error('[CHAT-ERROR]', error);
-        addMessage('bot', `ERRO DE CONEXÃO: ${error.message}`);
+        agentStatus.remove();
+        addMessage('bot', 'Desculpe, tive um problema técnico. Pode repetir?');
+    } finally {
+        chatInput.disabled = false;
+        sendMessage.disabled = false;
+        chatInput.focus();
     }
 };
 

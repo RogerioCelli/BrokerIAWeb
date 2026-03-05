@@ -145,23 +145,29 @@ const policyController = {
             const targetUrl = process.env.N8N_WEBHOOK_URL;
 
             console.log(`[PUBLIC-CHAT-DEBUG] Iniciando chamada n8n...`);
-            console.log(`[PUBLIC-CHAT-DEBUG] URL: ${targetUrl}`);
-            console.log(`[PUBLIC-CHAT-DEBUG] MSG recebida: "${message}" | SID: ${session_id}`);
+            console.log(`[PUBLIC-CHAT-DEBUG] URL: ${targetUrl} | SID: ${session_id}`);
 
             if (!targetUrl) {
                 console.error('[PUBLIC-CHAT-ERROR] N8N_WEBHOOK_URL não definida no ambiente!');
                 return res.status(200).json({ response: 'Erro de configuração: Webhook não definido.' });
             }
 
+            // Alinhando parâmetros com o chatWithAI (Dashboard) para compatibilidade no n8n
+            const n8nPayload = {
+                action: 'chat_publico',
+                pergunta_cliente: message, // n8n espera este campo
+                message: message,
+                session_id: session_id || 'pub_guest',
+                identifier: session_id || 'pub_guest', // n8n usa identifier para session_id
+                origem: 'PORTAL_WEB',
+                authenticated: false,
+                timestamp: new Date().toISOString()
+            };
+
             const response = await fetch(targetUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'chat_publico',
-                    message: message,
-                    session_id: session_id || 'pub_guest',
-                    timestamp: new Date().toISOString()
-                })
+                body: JSON.stringify(n8nPayload)
             });
 
             console.log(`[PUBLIC-CHAT-DEBUG] Status n8n: ${response.status} ${response.statusText}`);
