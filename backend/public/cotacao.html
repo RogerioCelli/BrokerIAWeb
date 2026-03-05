@@ -570,8 +570,11 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Erro ao identificar segurado');
                 modalClientId = data.client_id;
-                document.getElementById('modalMaskedPhone').textContent = data.masked_phone;
-                document.getElementById('modalMaskedEmail').textContent = data.masked_email;
+                const elPhone = document.getElementById('modalMaskedPhone');
+                const elEmail = document.getElementById('modalMaskedEmail');
+                if (elPhone) elPhone.textContent = data.masked_phone || '';
+                if (elEmail) elEmail.textContent = data.masked_email || '';
+
                 document.getElementById('modalStep1').style.display = 'none';
                 document.getElementById('modalStep2').style.display = 'block';
                 document.getElementById('loginModalDesc').textContent = 'Escolha como receber seu código.';
