@@ -126,6 +126,19 @@ const chatMessages = document.getElementById('chatMessages');
 const chatInput = document.getElementById('chatInput');
 const sendMessage = document.getElementById('sendMessage');
 
+/**
+ * Mantém um ID de sessão estável para o chat público (vivido apenas nesta aba/janela)
+ * Isso permite que o n8n mantenha o contexto da conversa (ex: processo de 2FA).
+ */
+const getChatSessionId = () => {
+    let sid = sessionStorage.getItem('pub_chat_session_id');
+    if (!sid) {
+        sid = 'pub_' + Math.random().toString(36).substring(2, 15) + Date.now();
+        sessionStorage.setItem('pub_chat_session_id', sid);
+    }
+    return sid;
+};
+
 // Abre/Fecha Chat
 chatFab.addEventListener('click', async () => {
     chatContainer.style.display = 'flex';
@@ -138,7 +151,10 @@ chatFab.addEventListener('click', async () => {
             const response = await fetch(`${API_URL}/policies/public-chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: '[GATILHO_INICIAL]' })
+                body: JSON.stringify({
+                    message: '[GATILHO_INICIAL]',
+                    session_id: getChatSessionId()
+                })
             });
             const data = await response.json();
             if (data && data.response) {
@@ -198,7 +214,10 @@ const handleSend = async () => {
         const response = await fetch(`${API_URL}/policies/public-chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: text })
+            body: JSON.stringify({
+                message: text,
+                session_id: getChatSessionId()
+            })
         });
         const data = await response.json();
 
@@ -206,7 +225,6 @@ const handleSend = async () => {
 
     } catch (error) {
         console.error('[CHAT-ERROR]', error);
-        alert('DEBUG CHAT ERROR: ' + error.message);
         addMessage('bot', `ERRO DE CONEXÃO: ${error.message}`);
     }
 };

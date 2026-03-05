@@ -141,12 +141,12 @@ const policyController = {
 
     publicChat: async (req, res) => {
         try {
-            const { message } = req.body;
+            const { message, session_id } = req.body;
             const targetUrl = process.env.N8N_WEBHOOK_URL;
 
             console.log(`[PUBLIC-CHAT-DEBUG] Iniciando chamada n8n...`);
             console.log(`[PUBLIC-CHAT-DEBUG] URL: ${targetUrl}`);
-            console.log(`[PUBLIC-CHAT-DEBUG] MSG recebida: "${message}"`);
+            console.log(`[PUBLIC-CHAT-DEBUG] MSG recebida: "${message}" | SID: ${session_id}`);
 
             if (!targetUrl) {
                 console.error('[PUBLIC-CHAT-ERROR] N8N_WEBHOOK_URL não definida no ambiente!');
@@ -159,6 +159,7 @@ const policyController = {
                 body: JSON.stringify({
                     action: 'chat_publico',
                     message: message,
+                    session_id: session_id || 'pub_guest',
                     timestamp: new Date().toISOString()
                 })
             });
