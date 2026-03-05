@@ -224,6 +224,67 @@ const adminController = {
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
+    },
+
+    ingestPolicyData: async (req, res) => {
+        try {
+            const { cliente, apolice, detalhes_especificos } = req.body;
+            console.log("[INGEST] Recebendo dados para ingestão:", cliente?.nome, apolice?.numero_apolice);
+
+            if (!cliente?.cpf_cnpj || !apolice?.numero_apolice) {
+                return res.status(400).json({ error: 'Dados obrigatórios ausentes (CPF ou Número da Apólice)' });
+            }
+
+            const cleanCpf = cliente.cpf_cnpj.replace(/\D/g, '');
+
+            // 1. Upsert CLIENTE
+            await db.clientesQuery(`
+                INSERT INTO clientes_brokeria (nome_completo, cpf, email, celular, data_cadastro)
+                VALUES ($1, $2, $3, $4, NOW())
+                ON CONFLICT (cpf) 
+                DO UPDATE SET 
+                    nome_completo = EXCLUDED.nome_completo,
+                    email = COALESCE(EXCLUDED.email, clientes_brokeria.email),
+                    celular = COALESCE(EXCLUDED.celular, clientes_brokeria.celular)
+            `, [cliente.nome, cleanCpf, cliente.email, cliente.telefone]);
+
+            // 2. Upsert APOLICE
+            await db.apolicesQuery(`
+                INSERT INTO apolices_brokeria (
+                    numero_apolice, seguradora, ramo, vigencia_inicio, vigencia_fim, 
+                    status_apolice, cpf, placa, data_criacao, data_sincronizacao
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+                ON CONFLICT (numero_apolice)
+                DO UPDATE SET
+                    seguradora = EXCLUDED.seguradora,
+                    ramo = EXCLUDED.ramo,
+                    vigencia_inicio = EXCLUDED.vigencia_inicio,
+                    vigencia_fim = EXCLUDED.vigencia_fim,
+                    status_apolice = EXCLUDED.status_apolice,
+                    cpf = EXCLUDED.cpf,
+                    placa = COALESCE(EXCLUDED.placa, apolices_brokeria.placa),
+                    data_sincronizacao = NOW()
+            `, [
+                apolice.numero_apolice,
+                apolice.seguradora,
+                apolice.ramo,
+                apolice.data_inicio,
+                apolice.data_fim,
+                apolice.status || 'ATIVA',
+                cleanCpf,
+                detalhes_especificos?.placa || null
+            ]);
+
+            res.json({
+                success: true,
+                message: `Ingestão concluída para ${cliente.nome} (Apólice ${apolice.numero_apolice})`
+            });
+
+        } catch (error) {
+            console.error("[INGEST] Erro na ingestão:", error);
+            res.status(500).json({ error: error.message });
+        }
     }
 };
 

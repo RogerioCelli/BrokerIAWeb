@@ -14,6 +14,7 @@ router.get('/clients/:cpf/policies', isAdmin, adminController.getClientPolicies)
 router.get('/policies', isAdmin, adminController.getAllPolicies);
 router.get('/cleanup-links', isAdmin, adminController.cleanupInvalidLinks);
 router.post('/sync-drive', isAdmin, adminController.syncDriveWithN8N);
+router.post('/ingest', isAdmin, adminController.ingestPolicyData);
 
 // --- Gestão de Usuários (Restrita ao MASTER) ---
 router.get('/users', isMaster, adminController.getPortalUsers);
