@@ -262,12 +262,13 @@ const adminController = {
                 }
             }
 
-            // 1. Buscar se o cliente já existe (por CPF ou CNPJ)
+            // 1. Buscar se o cliente já existe (Verifica o identificador em AMBAS as colunas CPF e CNPJ)
             const existingClient = await db.clientesQuery(`
                 SELECT id_cliente FROM clientes_brokeria 
-                WHERE (cpf IS NOT NULL AND cpf = $1) OR (cnpj IS NOT NULL AND cnpj = $2)
+                WHERE REPLACE(REPLACE(REPLACE(cpf, '.', ''), '-', ''), ' ', '') = $1 
+                   OR REPLACE(REPLACE(REPLACE(cnpj, '.', ''), '-', ''), ' ', '') = $1
                 LIMIT 1
-            `, [clienteCpf, clienteCnpj]);
+            `, [rawIdentifier]);
 
             let clienteId;
             if (existingClient.rows.length > 0) {
