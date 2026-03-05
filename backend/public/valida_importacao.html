@@ -286,7 +286,13 @@
 
         // HELPER: Normaliza os diferentes formatos de JSON (n8n vs Interno)
         function normalizeData(raw) {
-            const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            let data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+
+            // Suporte para o wrapper "OrganizaDados" do n8n
+            if (data.OrganizaDados) {
+                data = data.OrganizaDados;
+            }
+
             const norm = {
                 segurado: {},
                 apolice: {},
@@ -306,7 +312,7 @@
             norm.segurado.Celular = (cont.celulares && cont.celulares[0]) || cont.Celular || iden.Celular || "";
 
             // 3. Mapear Apólice (dados_da_apolice no n8n)
-            const apol = data.dados_da_apolice || data.DadosApolice || data.apolice || {};
+            const apol = data.dados_da_apolice || data.DadosApolice || data.apolice || iden.dados_da_apolice || {};
             norm.apolice.NumeroApolice = apol.numero_apolice || apol.NumeroApolice || "";
             norm.apolice.Seguradora = apol.seguradora || apol.Seguradora || "";
             norm.apolice.Ramo = apol.ramo || apol.Ramo || "";
@@ -347,6 +353,7 @@
                             <th class="checkbox-cell"><input type="checkbox" id="select-all" onchange="toggleSelectAll()"></th>
                             <th>Data Extração</th>
                             <th>Segurado</th>
+                            <th>Nº Apólice</th>
                             <th>Ramo / Documento</th>
                             <th>Ações</th>
                         </tr>
@@ -358,9 +365,12 @@
                 const isSelected = selectedIds.has(item.id);
                 // Tenta extrair o nome real se o sumário estiver vazio
                 let nomeExibicao = item.nome_segurado;
-                if (nomeExibicao === "Não Identificado" && item.dados_json) {
+                let numApolice = "";
+
+                if (item.dados_json) {
                     const norm = normalizeData(item.dados_json);
-                    nomeExibicao = norm.segurado.NomeCompleto;
+                    if (nomeExibicao === "Não Identificado") nomeExibicao = norm.segurado.NomeCompleto;
+                    numApolice = norm.apolice.NumeroApolice;
                 }
 
                 html += `
@@ -368,6 +378,7 @@
                         <td class="checkbox-cell"><input type="checkbox" class="row-checkbox" onchange="toggleSelect(${item.id})" ${isSelected ? 'checked' : ''}></td>
                         <td>${new Date(item.created_at).toLocaleString('pt-BR')}</td>
                         <td style="font-weight: 600">${nomeExibicao}</td>
+                        <td>${numApolice || '<span style="color:var(--text-secondary)">-</span>'}</td>
                         <td><span style="background: var(--accent)20; color: var(--accent); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem">${item.tipo_documento}</span></td>
                         <td>
                             <button class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem" onclick="openEdit(${item.id})">

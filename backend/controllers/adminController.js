@@ -229,31 +229,42 @@ const adminController = {
     // --- ÁREA DE STAGING (IMPORTAÇÕES PENDENTES) ---
 
     normalizeData: (raw) => {
-        const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        let data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+
+        // Suporte para o wrapper "OrganizaDados" do n8n
+        if (data.OrganizaDados) {
+            data = data.OrganizaDados;
+        }
+
         const norm = {
             Segurado: data.Segurado || data.cliente || {},
             DadosApolice: data.DadosApolice || data.apolice || {},
             Endereco: data.EnderecoCompleto || data.endereco || {}
         };
 
-        // Fallback para formato n8n
+        // Fallback para formato n8n (Identificacao)
         if (data.Identificacao) {
             norm.Segurado = {
-                NomeCompleto: data.Identificacao.nome_completo,
-                CPF: data.Identificacao.cpf_cnpj?.length === 11 ? data.Identificacao.cpf_cnpj : null,
-                CNPJ: data.Identificacao.cpf_cnpj?.length === 14 ? data.Identificacao.cpf_cnpj : null,
-                Email: data.contatos?.emails?.[0],
-                Celular: data.contatos?.celulares?.[0]
+                NomeCompleto: data.Identificacao.nome_completo || data.Identificacao.NomeCompleto,
+                CPF: data.Identificacao.cpf_cnpj?.replace(/\D/g, '').length === 11 ? data.Identificacao.cpf_cnpj : null,
+                CNPJ: data.Identificacao.cpf_cnpj?.replace(/\D/g, '').length === 14 ? data.Identificacao.cpf_cnpj : null,
+                Email: (data.contatos?.emails && data.contatos.emails[0]) || data.Identificacao.Email,
+                Celular: (data.contatos?.celulares && data.contatos.celulares[0]) || data.Identificacao.Celular
             };
+
+            // Se os dados da apólice estiverem DENTRO de Identificacao (raro, mas possível no n8n dependendo do nó)
+            if (data.Identificacao.dados_da_apolice && !data.dados_da_apolice) {
+                data.dados_da_apolice = data.Identificacao.dados_da_apolice;
+            }
         }
 
         if (data.dados_da_apolice) {
             norm.DadosApolice = {
-                NumeroApolice: data.dados_da_apolice.numero_apolice,
-                Seguradora: data.dados_da_apolice.seguradora,
-                Ramo: data.dados_da_apolice.ramo,
-                VigenciaInicio: data.dados_da_apolice.vigencia_inicio,
-                VigenciaFim: data.dados_da_apolice.vigencia_fim
+                NumeroApolice: data.dados_da_apolice.numero_apolice || data.dados_da_apolice.NumeroApolice,
+                Seguradora: data.dados_da_apolice.seguradora || data.dados_da_apolice.Seguradora,
+                Ramo: data.dados_da_apolice.ramo || data.dados_da_apolice.Ramo,
+                VigenciaInicio: data.dados_da_apolice.vigencia_inicio || data.dados_da_apolice.VigenciaInicio,
+                VigenciaFim: data.dados_da_apolice.vigencia_fim || data.dados_da_apolice.VigenciaFim
             };
         }
 
