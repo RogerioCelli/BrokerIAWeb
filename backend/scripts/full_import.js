@@ -11,12 +11,14 @@ async function importFull() {
         }
 
         console.log('Lendo arquivo SQL...');
-        const sql = fs.readFileSync(sqlPath, 'utf8');
+        let sql = fs.readFileSync(sqlPath, 'utf8');
 
-        // Forma robusta: Remove quebras de linha que quebram o comando no meio 
-        // mas mantêm o ponto e vírgula como delimitador
+        // Remove comentários de linha única antes de qualquer outra coisa
+        // para evitar que o comando seja ignorado ao remover as quebras de linha
+        sql = sql.replace(/--.*$/gm, '');
+
+        // Agora podemos remover quebras de linha extras e processar os comandos
         const statements = sql
-            .replace(/\r?\n/g, ' ') // Transforma tudo em uma linha única para não quebrar no meio do INSERT
             .split(';')
             .map(s => s.trim())
             .filter(s => s.length > 0);
