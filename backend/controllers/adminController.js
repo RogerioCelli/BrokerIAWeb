@@ -245,16 +245,12 @@ const adminController = {
             }
 
             const rawPhone = (cliente.telefone || "").replace(/\D/g, '');
-            let clienteCelular = null;
-            let clienteTelefone = null;
+            let clienteCelular = (cliente.celular || "").replace(/\D/g, '');
+            let clienteTelefone = (cliente.telefone_fixo || "").replace(/\D/g, '');
 
-            if (rawPhone) {
-                // Remove prefixo 55 se existir para checar o nono dígito
+            if (rawPhone && !clienteCelular && !clienteTelefone) {
                 let phoneBody = rawPhone.startsWith('55') ? rawPhone.slice(2) : rawPhone;
-
-                // Regra: Se tem 11 dígitos e o 3º dígito é 9 (ex: 119...), ou se o usuário disse "começar com 9" no corpo do número
                 const isMobile = (phoneBody.length === 11 && phoneBody[2] === '9') || phoneBody.startsWith('9');
-
                 if (isMobile) {
                     clienteCelular = rawPhone.startsWith('55') ? rawPhone : '55' + rawPhone;
                 } else {
@@ -262,7 +258,9 @@ const adminController = {
                 }
             }
 
-            // 1. Buscar se o cliente já existe (Verifica o identificador em AMBAS as colunas CPF e CNPJ)
+            const clienteNomeEmpresa = isCnpj ? (cliente.nome_empresa || cliente.nome) : null;
+
+            // 1. Buscar ou Criar Cliente
             const existingClient = await db.clientesQuery(`
                 SELECT id_cliente FROM clientes_brokeria 
                 WHERE REPLACE(REPLACE(REPLACE(cpf, '.', ''), '-', ''), ' ', '') = $1 
@@ -273,38 +271,60 @@ const adminController = {
             let clienteId;
             if (existingClient.rows.length > 0) {
                 clienteId = existingClient.rows[0].id_cliente;
-                // Update
                 await db.clientesQuery(`
                     UPDATE clientes_brokeria SET 
-                        nome_completo = $1,
+                        nome_completo = COALESCE($1, nome_completo),
                         email = COALESCE($2, email),
                         celular = COALESCE($3, celular),
                         telefone = COALESCE($4, telefone),
                         cpf = COALESCE($5, cpf),
-                        cnpj = COALESCE($6, cnpj)
-                    WHERE id_cliente = $7
-                `, [cliente.nome, cliente.email, clienteCelular, clienteTelefone, clienteCpf, clienteCnpj, clienteId]);
+                        cnpj = COALESCE($6, cnpj),
+                        nome_empresa = COALESCE($7, nome_empresa),
+                        data_nascimento = COALESCE($8, data_nascimento),
+                        endereco = COALESCE($9, endereco),
+                        bairro = COALESCE($10, bairro),
+                        cidade = COALESCE($11, cidade),
+                        estado = COALESCE($12, estado),
+                        cep = COALESCE($13, cep)
+                    WHERE id_cliente = $14
+                `, [
+                    cliente.nome, cliente.email, clienteCelular, clienteTelefone,
+                    clienteCpf, clienteCnpj, clienteNomeEmpresa, cliente.data_nascimento,
+                    cliente.endereco, cliente.bairro, cliente.cidade, cliente.estado, cliente.cep,
+                    clienteId
+                ]);
             } else {
-                // Insert
                 const insertRes = await db.clientesQuery(`
-                    INSERT INTO clientes_brokeria (nome_completo, cpf, cnpj, email, celular, telefone, data_cadastro)
-                    VALUES ($1, $2, $3, $4, $5, $6, NOW())
+                    INSERT INTO clientes_brokeria (
+                        nome_completo, cpf, cnpj, email, celular, telefone, nome_empresa, 
+                        data_nascimento, endereco, bairro, cidade, estado, cep, data_cadastro
+                    )
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
                     RETURNING id_cliente
-                `, [cliente.nome, clienteCpf, clienteCnpj, cliente.email, clienteCelular, clienteTelefone]);
+                `, [
+                    cliente.nome, clienteCpf, clienteCnpj, cliente.email, clienteCelular, clienteTelefone,
+                    clienteNomeEmpresa, cliente.data_nascimento, cliente.endereco, cliente.bairro,
+                    cliente.cidade, cliente.estado, cliente.cep
+                ]);
                 clienteId = insertRes.rows[0].id_cliente;
             }
 
-            // 2. Upsert APOLICE
+            // 2. Upsert APOLICE com Máximo de Dados
             await db.apolicesQuery(`
                 INSERT INTO apolices_brokeria (
-                    numero_apolice, seguradora, ramo, vigencia_inicio, vigencia_fim, 
-                    status_apolice, cpf, cnpj, placa, id_cliente, data_criacao, data_ultima_atualizacao
+                    numero_apolice, seguradora, ramo, produto, chassi, premio_total, forma_pagamento,
+                    vigencia_inicio, vigencia_fim, status_apolice, cpf, cnpj, placa, id_cliente,
+                    dados_adicionais_json, data_criacao, data_ultima_atualizacao
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW())
                 ON CONFLICT (numero_apolice)
                 DO UPDATE SET
                     seguradora = EXCLUDED.seguradora,
                     ramo = EXCLUDED.ramo,
+                    produto = COALESCE(EXCLUDED.produto, apolices_brokeria.produto),
+                    chassi = COALESCE(EXCLUDED.chassi, apolices_brokeria.chassi),
+                    premio_total = COALESCE(EXCLUDED.premio_total, apolices_brokeria.premio_total),
+                    forma_pagamento = COALESCE(EXCLUDED.forma_pagamento, apolices_brokeria.forma_pagamento),
                     vigencia_inicio = EXCLUDED.vigencia_inicio,
                     vigencia_fim = EXCLUDED.vigencia_fim,
                     status_apolice = EXCLUDED.status_apolice,
@@ -312,18 +332,28 @@ const adminController = {
                     cnpj = EXCLUDED.cnpj,
                     placa = COALESCE(EXCLUDED.placa, apolices_brokeria.placa),
                     id_cliente = EXCLUDED.id_cliente,
+                    dados_adicionais_json = COALESCE(EXCLUDED.dados_adicionais_json, apolices_brokeria.dados_adicionais_json),
                     data_ultima_atualizacao = NOW()
             `, [
                 apolice.numero_apolice,
                 apolice.seguradora,
                 apolice.ramo,
+                apolice.produto || null,
+                apolice.chassi || null,
+                apolice.premio_total || null,
+                apolice.forma_pagamento || null,
                 apolice.data_inicio,
                 apolice.data_fim,
                 apolice.status || 'ATIVA',
                 clienteCpf,
                 clienteCnpj,
                 detalhes_especificos?.placa || null,
-                clienteId
+                clienteId,
+                JSON.stringify({
+                    cliente_detalhes: cliente,
+                    veiculo_detalhes: detalhes_especificos,
+                    apolice_detalhes: apolice
+                })
             ]);
 
             res.json({
