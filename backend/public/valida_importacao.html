@@ -273,6 +273,49 @@
         let currentEditId = null;
         let currentFullItem = null;
 
+        // HELPER: Converte data BR (DD/MM/YYYY) para ISO (YYYY-MM-DD)
+        function formatDateForInput(dateStr) {
+            if (!dateStr) return '';
+            if (dateStr.includes('-')) return dateStr; // Já está em ISO
+            const parts = dateStr.split('/');
+            if (parts.length === 3) {
+                return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            }
+            return dateStr;
+        }
+
+        // HELPER: Normaliza os diferentes formatos de JSON (n8n vs Interno)
+        function normalizeData(raw) {
+            const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            const norm = {
+                segurado: {},
+                apolice: {},
+                endereco: {}
+            };
+
+            // 1. Mapear Segurado (Identificacao no n8n)
+            const iden = data.Identificacao || data.Segurado || data.cliente || {};
+            norm.segurado.NomeCompleto = iden.nome_completo || iden.NomeCompleto || iden.nome || "Não Identificado";
+            const doc = (iden.cpf_cnpj || iden.CPF || iden.CNPJ || "").replace(/\D/g, '');
+            if (doc.length === 11) norm.segurado.CPF = doc;
+            else if (doc.length === 14) norm.segurado.CNPJ = doc;
+
+            // 2. Mapear Contatos
+            const cont = data.contatos || iden.Contatos || {};
+            norm.segurado.Email = (cont.emails && cont.emails[0]) || cont.Email || iden.Email || "";
+            norm.segurado.Celular = (cont.celulares && cont.celulares[0]) || cont.Celular || iden.Celular || "";
+
+            // 3. Mapear Apólice (dados_da_apolice no n8n)
+            const apol = data.dados_da_apolice || data.DadosApolice || data.apolice || {};
+            norm.apolice.NumeroApolice = apol.numero_apolice || apol.NumeroApolice || "";
+            norm.apolice.Seguradora = apol.seguradora || apol.Seguradora || "";
+            norm.apolice.Ramo = apol.ramo || apol.Ramo || "";
+            norm.apolice.VigenciaInicio = formatDateForInput(apol.vigencia_inicio || apol.VigenciaInicio);
+            norm.apolice.VigenciaFim = formatDateForInput(apol.vigencia_fim || apol.VigenciaFim);
+
+            return norm;
+        }
+
         async function loadPending() {
             const container = document.getElementById('table-container');
             try {
@@ -313,11 +356,18 @@
 
             pendingData.forEach(item => {
                 const isSelected = selectedIds.has(item.id);
+                // Tenta extrair o nome real se o sumário estiver vazio
+                let nomeExibicao = item.nome_segurado;
+                if (nomeExibicao === "Não Identificado" && item.dados_json) {
+                    const norm = normalizeData(item.dados_json);
+                    nomeExibicao = norm.segurado.NomeCompleto;
+                }
+
                 html += `
                     <tr>
                         <td class="checkbox-cell"><input type="checkbox" class="row-checkbox" onchange="toggleSelect(${item.id})" ${isSelected ? 'checked' : ''}></td>
                         <td>${new Date(item.created_at).toLocaleString('pt-BR')}</td>
-                        <td style="font-weight: 600">${item.nome_segurado}</td>
+                        <td style="font-weight: 600">${nomeExibicao}</td>
                         <td><span style="background: var(--accent)20; color: var(--accent); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem">${item.tipo_documento}</span></td>
                         <td>
                             <button class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem" onclick="openEdit(${item.id})">
@@ -367,35 +417,31 @@
                 const item = await res.json();
                 currentFullItem = item;
 
-                const json = typeof item.dados_json === 'string' ? JSON.parse(item.dados_json) : item.dados_json;
-
-                document.getElementById('raw-json').innerText = JSON.stringify(json, null, 2);
-
-                const segurado = json.Segurado || {};
-                const apolice = json.DadosApolice || {};
+                const norm = normalizeData(item.dados_json);
+                document.getElementById('raw-json').innerText = JSON.stringify(item.dados_json, null, 2);
 
                 let formHtml = `
                     <div class="field-group">
                         <label>Nome Completo</label>
-                        <input type="text" id="edit-nome" class="input-edit" value="${segurado.NomeCompleto || ''}">
+                        <input type="text" id="edit-nome" class="input-edit" value="${norm.segurado.NomeCompleto}">
                     </div>
                     <div class="field-group">
                         <label>CPF / CNPJ (Apenas números)</label>
-                        <input type="text" id="edit-doc" class="input-edit" value="${segurado.CPF || segurado.CNPJ || ''}">
+                        <input type="text" id="edit-doc" class="input-edit" value="${norm.segurado.CPF || norm.segurado.CNPJ || ''}">
                     </div>
                     <div class="field-group">
                         <label>Nº Apólice</label>
-                        <input type="text" id="edit-apolice" class="input-edit" value="${apolice.NumeroApolice || ''}">
+                        <input type="text" id="edit-apolice" class="input-edit" value="${norm.apolice.NumeroApolice}">
                     </div>
                     <div class="field-group">
                         <label>Ramo</label>
-                        <input type="text" id="edit-ramo" class="input-edit" value="${apolice.Ramo || ''}">
+                        <input type="text" id="edit-ramo" class="input-edit" value="${norm.apolice.Ramo}">
                     </div>
                     <div class="field-group">
                         <label>Vigência</label>
                         <div style="display:flex; gap:10px">
-                            <input type="date" id="edit-inicio" class="input-edit" value="${apolice.VigenciaInicio || ''}">
-                            <input type="date" id="edit-fim" class="input-edit" value="${apolice.VigenciaFim || ''}">
+                            <input type="date" id="edit-inicio" class="input-edit" value="${norm.apolice.VigenciaInicio}">
+                            <input type="date" id="edit-fim" class="input-edit" value="${norm.apolice.VigenciaFim}">
                         </div>
                     </div>
                 `;

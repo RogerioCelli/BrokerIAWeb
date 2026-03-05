@@ -228,14 +228,45 @@ const adminController = {
 
     // --- ÁREA DE STAGING (IMPORTAÇÕES PENDENTES) ---
 
+    normalizeData: (raw) => {
+        const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        const norm = {
+            Segurado: data.Segurado || data.cliente || {},
+            DadosApolice: data.DadosApolice || data.apolice || {},
+            Endereco: data.EnderecoCompleto || data.endereco || {}
+        };
+
+        // Fallback para formato n8n
+        if (data.Identificacao) {
+            norm.Segurado = {
+                NomeCompleto: data.Identificacao.nome_completo,
+                CPF: data.Identificacao.cpf_cnpj?.length === 11 ? data.Identificacao.cpf_cnpj : null,
+                CNPJ: data.Identificacao.cpf_cnpj?.length === 14 ? data.Identificacao.cpf_cnpj : null,
+                Email: data.contatos?.emails?.[0],
+                Celular: data.contatos?.celulares?.[0]
+            };
+        }
+
+        if (data.dados_da_apolice) {
+            norm.DadosApolice = {
+                NumeroApolice: data.dados_da_apolice.numero_apolice,
+                Seguradora: data.dados_da_apolice.seguradora,
+                Ramo: data.dados_da_apolice.ramo,
+                VigenciaInicio: data.dados_da_apolice.vigencia_inicio,
+                VigenciaFim: data.dados_da_apolice.vigencia_fim
+            };
+        }
+
+        return norm;
+    },
+
     saveToStaging: async (req, res) => {
         try {
             const data = req.body;
-            const cliente = data.Segurado || data.cliente || {};
-            const apolice = data.DadosApolice || data.apolice || {};
+            const norm = adminController.normalizeData(data);
 
-            const nomeSegurado = cliente.NomeCompleto || cliente.nome || "Não Identificado";
-            const tipoDoc = apolice.Ramo || data.Identificacao?.TipoDocumento || "Documento";
+            const nomeSegurado = norm.Segurado.NomeCompleto || norm.Segurado.nome || "Não Identificado";
+            const tipoDoc = norm.DadosApolice.Ramo || data.Identificacao?.TipoDocumento || "Documento";
 
             await db.query(`
                 INSERT INTO importacoes_pendentes (dados_json, tipo_documento, nome_segurado)
@@ -326,14 +357,15 @@ const adminController = {
 
     ingestPolicyData: async (req, res) => {
         try {
-            const data = req.body;
+            const rawData = req.body;
             console.log("[INGEST] Recebendo dados para ingestão...");
 
-            // --- Normalização da Estrutura (Compatibilidade com formato hierárquico) ---
-            const cliente = data.Segurado || data.cliente || {};
-            const apolice = data.DadosApolice || data.apolice || {};
-            const item = data.ItemSegurado || data.detalhes_especificos || {};
-            const seguradora = data.Seguradora || {};
+            // Normalização Obrigatória
+            const norm = adminController.normalizeData(rawData);
+            const cliente = norm.Segurado;
+            const apolice = norm.DadosApolice;
+            const item = rawData.ItemSegurado || rawData.detalhes_especificos || {};
+            const seguradora = rawData.Seguradora || {};
 
             // Mapeamento de campos internos (Extraindo do novo padrão)
             const nomeCli = cliente.NomeCompleto || cliente.nome || cliente.nome_completo;
