@@ -13,11 +13,13 @@ async function importFull() {
         console.log('Lendo arquivo SQL...');
         const sql = fs.readFileSync(sqlPath, 'utf8');
 
-        // Dividir por ponto e vírgula, mas ignorar comentários e linhas vazias
+        // Uma forma mais robusta de dividir o SQL por ponto e vírgula, 
+        // mas mantendo a integridade das instruções. 
+        // O banco de dados (PostgreSQL) lida bem com comentários dentro da string enviada.
         const statements = sql
             .split(';')
             .map(s => s.trim())
-            .filter(s => s.length > 0 && !s.startsWith('--'));
+            .filter(s => s.length > 0);
 
         console.log(`Total de instruções detectadas: ${statements.length}`);
 
@@ -28,8 +30,15 @@ async function importFull() {
             const batchSql = batch.join(';') + ';';
 
             process.stdout.write(`Processando batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(statements.length / batchSize)}... `);
-            await db.query(batchSql);
-            console.log('OK');
+            try {
+                await db.query(batchSql);
+                console.log('OK');
+            } catch (err) {
+                console.log('ERRO');
+                console.error(`[BATCH-ERROR] Erro no batch começando em ${i}:`, err.message);
+                // Opcional: decidir se continua ou para. Aqui vamos parar para garantir integridade.
+                throw err;
+            }
         }
 
         console.log('--- Importação Concluída com Sucesso ---');
