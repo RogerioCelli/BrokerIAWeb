@@ -244,30 +244,62 @@ const adminController = {
                 return res.status(400).json({ error: 'Dados obrigatórios ausentes (Identificador ou Número da Apólice)' });
             }
 
-            // 1. Upsert CLIENTE
-            await db.clientesQuery(`
-                INSERT INTO clientes_brokeria (nome_completo, cpf, cnpj, email, celular, data_cadastro)
-                VALUES ($1, $2, $3, $4, $5, NOW())
-                ON CONFLICT (id_cliente) 
-                DO UPDATE SET 
-                    nome_completo = EXCLUDED.nome_completo,
-                    email = COALESCE(EXCLUDED.email, clientes_brokeria.email),
-                    celular = COALESCE(EXCLUDED.celular, clientes_brokeria.celular),
-                    cpf = COALESCE(EXCLUDED.cpf, clientes_brokeria.cpf),
-                    cnpj = COALESCE(EXCLUDED.cnpj, clientes_brokeria.cnpj)
-            `, [cliente.nome, clienteCpf, clienteCnpj, cliente.email, cliente.telefone]);
+            const rawPhone = (cliente.telefone || "").replace(/\D/g, '');
+            let clienteCelular = null;
+            let clienteTelefone = null;
 
-            // Nota: Como o ON CONFLICT precisa de um índice único, e temos CPF e CNPJ separados, 
-            // a lógica ideal de banco de dados seria ter um índice único ou fazer uma busca prévia.
-            // Para manter a simplicidade do "ingest", vamos assumir que o portal lida com o vínculo via ID ou CPF/CNPJ limpo.
+            if (rawPhone) {
+                // Remove prefixo 55 se existir para checar o nono dígito
+                let phoneBody = rawPhone.startsWith('55') ? rawPhone.slice(2) : rawPhone;
+
+                // Regra: Se tem 11 dígitos e o 3º dígito é 9 (ex: 119...), ou se o usuário disse "começar com 9" no corpo do número
+                const isMobile = (phoneBody.length === 11 && phoneBody[2] === '9') || phoneBody.startsWith('9');
+
+                if (isMobile) {
+                    clienteCelular = rawPhone.startsWith('55') ? rawPhone : '55' + rawPhone;
+                } else {
+                    clienteTelefone = rawPhone.startsWith('55') ? rawPhone : '55' + rawPhone;
+                }
+            }
+
+            // 1. Buscar se o cliente já existe (por CPF ou CNPJ)
+            const existingClient = await db.clientesQuery(`
+                SELECT id_cliente FROM clientes_brokeria 
+                WHERE (cpf IS NOT NULL AND cpf = $1) OR (cnpj IS NOT NULL AND cnpj = $2)
+                LIMIT 1
+            `, [clienteCpf, clienteCnpj]);
+
+            let clienteId;
+            if (existingClient.rows.length > 0) {
+                clienteId = existingClient.rows[0].id_cliente;
+                // Update
+                await db.clientesQuery(`
+                    UPDATE clientes_brokeria SET 
+                        nome_completo = $1,
+                        email = COALESCE($2, email),
+                        celular = COALESCE($3, celular),
+                        telefone = COALESCE($4, telefone),
+                        cpf = COALESCE($5, cpf),
+                        cnpj = COALESCE($6, cnpj)
+                    WHERE id_cliente = $7
+                `, [cliente.nome, cliente.email, clienteCelular, clienteTelefone, clienteCpf, clienteCnpj, clienteId]);
+            } else {
+                // Insert
+                const insertRes = await db.clientesQuery(`
+                    INSERT INTO clientes_brokeria (nome_completo, cpf, cnpj, email, celular, telefone, data_cadastro)
+                    VALUES ($1, $2, $3, $4, $5, $6, NOW())
+                    RETURNING id_cliente
+                `, [cliente.nome, clienteCpf, clienteCnpj, cliente.email, clienteCelular, clienteTelefone]);
+                clienteId = insertRes.rows[0].id_cliente;
+            }
 
             // 2. Upsert APOLICE
             await db.apolicesQuery(`
                 INSERT INTO apolices_brokeria (
                     numero_apolice, seguradora, ramo, vigencia_inicio, vigencia_fim, 
-                    status_apolice, cpf, cnpj, placa, data_criacao, data_ultima_atualizacao
+                    status_apolice, cpf, cnpj, placa, id_cliente, data_criacao, data_ultima_atualizacao
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
                 ON CONFLICT (numero_apolice)
                 DO UPDATE SET
                     seguradora = EXCLUDED.seguradora,
@@ -278,6 +310,7 @@ const adminController = {
                     cpf = EXCLUDED.cpf,
                     cnpj = EXCLUDED.cnpj,
                     placa = COALESCE(EXCLUDED.placa, apolices_brokeria.placa),
+                    id_cliente = EXCLUDED.id_cliente,
                     data_ultima_atualizacao = NOW()
             `, [
                 apolice.numero_apolice,
@@ -288,7 +321,8 @@ const adminController = {
                 apolice.status || 'ATIVA',
                 clienteCpf,
                 clienteCnpj,
-                detalhes_especificos?.placa || null
+                detalhes_especificos?.placa || null,
+                clienteId
             ]);
 
             res.json({
