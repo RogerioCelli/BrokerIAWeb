@@ -110,8 +110,33 @@ async function migrate() {
             console.log('[PORTAL-MIGRATE] ✅ Marcas populadas.');
         }
 
-        // 6. Tabela de Cotações (Estruturada)
-        console.log('[PORTAL-MIGRATE] Passo 6: Tabela de Cotações...');
+        // 6. Tabela de Apólices (Atualizada com Contatos de Emergência)
+        console.log('[PORTAL-MIGRATE] Passo 6: Verificando Tabela de Apólices...');
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS apolices_brokeria (
+                id SERIAL PRIMARY KEY,
+                cliente_id UUID REFERENCES clientes_brokeria(id),
+                seguradora VARCHAR(255),
+                ramo VARCHAR(100),
+                numero_apolice VARCHAR(100),
+                vigencia_inicio DATE,
+                vigencia_fim DATE,
+                status_apolice VARCHAR(50),
+                link_url_apolice TEXT,
+                placa VARCHAR(20),
+                premio_total DECIMAL(10,2),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                telefone_capital VARCHAR(50),
+                telefone_0800 VARCHAR(50)
+            );
+            
+            -- Garante que as colunas existam caso a tabela já tenha sido criada antes
+            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS telefone_capital VARCHAR(50);
+            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS telefone_0800 VARCHAR(50);
+        `);
+
+        // 7. Tabela de Cotações
+        console.log('[PORTAL-MIGRATE] Passo 7: Tabela de Cotações...');
         await db.query(`
             CREATE TABLE IF NOT EXISTS cotacoes (
                 id SERIAL PRIMARY KEY,
@@ -130,7 +155,7 @@ async function migrate() {
             );
         `);
 
-        console.log('[PORTAL-MIGRATE] Passo 7: Tabela de Tokens 2FA...');
+        console.log('[PORTAL-MIGRATE] Passo 8: Tabela de Tokens 2FA...');
         await db.query(`
             CREATE TABLE IF NOT EXISTS tokens_acesso (
                 id SERIAL PRIMARY KEY,
