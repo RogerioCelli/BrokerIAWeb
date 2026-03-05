@@ -273,7 +273,12 @@ const adminController = {
 
     saveToStaging: async (req, res) => {
         try {
-            const data = req.body;
+            let data = req.body;
+            console.log(`[STAGING] Recebendo carga de: ${typeof data === 'object' ? JSON.stringify(data).substring(0, 100) : data}`);
+
+            // Se for array do n8n, descompacta
+            if (Array.isArray(data)) data = data[0];
+
             const norm = adminController.normalizeData(data);
 
             const nomeSegurado = norm.Segurado.NomeCompleto || norm.Segurado.nome || "Não Identificado";
@@ -294,7 +299,7 @@ const adminController = {
     getPendingImports: async (req, res) => {
         try {
             const result = await db.query(`
-                SELECT id, nome_segurado, tipo_documento, created_at, status 
+                SELECT id, nome_segurado, tipo_documento, created_at, status, dados_json 
                 FROM importacoes_pendentes 
                 WHERE status = 'PENDENTE'
                 ORDER BY created_at DESC
