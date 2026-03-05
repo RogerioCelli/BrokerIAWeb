@@ -9,7 +9,7 @@ const isAdmin = (req, res, next) => {
     }
 
     // 1. Verificar se é a Chave de API fixa do n8n (para automações)
-    const n8nApiKey = process.env.N8N_API_KEY || 'corretora-robo-n8n-access-2025';
+    const n8nApiKey = process.env.N8N_API_KEY || 'brokeria2025';
     if (token === n8nApiKey) {
         req.admin = { id: 'n8n_automation', type: 'admin', role: 'master' };
         return next();
