@@ -801,7 +801,7 @@
             return !(normalized === "" || normalized === "null" || normalized === "undefined" || normalized === "none");
         }
 
-        document.getElementById('select_apolice').addEventListener('change', function () {
+        document.getElementById('select_apolice').addEventListener('change', async function () {
             const policyId = this.value;
             const downloadContainer = document.getElementById('policy-download-container');
             const catGroup = document.querySelector('.form-group label[for="categoria_seguro"]').closest('.form-group');
@@ -847,32 +847,39 @@
 
             // Tentar preencher Marca e Modelo (Se houver na base de apólices)
             if (p.marca) {
+                // AGUARDAR o carregamento das marcas antes de selecionar
+                const catName = (catOpt?.text || '').toLowerCase();
+                let tipo = 'CARRO';
+                if (catName.includes('moto')) tipo = 'MOTO';
+                else if (catName.includes('transporte')) tipo = 'CAMINHAO';
+                else if (catName.includes('náutica')) tipo = 'NAUTICA';
+
+                await loadVeiculoMarcas(tipo);
+
                 // Tenta achar a marca no select
                 const marcaOpt = [...veiculoMarcaSelect.options].find(o =>
                     o.text.toLowerCase().includes(p.marca.toLowerCase())
                 );
+
                 if (marcaOpt) {
                     veiculoMarcaSelect.value = marcaOpt.value;
-                    // Força carregamento dos modelos
-                    const marcaChangeEvent = new Event('change');
-                    veiculoMarcaSelect.dispatchEvent(marcaChangeEvent);
+                    // Força carregamento dos modelos e AGUARDA
+                    await loadVeiculoModelos(marcaOpt.value);
 
-                    // Como o carregamento de modelos é async, precisamos de um pequeno delay ou check
-                    setTimeout(() => {
-                        if (p.modelo) {
-                            const modeloOpt = [...veiculoModeloSelect.options].find(o =>
-                                o.text.toLowerCase().includes(p.modelo.toLowerCase())
-                            );
-                            if (modeloOpt) veiculoModeloSelect.value = modeloOpt.value;
-                        }
-                    }, 800);
+                    if (p.modelo) {
+                        const modeloOpt = [...veiculoModeloSelect.options].find(o =>
+                            o.text.toLowerCase().includes(p.modelo.toLowerCase())
+                        );
+                        if (modeloOpt) veiculoModeloSelect.value = modeloOpt.value;
+                    }
                 }
             }
 
             // 4. Link de Download (Prioridade para url_link do Google Drive)
             const pdfUrl = p.url_link || p.link_url_apolice || p.url_pdf;
             if (checkPdfLink(pdfUrl)) {
-                document.getElementById('btn_download_apolice').href = pdfUrl;
+                const btnDownload = document.getElementById('btn_download_apolice');
+                if (btnDownload) btnDownload.href = pdfUrl;
                 downloadContainer.style.display = 'flex';
             } else {
                 downloadContainer.style.display = 'none';
@@ -885,7 +892,7 @@
             // 6. Observação automática (Contexto)
             const obs = document.getElementById('observacoes');
             if (obs) {
-                const dataFim = p.data_fim ? new Date(p.data_fim).toLocaleDateString('pt-BR') : 'não informada';
+                const dataFim = p.validade_fim || p.data_fim ? new Date(p.validade_fim || p.data_fim).toLocaleDateString('pt-BR') : 'não informada';
                 obs.value = `Solicitação de renovação para apólice nº ${p.numero_apolice || 'N/A'}. Vigência até ${dataFim}.`;
             }
 
@@ -947,26 +954,37 @@
                     opt.value = m.id; opt.textContent = m.nome;
                     veiculoMarcaSelect.appendChild(opt);
                 });
-            } catch (e) { console.error(e); }
+                return marcas;
+            } catch (e) {
+                console.error('[VEICULOS-MARCAS-ERR]', e);
+                veiculoMarcaSelect.innerHTML = '<option value="" disabled>Erro ao carregar marcas</option>';
+            }
         }
 
-        if (veiculoMarcaSelect) { // Adicionado para evitar erro se o elemento não existir
-            veiculoMarcaSelect.addEventListener('change', async function () {
-                const mid = this.value;
-                if (!mid) return;
-                veiculoModeloSelect.disabled = true;
-                veiculoModeloSelect.innerHTML = '<option value="" disabled selected>Carregando...</option>';
-                try {
-                    const res = await fetch(`${API_URL}/seguros/veiculos/modelos/${mid}`);
-                    const models = await res.json();
-                    veiculoModeloSelect.innerHTML = '<option value="" disabled selected>Selecione o Modelo</option>';
-                    models.forEach(mod => {
-                        const opt = document.createElement('option');
-                        opt.value = mod.nome; opt.textContent = mod.nome;
-                        veiculoModeloSelect.appendChild(opt);
-                    });
-                    veiculoModeloSelect.disabled = false;
-                } catch (e) { console.error(e); }
+        async function loadVeiculoModelos(marcaId) {
+            if (!marcaId) return;
+            veiculoModeloSelect.disabled = true;
+            veiculoModeloSelect.innerHTML = '<option value="" disabled selected>Carregando...</option>';
+            try {
+                const res = await fetch(`${API_URL}/seguros/veiculos/modelos/${marcaId}`);
+                const models = await res.json();
+                veiculoModeloSelect.innerHTML = '<option value="" disabled selected>Selecione o Modelo</option>';
+                models.forEach(mod => {
+                    const opt = document.createElement('option');
+                    opt.value = mod.nome; opt.textContent = mod.nome;
+                    veiculoModeloSelect.appendChild(opt);
+                });
+                veiculoModeloSelect.disabled = false;
+                return models;
+            } catch (e) {
+                console.error('[VEICULOS-MODELOS-ERR]', e);
+                veiculoModeloSelect.innerHTML = '<option value="" disabled>Erro ao carregar modelos</option>';
+            }
+        }
+
+        if (veiculoMarcaSelect) {
+            veiculoMarcaSelect.addEventListener('change', function () {
+                loadVeiculoModelos(this.value);
             });
         }
 

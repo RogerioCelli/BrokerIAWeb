@@ -1,11 +1,11 @@
 const fs = require('fs');
 const path = require('path');
-const db = require('./db');
+const db = require('../db');
 
 async function importFull() {
     console.log('--- Iniciando Importação Completa ---');
     try {
-        const sqlPath = path.join(__dirname, 'scripts', 'import_veiculos_v3.sql');
+        const sqlPath = path.join(__dirname, 'import_veiculos_v3.sql');
         if (!fs.existsSync(sqlPath)) {
             throw new Error('Arquivo SQL não encontrado: ' + sqlPath);
         }
