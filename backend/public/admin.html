@@ -296,8 +296,8 @@
 
             <div id="login-step-1">
                 <div class="input-group">
-                    <label>E-mail ou CPF</label>
-                    <input type="text" id="admin-id" class="login-input" placeholder="seu@email.com">
+                    <label>CPF</label>
+                    <input type="text" id="admin-id" class="login-input" placeholder="000.000.000-00">
                 </div>
                 <button class="btn-admin" onclick="requestAdminToken()">Receber Código</button>
             </div>
@@ -420,15 +420,13 @@
 
         async function requestAdminToken() {
             const id = document.getElementById('admin-id').value.trim();
-            if (!id) return alert('Insira seu E-mail ou CPF');
+            if (!id) return alert('Insira seu CPF');
 
-            // Se não for e-mail, valida formato CPF ou CNPJ
-            const isEmail = id.includes('@');
             // Allow both formatted (000.000.000-00) and unformatted (digits only)
             const CPF_REGEX = /^(\d{3}\.\d{3}\.\d{3}-\d{2}|\d{11})$/;
             const CNPJ_REGEX = /^(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}|\d{14})$/;
             if (!CPF_REGEX.test(id) && !CNPJ_REGEX.test(id)) {
-                return alert('Formato inválido. Use CPF ou CNPJ (apenas números ou com pontos/traços).');
+                return alert('Formato inválido. Use CPF (apenas números ou com pontos/traços).');
             }
 
             try {
