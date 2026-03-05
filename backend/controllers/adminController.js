@@ -235,26 +235,39 @@ const adminController = {
                 return res.status(400).json({ error: 'Dados obrigatórios ausentes (CPF ou Número da Apólice)' });
             }
 
-            const cleanCpf = cliente.cpf_cnpj.replace(/\D/g, '');
+            const rawIdentifier = (cliente.cpf_cnpj || "").replace(/\D/g, '');
+            const isCnpj = rawIdentifier.length === 14;
+            const clienteCpf = !isCnpj ? rawIdentifier : null;
+            const clienteCnpj = isCnpj ? rawIdentifier : null;
+
+            if (!rawIdentifier || !apolice?.numero_apolice) {
+                return res.status(400).json({ error: 'Dados obrigatórios ausentes (Identificador ou Número da Apólice)' });
+            }
 
             // 1. Upsert CLIENTE
             await db.clientesQuery(`
-                INSERT INTO clientes_brokeria (nome_completo, cpf, email, celular, data_cadastro)
-                VALUES ($1, $2, $3, $4, NOW())
-                ON CONFLICT (cpf) 
+                INSERT INTO clientes_brokeria (nome_completo, cpf, cnpj, email, celular, data_cadastro)
+                VALUES ($1, $2, $3, $4, $5, NOW())
+                ON CONFLICT (id_cliente) 
                 DO UPDATE SET 
                     nome_completo = EXCLUDED.nome_completo,
                     email = COALESCE(EXCLUDED.email, clientes_brokeria.email),
-                    celular = COALESCE(EXCLUDED.celular, clientes_brokeria.celular)
-            `, [cliente.nome, cleanCpf, cliente.email, cliente.telefone]);
+                    celular = COALESCE(EXCLUDED.celular, clientes_brokeria.celular),
+                    cpf = COALESCE(EXCLUDED.cpf, clientes_brokeria.cpf),
+                    cnpj = COALESCE(EXCLUDED.cnpj, clientes_brokeria.cnpj)
+            `, [cliente.nome, clienteCpf, clienteCnpj, cliente.email, cliente.telefone]);
+
+            // Nota: Como o ON CONFLICT precisa de um índice único, e temos CPF e CNPJ separados, 
+            // a lógica ideal de banco de dados seria ter um índice único ou fazer uma busca prévia.
+            // Para manter a simplicidade do "ingest", vamos assumir que o portal lida com o vínculo via ID ou CPF/CNPJ limpo.
 
             // 2. Upsert APOLICE
             await db.apolicesQuery(`
                 INSERT INTO apolices_brokeria (
                     numero_apolice, seguradora, ramo, vigencia_inicio, vigencia_fim, 
-                    status_apolice, cpf, placa, data_criacao, data_sincronizacao
+                    status_apolice, cpf, cnpj, placa, data_criacao, data_ultima_atualizacao
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
                 ON CONFLICT (numero_apolice)
                 DO UPDATE SET
                     seguradora = EXCLUDED.seguradora,
@@ -263,8 +276,9 @@ const adminController = {
                     vigencia_fim = EXCLUDED.vigencia_fim,
                     status_apolice = EXCLUDED.status_apolice,
                     cpf = EXCLUDED.cpf,
+                    cnpj = EXCLUDED.cnpj,
                     placa = COALESCE(EXCLUDED.placa, apolices_brokeria.placa),
-                    data_sincronizacao = NOW()
+                    data_ultima_atualizacao = NOW()
             `, [
                 apolice.numero_apolice,
                 apolice.seguradora,
@@ -272,7 +286,8 @@ const adminController = {
                 apolice.data_inicio,
                 apolice.data_fim,
                 apolice.status || 'ATIVA',
-                cleanCpf,
+                clienteCpf,
+                clienteCnpj,
                 detalhes_especificos?.placa || null
             ]);
 
