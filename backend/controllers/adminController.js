@@ -483,10 +483,25 @@ const adminController = {
             const clienteCpf = !isCnpj ? rawIdentifier : null;
             const clienteCnpj = isCnpj ? rawIdentifier : null;
 
-            // Tratamento de Telefones — suporta formato normalizado e formato v19 direto
             const emailCli = cliente.Email || null;
-            const clienteCelular = String(cliente.Celular || '').replace(/\D/g, '');
-            const clienteTelefone = String(cliente.TelefoneFixo || '').replace(/\D/g, '');
+
+            // Formatação estrita de Telefones (Adicionando 55 se faltar, mantendo DDD + número)
+            const formatPhone = (phoneStr) => {
+                let cleaned = String(phoneStr || '').replace(/\D/g, '');
+                if (!cleaned) return null;
+                // Se já começar com 55 e tiver 12 ou 13 dígitos, está ok.
+                if (cleaned.startsWith('55') && cleaned.length >= 12 && cleaned.length <= 13) {
+                    return cleaned;
+                }
+                // Se tiver 10 ou 11 dígitos, é o DDD + Número Bruto
+                if (cleaned.length === 10 || cleaned.length === 11) {
+                    return '55' + cleaned;
+                }
+                return cleaned; // Devolve como está se for um formato desconhecido
+            };
+
+            const clienteCelular = formatPhone(cliente.Celular);
+            const clienteTelefone = formatPhone(cliente.TelefoneFixo);
 
             // Endereço — usa Endereco normalizado (cobre ambos os formatos)
             const endNorm = norm.Endereco;
