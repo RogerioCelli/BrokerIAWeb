@@ -632,35 +632,35 @@
                     <div style="display:flex; gap:10px">
                         <div class="field-group" style="flex:3">
                             <label>Logradouro</label>
-                            <input type="text" id="edit-logradouro" class="input-edit" value="${esc(norm.endereco.Logradouro)}">
+                            <input type="text" id="edit-logradouro" class="input-edit" value="${esc(norm.endereco.Logradouro || '')}">
                         </div>
                         <div class="field-group" style="flex:1">
                             <label>Nº</label>
-                            <input type="text" id="edit-numero" class="input-edit" value="${esc(norm.endereco.Numero)}">
+                            <input type="text" id="edit-numero" class="input-edit" value="${esc(norm.endereco.Numero || '')}">
                         </div>
                     </div>
                     <div style="display:flex; gap:10px">
                         <div class="field-group" style="flex:1">
                             <label>Complemento</label>
-                            <input type="text" id="edit-complemento" class="input-edit" value="${esc(norm.endereco.Complemento)}">
+                            <input type="text" id="edit-complemento" class="input-edit" value="${esc(norm.endereco.Complemento || '')}">
                         </div>
                         <div class="field-group" style="flex:1">
                             <label>Bairro</label>
-                            <input type="text" id="edit-bairro" class="input-edit" value="${esc(norm.endereco.Bairro)}">
+                            <input type="text" id="edit-bairro" class="input-edit" value="${esc(norm.endereco.Bairro || '')}">
                         </div>
                     </div>
                     <div style="display:flex; gap:10px">
                         <div class="field-group" style="flex:2">
                             <label>Cidade</label>
-                            <input type="text" id="edit-cidade" class="input-edit" value="${esc(norm.endereco.Cidade)}">
+                            <input type="text" id="edit-cidade" class="input-edit" value="${esc(norm.endereco.Cidade || '')}">
                         </div>
                         <div class="field-group" style="flex:1">
                             <label>UF</label>
-                            <input type="text" id="edit-estado" class="input-edit" value="${esc(norm.endereco.Estado)}">
+                            <input type="text" id="edit-estado" class="input-edit" value="${esc(norm.endereco.Estado || '')}">
                         </div>
                         <div class="field-group" style="flex:1">
                             <label>CEP</label>
-                            <input type="text" id="edit-cep" class="input-edit" value="${esc(norm.endereco.CEP)}">
+                            <input type="text" id="edit-cep" class="input-edit" value="${esc(norm.endereco.CEP || '')}">
                         </div>
                     </div>
 
@@ -792,6 +792,22 @@
                     <div class="field-group">
                         <label>Tipo Franquia</label>
                         <input type="text" id="edit-franquia" class="input-edit" value="${esc(norm.apolice.FranquiaTipo || '')}">
+                    </div>
+
+                    <p style="color: var(--text-secondary); font-size:0.8rem; margin: 1.5rem 0 0.8rem; border-bottom:1px solid var(--border); padding-bottom:0.8rem;">👔 CORRETOR E COBERTURAS</p>
+                    <div style="display:flex; gap:10px">
+                        <div class="field-group" style="flex:2">
+                            <label>Nome do Corretor</label>
+                            <input type="text" id="edit-corretor-nome" class="input-edit" value="${esc(norm.extras.Corretor.Nome || norm.extras.Corretor.nome || '')}">
+                        </div>
+                        <div class="field-group" style="flex:1">
+                            <label>Código Corretor (Susep)</label>
+                            <input type="text" id="edit-corretor-codigo" class="input-edit" value="${esc(norm.extras.Corretor.Susep || norm.extras.Corretor.susep || '')}">
+                        </div>
+                    </div>
+                    <div class="field-group">
+                        <label>Coberturas Principais (Separadas por vírgula)</label>
+                        <textarea id="edit-coberturas" class="input-edit" rows="3" style="font-family:inherit; resize:vertical;">${Array.isArray(norm.extras.Coberturas) ? esc(norm.extras.Coberturas.join(', ')) : esc(norm.extras.Coberturas || '')}</textarea>
                     </div>
 
                     <p style="color: var(--text-secondary); font-size:0.8rem; margin: 1.5rem 0 0.8rem; border-bottom:1px solid var(--border); padding-bottom:0.8rem;">📦 DADOS COMPLETOS EXTRAÍDOS (JSON)</p>
@@ -935,6 +951,14 @@
                 json.DADOS_DO_BEM_AUTO.Kit_Gas = document.getElementById('edit-kitgas').value === 'true';
                 json.DADOS_DO_BEM_AUTO.Cambio_Automatico = document.getElementById('edit-automatico').value === 'true';
                 json.DADOS_DO_BEM_AUTO.Franquia_Tipo = document.getElementById('edit-franquia').value;
+
+                // ─── EXTRAS / CORRETOR E COBERTURAS ───────────────────────
+                if (!json.EXTRAS.Corretor) json.EXTRAS.Corretor = {};
+                json.EXTRAS.Corretor.Nome = document.getElementById('edit-corretor-nome').value;
+                json.EXTRAS.Corretor.Susep = document.getElementById('edit-corretor-codigo').value;
+
+                const coberturasRaw = document.getElementById('edit-coberturas').value;
+                json.EXTRAS.Coberturas_Principais = coberturasRaw ? coberturasRaw.split(',').map(c => c.trim()).filter(c => c) : [];
 
                 // 2. Enviar para o banco final (reutilizando a lógica de ingestão)
                 const token = localStorage.getItem('admin_token');
