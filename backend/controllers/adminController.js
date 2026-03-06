@@ -370,6 +370,11 @@ const adminController = {
             // Se for array do n8n, descompacta
             if (Array.isArray(data)) data = data[0];
 
+            // Se o n8n HTTP Request encapsulou dentro de { parameters: [...] }
+            if (data && data.parameters && Array.isArray(data.parameters)) {
+                data = data.parameters[0];
+            }
+
             const norm = adminController.normalizeData(data);
 
             const nomeSegurado = norm.Segurado.NomeCompleto || norm.Segurado.nome || "Não Identificado";

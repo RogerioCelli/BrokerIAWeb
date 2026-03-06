@@ -353,6 +353,12 @@
 
             // Suporte para array do n8n (recursivo simples)
             if (Array.isArray(data)) data = data[0];
+
+            // Suporte para quando o n8n HTTP Request encapsula em { parameters: [...] }
+            if (data && data.parameters && Array.isArray(data.parameters)) {
+                data = data.parameters[0];
+            }
+
             if (!data) return { segurado: {}, apolice: {}, endereco: {} };
 
             // Suporte para wrapper "OrganizaDados" (case-insensitive)
