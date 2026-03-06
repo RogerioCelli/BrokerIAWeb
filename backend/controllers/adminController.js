@@ -243,13 +243,6 @@ const adminController = {
         // Se após extrair o wrapper ainda for array
         if (Array.isArray(data)) data = data[0];
 
-        const norm = {
-            Segurado: {},
-            DadosApolice: {},
-            Endereco: {},
-            BemAuto: {}
-        };
-
         // ─── HELPER: busca chave case-insensitive em um objeto ───────────────
         const getKey = (obj, ...aliases) => {
             if (!obj || typeof obj !== 'object') return undefined;
@@ -257,91 +250,106 @@ const adminController = {
             return found ? obj[found] : undefined;
         };
 
-        // ─── 1. IDENTIFICACAO / Segurado ─────────────────────────────────────
-        const iden = getKey(data, 'identificacao', 'identificação', 'segurado', 'cliente') || data;
+        const norm = { Segurado: {}, DadosApolice: {}, Endereco: {}, BemAuto: {}, Extras: {} };
 
-        const cpfRaw = String(iden.CPF || iden.cpf || iden.cpf_cnpj || iden.CPF_CNPJ || '').replace(/\D/g, '');
-        const cnpjRaw = String(iden.CNPJ || iden.cnpj || '').replace(/\D/g, '');
+        // ─── 1. IDENTIFICACAO / Segurado ─────────────────────────────────────
+        const iden = getKey(data, 'segurado', 'identificacao', 'identificação', 'cliente') || data;
+
+        const cpfRaw = String(iden.cpf || iden.CPF || iden.cpf_cnpj || iden.CPF_CNPJ || '').replace(/\D/g, '');
+        const cnpjRaw = String(iden.cnpj || iden.CNPJ || '').replace(/\D/g, '');
         const docRaw = cpfRaw || cnpjRaw || '';
 
-        norm.Segurado = {
-            NomeCompleto: iden.Nome_Segurado || iden.NomeCompleto || iden.nome_completo || iden.nome || iden.Nome || 'Não Identificado',
-            CPF: docRaw.length === 11 ? docRaw : (cpfRaw.length === 11 ? cpfRaw : null),
-            CNPJ: docRaw.length === 14 ? docRaw : (cnpjRaw.length === 14 ? cnpjRaw : null),
-            RG: iden.RG || iden.rg || '',
-            DataNascimento: iden.Data_Nascimento || iden.data_nascimento || iden.DataNascimento || null,
-            Profissao: iden.Profissao || iden.profissao || '',
-            EstadoCivil: iden.Estado_Civil || iden.estado_civil || iden.EstadoCivil || '',
-            CPFConjuge: iden.CPF_Conjuge || iden.cpf_conjuge || ''
-        };
+        norm.Segurado.NomeCompleto = iden.nome || iden.Nome || iden.Nome_Segurado || iden.NomeCompleto || iden.nome_completo || 'Não Identificado';
+        if (docRaw.length === 11) norm.Segurado.CPF = docRaw;
+        else if (docRaw.length === 14) norm.Segurado.CNPJ = docRaw;
+
+        norm.Segurado.RG = iden.rg || iden.RG || '';
+        norm.Segurado.DataNascimento = iden.data_nascimento || iden.DataNascimento || null;
+        norm.Segurado.Profissao = iden.profissao || iden.Profissao || '';
+        norm.Segurado.EstadoCivil = iden.estado_civil || iden.Estado_Civil || '';
+
+        // Suporte para extras (novo n8n)
+        const extrasBlock = data.extras || getKey(data, 'outros') || {};
+        norm.Segurado.CPFConjuge = extrasBlock.cpf_conjuge || iden.cpf_conjuge || iden.CPF_Conjuge || '';
 
         // ─── 2. CONTATOS ─────────────────────────────────────────────────────
-        const cont = getKey(data, 'contatos') || iden.Contatos || iden.contatos || {};
-        const emails = cont.Emails || cont.emails || [];
-        const celulares = cont.Celulares || cont.celulares || [];
-        const fixos = cont.Telefones_Fixos || cont.Telefones_fixos || cont.telefones_fixos || [];
-        norm.Segurado.Email = (Array.isArray(emails) ? emails[0] : emails) || cont.Email || cont.email || iden.Email || '';
+        const cont = getKey(data, 'contatos_segurado', 'contatos') || iden.Contatos || iden.contatos || {};
+        const emails = cont.emails || cont.Emails || [];
+
+        norm.Segurado.Email = (Array.isArray(emails) ? emails[0] : emails) || cont.email || cont.Email || iden.email || iden.Email || '';
         norm.Segurado.Email2 = (Array.isArray(emails) && emails.length > 1 ? emails[1] : '');
-        norm.Segurado.Celular = (Array.isArray(celulares) ? celulares[0] : celulares) || cont.Celular || cont.celular || iden.Celular || '';
-        norm.Segurado.TelefoneFixo = (Array.isArray(fixos) ? fixos[0] : fixos) || '';
-        norm.Segurado.Telefone2 = (Array.isArray(fixos) && fixos.length > 1 ? fixos[1] : '');
+
+        norm.Segurado.Celular = cont.celular || cont.Celular || iden.celular || iden.Celular || '';
+
+        const comPhone = cont.telefone_comercial || cont.Telefone_Comercial || '';
+        const resPhone = cont.telefone_residencial || cont.Telefone_Residencial || '';
+        norm.Segurado.TelefoneFixo = comPhone || resPhone || '';
+        norm.Segurado.Telefone2 = comPhone && resPhone ? resPhone : '';
 
         // ─── 3. ENDERECO ─────────────────────────────────────────────────────
-        const end = getKey(data, 'endereco_principal', 'endereco', 'enderecocompleto') || iden.Endereco || iden.Endereço || {};
-        norm.Endereco = {
-            Logradouro: end.Logradouro || end.logradouro || '',
-            Numero: end.Numero || end.numero || '',
-            Complemento: end.Complemento || end.complemento || '',
-            Bairro: end.Bairro || end.bairro || '',
-            Cidade: end.Cidade || end.cidade || '',
-            Estado: end.Estado || end.estado || '',
-            CEP: String(end.CEP || end.cep || '').replace(/\D/g, ''),
-        };
+        let endObj = getKey(data, 'enderecos_segurado', 'endereco_principal', 'endereco', 'enderecocompleto') || iden.Endereco || iden.Endereço || {};
+        // novo n8n manda um array de enderecos
+        if (Array.isArray(endObj) && endObj.length > 0) endObj = endObj[0];
+
+        norm.Endereco.Logradouro = endObj.logradouro || endObj.Logradouro || '';
+        norm.Endereco.Numero = endObj.numero || endObj.Numero || '';
+        norm.Endereco.Complemento = endObj.complemento || endObj.Complemento || '';
+        norm.Endereco.Bairro = endObj.bairro || endObj.Bairro || '';
+        norm.Endereco.Cidade = endObj.cidade || endObj.Cidade || '';
+        norm.Endereco.Estado = endObj.estado || endObj.Estado || '';
+        norm.Endereco.CEP = String(endObj.cep || endObj.CEP || '').replace(/\D/g, '');
 
         // ─── 4. DADOS_DA_APOLICE ─────────────────────────────────────────────
-        const apol = getKey(data, 'dados_da_apolice', 'dados_da_apólice', 'dadosapolice', 'apolice') || {};
-        norm.DadosApolice = {
-            NumeroApolice: apol.Numero || apol.numero_apolice || apol.NumeroApolice || apol.numero || '',
-            Seguradora: apol.Seguradora || apol.seguradora || '',
-            Ramo: apol.Ramo || apol.ramo || '',
-            NomeProduto: apol.Nome_do_Produto || apol.NomeProduto || apol.nome_produto || apol.produto || '',
-            ValorPremioTotal: apol.Valor_Premio_Total || apol.ValorPremioTotal || apol.valor_premio_total || null,
-            FormaPagamento: apol.Forma_Pagamento || apol.FormaPagamento || apol.forma_pagamento || '',
-            NumeroParcelas: apol.Numero_Parcelas || apol.NumeroParcelas || apol.numero_parcelas || null,
-            FrequenciaPagamento: apol.Frequencia_Pagamento || apol.frequencia_pagamento || '',
-            NumeroProposta: apol.Numero_Proposta || apol.numero_proposta || '',
-            VigenciaInicio: apol.Vigencia_Inicio || apol.vigencia_inicio || apol.VigenciaInicio || '',
-            VigenciaFim: apol.Vigencia_Fim || apol.vigencia_fim || apol.VigenciaFim || '',
-        };
+        const apol = getKey(data, 'dados_apolice', 'dados_da_apolice', 'dados_da_apólice', 'dadosapolice', 'apolice') || {};
+        norm.DadosApolice.NumeroApolice = apol.numero_apolice || apol.Numero || apol.NumeroApolice || apol.numero || '';
+        const segRaw = apol.seguradora || apol.Seguradora || '';
+        norm.DadosApolice.Seguradora = (typeof segRaw === 'object' && segRaw !== null) ? (segRaw.nome || segRaw.Nome || JSON.stringify(segRaw)) : segRaw;
+        norm.DadosApolice.Ramo = apol.ramo || apol.Ramo || '';
+        norm.DadosApolice.NomeProduto = apol.nome_produto || apol.Nome_do_Produto || apol.NomeProduto || apol.produto || '';
+        norm.DadosApolice.ValorPremioTotal = apol.premio_total || apol.Valor_Premio_Total || apol.ValorPremioTotal || apol.valor_premio_total || '';
+        norm.DadosApolice.FormaPagamento = apol.forma_pagamento || apol.Forma_Pagamento || apol.FormaPagamento || '';
+        norm.DadosApolice.NumeroParcelas = apol.numero_parcelas || apol.Numero_Parcelas || apol.NumeroParcelas || '';
+        norm.DadosApolice.FrequenciaPagamento = apol.frequencia_pagamento || apol.Frequencia_Pagamento || '';
+        norm.DadosApolice.NumeroProposta = apol.numero_proposta || apol.Numero_Proposta || '';
+
+        // Opcional do bloco de extras do novo n8n
+        if (!norm.DadosApolice.NumeroProposta && extrasBlock.documento_informacoes) {
+            norm.DadosApolice.NumeroProposta = extrasBlock.documento_informacoes.numero_proposta_endosso || '';
+        }
+
+        norm.DadosApolice.VigenciaInicio = apol.vigencia_inicio || apol.Vigencia_Inicio || apol.VigenciaInicio || '';
+        norm.DadosApolice.VigenciaFim = apol.vigencia_fim || apol.Vigencia_Fim || apol.VigenciaFim || '';
 
         // ─── 5. DADOS_DO_BEM_AUTO ────────────────────────────────────────────
-        const auto = getKey(data, 'dados_do_bem_auto', 'dados_bem_auto', 'bemauto', 'veículo', 'veiculo', 'itemsegurado') || {};
-        norm.BemAuto = {
-            Placa: auto.Placa || auto.placa || '',
-            Chassi: auto.Chassi || auto.chassi || '',
-            Modelo: auto.Modelo || auto.modelo || '',
-            Fabricante: auto.Fabricante || auto.fabricante || '',
-            AnoModelo: auto.Ano_Modelo || auto.AnoModelo || auto.ano_modelo || '',
-            AnoFabricacao: auto.Ano_Fabricacao || auto.AnoFabricacao || auto.ano_fabricacao || '',
-            Renavam: auto.Renavam || auto.renavam || '',
-            CodigoFIPE: auto.Codigo_FIPE || auto.CodigoFIPE || auto.codigo_fipe || '',
-            CorVeiculo: auto.Cor || auto.cor || auto.cor_veiculo || '',
-            Combustivel: auto.Combustivel || auto.combustivel || '',
-            Kilometragem: auto.Kilometragem || auto.kilometragem || '',
-            Blindado: auto.Blindado || auto.blindado || false,
-            KitGas: auto.Kit_Gas || auto.kit_gas || false,
-            CambioAutomatico: auto.Cambio_Automatico || auto.cambio_automatico || false,
-            FranquiaTipo: auto.Franquia_Tipo || auto.franquia_tipo || '',
-        };
+        const auto = getKey(data, 'dados_bem_auto', 'dados_do_bem_auto', 'bemauto', 'itemsegurado') || {};
+        norm.BemAuto.Placa = auto.placa || auto.Placa || '';
+        norm.BemAuto.Chassi = auto.chassi || auto.Chassi || '';
+        norm.BemAuto.Modelo = auto.modelo || auto.Modelo || '';
+        norm.BemAuto.Fabricante = auto.fabricante || auto.Fabricante || '';
+        norm.BemAuto.AnoModelo = auto.ano_modelo || auto.Ano_Modelo || auto.AnoModelo || '';
+        norm.BemAuto.AnoFabricacao = auto.ano_fabricacao || auto.Ano_Fabricacao || auto.AnoFabricacao || '';
+        norm.BemAuto.Renavam = auto.renavam || auto.Renavam || '';
+        norm.BemAuto.CodigoFIPE = auto.codigo_fipe || auto.Codigo_FIPE || auto.CodigoFIPE || '';
+        norm.BemAuto.CorVeiculo = auto.cor || auto.Cor || auto.cor_veiculo || '';
+        norm.BemAuto.Combustivel = auto.combustivel || auto.Combustivel || '';
+        norm.BemAuto.Kilometragem = auto.kilometragem || auto.Kilometragem || '';
+        norm.BemAuto.Blindado = auto.blindado || auto.Blindado || false;
+        norm.BemAuto.KitGas = auto.kit_gas || auto.Kit_Gas || false;
+        norm.BemAuto.CambioAutomatico = auto.cambio_automatico || auto.Cambio_Automatico || false;
 
-        // ─── 6. EXTRAS / OUTROS ──────────────────────────────────────────────
-        const extras = getKey(data, 'extras', 'outros') || {};
+        // Franquia geral
+        let franq = auto.franquia_geral || auto.Franquia_Tipo || auto.franquia_tipo || '';
+        if (!franq && Array.isArray(data.franquias) && data.franquias.length > 0) {
+            franq = data.franquias.map(f => `${f.tipo}: ${f.valor}`).join(', ');
+        }
+        norm.BemAuto.FranquiaTipo = franq;
+
+        // ─── 6. EXTRAS ───────────────────────────────────────────────────────
         norm.Extras = {
-            Coberturas: extras.Coberturas_Principais || extras.coberturas || [],
-            Condutor: extras.Principal_Condutor || extras.condutor || {},
-            Corretor: extras.Corretor || {},
-            DadosBancarios: extras.Banco_Debito_Conta || {},
-            DadosAdicionais: extras.OutrosDados || extras
+            Corretor: extrasBlock.corretora || extrasBlock.Corretor || {},
+            Coberturas: Array.isArray(data.coberturas) ? data.coberturas.map(c => typeof c === 'string' ? c : `${c.tipo}${c.limite_indenizacao ? ` (${c.limite_indenizacao})` : ''}`) : (extrasBlock.Coberturas_Principais || extrasBlock.coberturas || []),
+            Condutor: data.condutores || extrasBlock.Principal_Condutor || extrasBlock.condutor || {},
+            DadosAdicionais: extrasBlock.dados_bancarios_debito || extrasBlock.OutrosDados || extrasBlock
         };
 
         return norm;
