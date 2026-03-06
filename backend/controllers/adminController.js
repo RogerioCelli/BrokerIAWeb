@@ -229,17 +229,19 @@ const adminController = {
     // --- ÁREA DE STAGING (IMPORTAÇÕES PENDENTES) ---
 
     normalizeData: (raw) => {
+        if (!raw) return { Segurado: {}, DadosApolice: {}, Endereco: {} };
         let data = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
         // n8n frequentemente envia um array com um objeto dentro
-        if (Array.isArray(data)) {
-            data = data[0];
-        }
+        if (Array.isArray(data)) data = data[0];
+        if (!data) return { Segurado: {}, DadosApolice: {}, Endereco: {} };
 
-        // Suporte para o wrapper "OrganizaDados" do n8n
-        if (data && data.OrganizaDados) {
-            data = data.OrganizaDados;
-        }
+        // Suporte para wrapper "OrganizaDados" (Case Insensitive)
+        const wrapperKey = Object.keys(data).find(k => k.toLowerCase() === 'organizadados');
+        if (wrapperKey) data = data[wrapperKey];
+
+        // Se após extrair o wrapper ainda for array
+        if (Array.isArray(data)) data = data[0];
 
         const norm = {
             Segurado: data.Segurado || data.cliente || {},
