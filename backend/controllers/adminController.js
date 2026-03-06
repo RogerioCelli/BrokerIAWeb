@@ -470,14 +470,15 @@ const adminController = {
             const seguradora = rawData.Seguradora || {};
 
             const nomeCli = cliente.NomeCompleto;
-            const docCli = cliente.CPF || cliente.CNPJ;
+            const docCliRaw = String(cliente.CPF || cliente.CNPJ || '');
             const numApo = apolice.NumeroApolice;
 
-            if (!docCli || !numApo) {
-                return res.status(400).json({ error: 'Dados obrigatórios ausentes (CPF/CNPJ ou Número da Apólice)' });
+            const rawIdentifier = docCliRaw.replace(/\D/g, '');
+
+            if (!rawIdentifier || (rawIdentifier.length !== 11 && rawIdentifier.length !== 14) || !numApo) {
+                return res.status(400).json({ error: 'Dados obrigatórios ausentes ou inválidos. CPF precisa ter 11 dígitos, CNPJ 14 dígitos, e Número da Apólice é obrigatório.' });
             }
 
-            const rawIdentifier = String(docCli).replace(/\D/g, '');
             const isCnpj = rawIdentifier.length === 14;
             const clienteCpf = !isCnpj ? rawIdentifier : null;
             const clienteCnpj = isCnpj ? rawIdentifier : null;
@@ -533,8 +534,8 @@ const adminController = {
                         cpf_conjuge = COALESCE($19, cpf_conjuge)
                     WHERE id_cliente = $20
                 `, [
-                    nomeCli, cliente.email || cliente.Email, clienteCelular, clienteTelefone,
-                    clienteCpf, clienteCnpj, clienteNomeEmpresa, cliente.data_nascimento || cliente.DataNascimento,
+                    nomeCli, emailCli, clienteCelular, clienteTelefone,
+                    clienteCpf, clienteCnpj, clienteNomeEmpresa, cliente.DataNascimento || null,
                     enderecoStr, bairro, cidade, estado, cep,
                     cliente.RG, cliente.Profissao, cliente.EstadoCivil, cliente.Telefone2, cliente.Email2, cliente.CPFConjuge,
                     clienteId
