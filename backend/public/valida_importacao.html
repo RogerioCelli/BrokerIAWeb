@@ -404,7 +404,7 @@
             norm.segurado.Telefone2 = normalizePhone(comPhone && resPhone ? resPhone : '');
 
             // ─── 3. ENDERECO ─────────────────────────────────────────────────────
-            let endObj = getKey(data, 'enderecos_segurado', 'endereco_principal', 'endereco', 'enderecocompleto', 'enderecos') || iden.Endereco || iden.Endereço || {};
+            let endObj = getKey(data, 'enderecos_segurado', 'endereco_principal', 'endereco', 'enderecocompleto', 'enderecos') || iden.endereco_principal || iden.Endereco || iden.Endereço || {};
             // novo n8n manda um array de enderecos ou um objeto com 'residencial' e 'comercial'
             if (Array.isArray(endObj) && endObj.length > 0) {
                 endObj = endObj[0];

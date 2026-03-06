@@ -287,9 +287,13 @@ const adminController = {
         norm.Segurado.Telefone2 = comPhone && resPhone ? resPhone : '';
 
         // ─── 3. ENDERECO ─────────────────────────────────────────────────────
-        let endObj = getKey(data, 'enderecos_segurado', 'endereco_principal', 'endereco', 'enderecocompleto') || iden.Endereco || iden.Endereço || {};
-        // novo n8n manda um array de enderecos
-        if (Array.isArray(endObj) && endObj.length > 0) endObj = endObj[0];
+        let endObj = getKey(data, 'enderecos_segurado', 'endereco_principal', 'endereco', 'enderecocompleto', 'enderecos') || iden.endereco_principal || iden.Endereco || iden.Endereço || {};
+        // novo n8n manda um array de enderecos ou um objeto com 'residencial' e 'comercial'
+        if (Array.isArray(endObj) && endObj.length > 0) {
+            endObj = endObj[0];
+        } else if (endObj && (endObj.residencial || endObj.comercial)) {
+            endObj = endObj.residencial || endObj.comercial; // Pega o primeiro que existir
+        }
 
         norm.Endereco.Logradouro = endObj.logradouro || endObj.Logradouro || '';
         norm.Endereco.Numero = endObj.numero || endObj.Numero || '';
