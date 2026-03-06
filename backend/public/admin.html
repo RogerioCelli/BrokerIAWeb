@@ -504,6 +504,7 @@
 
                 localStorage.setItem('admin_token', data.token);
                 localStorage.setItem('admin_user', JSON.stringify(data.user));
+                localStorage.setItem('admin_login_time', Date.now().toString());
 
                 checkAuth();
             } catch (err) { alert(err.message); }
@@ -511,18 +512,43 @@
 
         function checkAuth() {
             const token = localStorage.getItem('admin_token');
-            const user = JSON.parse(localStorage.getItem('admin_user') || '{}');
+            const userStr = localStorage.getItem('admin_user');
+            const loginTime = localStorage.getItem('admin_login_time');
 
-            if (token && user.id) {
-                document.getElementById('login-overlay').style.display = 'none';
-                document.getElementById('admin-name').innerText = user.nome;
+            // Verifica expiração em horas (ex: 2 horas)
+            const EXPIRATION_HOURS = 2;
+            let isExpired = false;
 
-                if (user.role === 'master') {
-                    document.getElementById('users-tab').style.display = 'block';
-                    document.getElementById('master-badge').style.display = 'inline-block';
+            if (loginTime) {
+                const hoursPassed = (Date.now() - parseInt(loginTime)) / (1000 * 60 * 60);
+                if (hoursPassed >= EXPIRATION_HOURS) {
+                    isExpired = true;
                 }
-                loadAllData();
             }
+
+            if (!token || !userStr || isExpired) {
+                // Força o login overlay a aparecer
+                document.getElementById('login-overlay').style.display = 'flex';
+                // Limpa dados antigos se estiver expirado
+                if (isExpired) {
+                    localStorage.removeItem('admin_token');
+                    localStorage.removeItem('admin_user');
+                    localStorage.removeItem('admin_login_time');
+                    alert('Sua sessão expirou por inatividade. Por favor, faça login novamente.');
+                }
+                return; // Bloqueia a execução do resto
+            }
+
+            const user = JSON.parse(userStr);
+
+            document.getElementById('login-overlay').style.display = 'none';
+            document.getElementById('admin-name').innerText = user.nome;
+
+            if (user.role === 'master') {
+                document.getElementById('users-tab').style.display = 'block';
+                document.getElementById('master-badge').style.display = 'inline-block';
+            }
+            loadAllData();
         }
 
         function logout() {

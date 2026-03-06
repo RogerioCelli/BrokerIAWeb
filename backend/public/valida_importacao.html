@@ -273,6 +273,40 @@
         let currentEditId = null;
         let currentFullItem = null;
 
+        // VERIFICAÇÃO DE AUTENTICAÇÃO E EXPIRAÇÃO (Mesma lógica do admin.html)
+        function checkAuth() {
+            const token = localStorage.getItem('admin_token');
+            const userStr = localStorage.getItem('admin_user');
+            const loginTime = localStorage.getItem('admin_login_time');
+
+            const EXPIRATION_HOURS = 2;
+            let isExpired = false;
+
+            if (loginTime) {
+                const hoursPassed = (Date.now() - parseInt(loginTime)) / (1000 * 60 * 60);
+                if (hoursPassed >= EXPIRATION_HOURS) {
+                    isExpired = true;
+                }
+            }
+
+            if (!token || !userStr || isExpired) {
+                if (isExpired) {
+                    localStorage.removeItem('admin_token');
+                    localStorage.removeItem('admin_user');
+                    localStorage.removeItem('admin_login_time');
+                    alert('Sua sessão expirou por inatividade. Por favor, faça login novamente na tela inicial.');
+                }
+                window.location.href = '/admin.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Executa a verificação IMEDIATAMENTE antes de carregar dados
+        if (!checkAuth()) {
+            throw new Error("Acesso negado. Redirecionando.");
+        }
+
         // HELPER: Converte data BR (DD/MM/YYYY) para ISO (YYYY-MM-DD)
         function formatDateForInput(dateStr) {
             if (!dateStr) return '';
