@@ -334,29 +334,6 @@
             return norm;
         }
 
-        // 1. Mapear Segurado (Identificacao no n8n)
-        const iden = data.Identificacao || data.Segurado || data.cliente || {};
-        norm.segurado.NomeCompleto = iden.nome_completo || iden.NomeCompleto || iden.nome || "Não Identificado";
-        const doc = (iden.cpf_cnpj || iden.CPF || iden.CNPJ || "").replace(/\D/g, '');
-        if (doc.length === 11) norm.segurado.CPF = doc;
-        else if (doc.length === 14) norm.segurado.CNPJ = doc;
-
-        // 2. Mapear Contatos
-        const cont = data.contatos || iden.Contatos || {};
-        norm.segurado.Email = (cont.emails && cont.emails[0]) || cont.Email || iden.Email || "";
-        norm.segurado.Celular = (cont.celulares && cont.celulares[0]) || cont.Celular || iden.Celular || "";
-
-        // 3. Mapear Apólice (dados_da_apolice no n8n)
-        const apol = data.dados_da_apolice || data.DadosApolice || data.apolice || iden.dados_da_apolice || {};
-        norm.apolice.NumeroApolice = apol.numero_apolice || apol.NumeroApolice || "";
-        norm.apolice.Seguradora = apol.seguradora || apol.Seguradora || "";
-        norm.apolice.Ramo = apol.ramo || apol.Ramo || "";
-        norm.apolice.VigenciaInicio = formatDateForInput(apol.vigencia_inicio || apol.VigenciaInicio);
-        norm.apolice.VigenciaFim = formatDateForInput(apol.vigencia_fim || apol.VigenciaFim);
-
-        return norm;
-        }
-
         async function loadPending() {
             const container = document.getElementById('table-container');
             try {
