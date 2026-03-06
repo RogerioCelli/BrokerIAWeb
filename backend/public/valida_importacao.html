@@ -284,6 +284,32 @@
             return dateStr;
         }
 
+        // HELPER: Normaliza telefone para padrão BR do banco de dados
+        // Celular: 13 dígitos = 55 + DDD(2) + 9XXXXXXXX(9)
+        // Fixo:    12 dígitos = 55 + DDD(2) + XXXXXXXX(8)
+        function normalizePhone(raw) {
+            if (!raw) return '';
+            const digits = String(raw).replace(/\D/g, '');
+            if (!digits) return '';
+
+            // Já tem o código do país
+            if (digits.startsWith('55')) {
+                // 5511999999999 = 13 d (celular OK) | 551199999999 = 12 d (fixo OK)
+                if (digits.length === 13 || digits.length === 12) return digits;
+                // Sobrou número + 55 inválido → tenta reconstruir a partir do 3º dígito
+                return '55' + digits.slice(2);
+            }
+
+            // Tem DDD + número completo (11 dígitos = DDD+9+8)
+            if (digits.length === 11) return '55' + digits; // celular: 55 + 11 = 13 dígitos ✓
+
+            // Tem DDD + fixo (10 dígitos = DDD+8)
+            if (digits.length === 10) return '55' + digits; // fixo: 55 + 10 = 12 dígitos ✓
+
+            // Número sem DDD — retorna como está (não dá para inferir DDD)
+            return digits;
+        }
+
         // HELPER: Normaliza os diferentes formatos de JSON (n8n vs Interno)
         function normalizeData(raw) {
             if (!raw) return { segurado: {}, apolice: {}, endereco: {} };
@@ -324,17 +350,25 @@
             const cont = getKey(data, 'contatos') || iden.Contatos || iden.contatos || {};
             const emails = cont.Emails || cont.emails || [];
             const celulares = cont.Celulares || cont.celulares || [];
+            const fixos = cont.Telefones_Fixos || cont.Telefones_fixos || cont.telefones_fixos || [];
             norm.segurado.Email = (Array.isArray(emails) ? emails[0] : emails) || cont.Email || cont.email || iden.Email || '';
-            norm.segurado.Celular = (Array.isArray(celulares) ? celulares[0] : celulares) || cont.Celular || cont.celular || iden.Celular || '';
+            // Normaliza celular → 13 dígitos (55+DDD+9XXXXXX)
+            const rawCel = (Array.isArray(celulares) ? celulares[0] : celulares) || cont.Celular || cont.celular || iden.Celular || '';
+            norm.segurado.Celular = normalizePhone(rawCel);
+            // Normaliza fixo → 12 dígitos (55+DDD+XXXXXXXX)
+            const rawTel = (Array.isArray(fixos) ? fixos[0] : fixos) || '';
+            norm.segurado.TelefoneFixo = normalizePhone(rawTel);
 
             // ─── 3. DADOS_DA_APOLICE ─────────────────────────────────────────────
-            // Suporta: DADOS_DA_APOLICE (novo), dados_da_apolice / apolice (antigo)
             const apol = getKey(data, 'dados_da_apolice', 'dados_da_apólice', 'dadosapolice', 'apolice') || {};
             norm.apolice.NumeroApolice = apol.Numero || apol.numero_apolice || apol.NumeroApolice || apol.numero || '';
-            norm.apolice.Seguradora = apol.Seguradora || apol.seguradora || '';
+            // Seguradora pode ser string ou objeto {Nome: '...'}
+            const segRaw = apol.Seguradora || apol.seguradora || '';
+            norm.apolice.Seguradora = (typeof segRaw === 'object' && segRaw !== null) ? (segRaw.Nome || segRaw.nome || JSON.stringify(segRaw)) : segRaw;
             norm.apolice.Ramo = apol.Ramo || apol.ramo || '';
             norm.apolice.VigenciaInicio = formatDateForInput(apol.Vigencia_Inicio || apol.vigencia_inicio || apol.VigenciaInicio || '');
             norm.apolice.VigenciaFim = formatDateForInput(apol.Vigencia_Fim || apol.vigencia_fim || apol.VigenciaFim || '');
+
 
             // ─── 4. DADOS_DO_BEM_AUTO ────────────────────────────────────────────
             const auto = getKey(data, 'dados_do_bem_auto', 'dados_bem_auto', 'bemauto', 'itemsegurado') || {};
@@ -547,13 +581,26 @@
 
             for (const [key, val] of Object.entries(data)) {
                 if (val === null || val === undefined || val === '') continue;
-                if (typeof val === 'object' && !Array.isArray(val)) {
+                if (Array.isArray(val)) {
+                    if (val.length === 0) continue;
+                    // Array de objetos → renderiza cada um como sub-bloco numerado
+                    if (typeof val[0] === 'object' && val[0] !== null) {
+                        html += `<div style="margin-left:${pad}px; margin-top:8px;"><span style="color:#94a3b8; font-size:0.75rem; text-transform:uppercase;">${key}</span>`;
+                        val.forEach((item, i) => {
+                            html += `<div style="margin-left:${pad + 8}px; border-left:2px solid #334155; padding-left:8px; margin-top:4px;"><span style="color:#64748b; font-size:0.7rem;">#${i + 1}</span>`;
+                            html += renderJsonReadable(item, indent + 1);
+                            html += `</div>`;
+                        });
+                        html += `</div>`;
+                    } else {
+                        // Array de strings/números → junta em linha
+                        const joined = val.filter(v => v !== null && v !== '' && v !== undefined).join(', ');
+                        if (joined) html += `<div style="margin-left:${pad}px; padding:3px 0;"><span style="color:#64748b; font-size:0.75rem;">${key}:</span> <span style="color:#e2e8f0;">${joined}</span></div>`;
+                    }
+                } else if (typeof val === 'object') {
                     html += `<div style="margin-left:${pad}px; margin-top:8px;"><span style="color:#94a3b8; font-size:0.75rem; text-transform:uppercase;">${key}</span>`;
                     html += renderJsonReadable(val, indent + 1);
                     html += `</div>`;
-                } else if (Array.isArray(val)) {
-                    const joined = val.filter(Boolean).join(', ');
-                    if (joined) html += `<div style="margin-left:${pad}px; padding:3px 0;"><span style="color:#64748b; font-size:0.75rem;">${key}:</span> <span style="color:#e2e8f0;">${joined}</span></div>`;
                 } else {
                     html += `<div style="margin-left:${pad}px; padding:3px 0;"><span style="color:#64748b; font-size:0.75rem;">${key}:</span> <span style="color:#10b981; font-weight:500;">${val}</span></div>`;
                 }
