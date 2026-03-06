@@ -334,8 +334,6 @@
 
             const norm = { segurado: {}, apolice: {}, endereco: {} };
 
-            // ─── 1. IDENTIFICACAO ────────────────────────────────────────────────
-            // Suporta: IDENTIFICACAO (novo), Identificacao / segurado / cliente (antigo)
             const iden = getKey(data, 'identificacao', 'identificação', 'segurado', 'cliente') || data;
 
             const cpfRaw = String(iden.CPF || iden.cpf || iden.cpf_cnpj || iden.CPF_CNPJ || '').replace(/\D/g, '');
@@ -346,37 +344,81 @@
             if (docRaw.length === 11) norm.segurado.CPF = docRaw;
             else if (docRaw.length === 14) norm.segurado.CNPJ = docRaw;
 
+            norm.segurado.RG = iden.RG || iden.rg || '';
+            norm.segurado.DataNascimento = iden.data_nascimento || iden.DataNascimento || null;
+            norm.segurado.Profissao = iden.Profissao || iden.profissao || '';
+            norm.segurado.EstadoCivil = iden.Estado_Civil || iden.estado_civil || '';
+            norm.segurado.CPFConjuge = iden.CPF_Conjuge || iden.cpf_conjuge || '';
+
             // ─── 2. CONTATOS ─────────────────────────────────────────────────────
             const cont = getKey(data, 'contatos') || iden.Contatos || iden.contatos || {};
             const emails = cont.Emails || cont.emails || [];
             const celulares = cont.Celulares || cont.celulares || [];
             const fixos = cont.Telefones_Fixos || cont.Telefones_fixos || cont.telefones_fixos || [];
             norm.segurado.Email = (Array.isArray(emails) ? emails[0] : emails) || cont.Email || cont.email || iden.Email || '';
-            // Normaliza celular → 13 dígitos (55+DDD+9XXXXXX)
+            norm.segurado.Email2 = (Array.isArray(emails) && emails.length > 1 ? emails[1] : '');
+
             const rawCel = (Array.isArray(celulares) ? celulares[0] : celulares) || cont.Celular || cont.celular || iden.Celular || '';
             norm.segurado.Celular = normalizePhone(rawCel);
-            // Normaliza fixo → 12 dígitos (55+DDD+XXXXXXXX)
+
             const rawTel = (Array.isArray(fixos) ? fixos[0] : fixos) || '';
             norm.segurado.TelefoneFixo = normalizePhone(rawTel);
+            norm.segurado.Telefone2 = (Array.isArray(fixos) && fixos.length > 1 ? normalizePhone(fixos[1]) : '');
 
-            // ─── 3. DADOS_DA_APOLICE ─────────────────────────────────────────────
+            // ─── 3. ENDERECO ─────────────────────────────────────────────────────
+            const end = getKey(data, 'endereco_principal', 'endereco', 'enderecocompleto') || iden.Endereco || iden.Endereço || {};
+            norm.endereco.Logradouro = end.Logradouro || end.logradouro || '';
+            norm.endereco.Numero = end.Numero || end.numero || '';
+            norm.endereco.Complemento = end.Complemento || end.complemento || '';
+            norm.endereco.Bairro = end.Bairro || end.bairro || '';
+            norm.endereco.Cidade = end.Cidade || end.cidade || '';
+            norm.endereco.Estado = end.Estado || end.estado || '';
+            norm.endereco.CEP = String(end.CEP || end.cep || '').replace(/\D/g, '');
+
+            // ─── 4. DADOS_DA_APOLICE ─────────────────────────────────────────────
             const apol = getKey(data, 'dados_da_apolice', 'dados_da_apólice', 'dadosapolice', 'apolice') || {};
             norm.apolice.NumeroApolice = apol.Numero || apol.numero_apolice || apol.NumeroApolice || apol.numero || '';
-            // Seguradora pode ser string ou objeto {Nome: '...'}
             const segRaw = apol.Seguradora || apol.seguradora || '';
             norm.apolice.Seguradora = (typeof segRaw === 'object' && segRaw !== null) ? (segRaw.Nome || segRaw.nome || JSON.stringify(segRaw)) : segRaw;
             norm.apolice.Ramo = apol.Ramo || apol.ramo || '';
+            norm.apolice.NomeProduto = apol.Nome_do_Produto || apol.NomeProduto || apol.nome_produto || apol.produto || '';
+            norm.apolice.ValorPremioTotal = apol.Valor_Premio_Total || apol.ValorPremioTotal || apol.valor_premio_total || '';
+            norm.apolice.FormaPagamento = apol.Forma_Pagamento || apol.FormaPagamento || apol.forma_pagamento || '';
+            norm.apolice.NumeroParcelas = apol.Numero_Parcelas || apol.NumeroParcelas || apol.numero_parcelas || '';
+            norm.apolice.FrequenciaPagamento = apol.Frequencia_Pagamento || apol.frequencia_pagamento || '';
+            norm.apolice.NumeroProposta = apol.Numero_Proposta || apol.numero_proposta || '';
             norm.apolice.VigenciaInicio = formatDateForInput(apol.Vigencia_Inicio || apol.vigencia_inicio || apol.VigenciaInicio || '');
             norm.apolice.VigenciaFim = formatDateForInput(apol.Vigencia_Fim || apol.vigencia_fim || apol.VigenciaFim || '');
 
-
-            // ─── 4. DADOS_DO_BEM_AUTO ────────────────────────────────────────────
+            // ─── 5. DADOS_DO_BEM_AUTO ────────────────────────────────────────────
             const auto = getKey(data, 'dados_do_bem_auto', 'dados_bem_auto', 'bemauto', 'itemsegurado') || {};
             norm.apolice.Placa = auto.Placa || auto.placa || '';
             norm.apolice.Chassi = auto.Chassi || auto.chassi || '';
             norm.apolice.Modelo = auto.Modelo || auto.modelo || '';
+            norm.apolice.Fabricante = auto.Fabricante || auto.fabricante || '';
+            norm.apolice.AnoModelo = auto.Ano_Modelo || auto.AnoModelo || auto.ano_modelo || '';
+            norm.apolice.AnoFabricacao = auto.Ano_Fabricacao || auto.AnoFabricacao || auto.ano_fabricacao || '';
+            norm.apolice.Renavam = auto.Renavam || auto.renavam || '';
+            norm.apolice.CodigoFIPE = auto.Codigo_FIPE || auto.CodigoFIPE || auto.codigo_fipe || '';
+            norm.apolice.CorVeiculo = auto.Cor || auto.cor || auto.cor_veiculo || '';
+            norm.apolice.Combustivel = auto.Combustivel || auto.combustivel || '';
+            norm.apolice.Kilometragem = auto.Kilometragem || auto.kilometragem || '';
+            norm.apolice.Blindado = auto.Blindado || auto.blindado || false;
+            norm.apolice.KitGas = auto.Kit_Gas || auto.kit_gas || false;
+            norm.apolice.CambioAutomatico = auto.Cambio_Automatico || auto.cambio_automatico || false;
+            norm.apolice.FranquiaTipo = auto.Franquia_Tipo || auto.franquia_tipo || '';
+
+            // ─── 6. EXTRAS ───────────────────────────────────────────────────────
+            const extras = getKey(data, 'extras', 'outros') || {};
+            norm.extras = {
+                Corretor: extras.Corretor || {},
+                Coberturas: extras.Coberturas_Principais || extras.coberturas || [],
+                Condutor: extras.Principal_Condutor || extras.condutor || {},
+                DadosAdicionais: extras.OutrosDados || extras
+            };
 
             return norm;
+
         }
 
         async function loadPending() {
@@ -495,13 +537,47 @@
                         <label>Nome Completo</label>
                         <input type="text" id="edit-nome" class="input-edit" value="${esc(norm.segurado.NomeCompleto)}">
                     </div>
-                    <div class="field-group">
-                        <label>CPF / CNPJ (apenas números)</label>
-                        <input type="text" id="edit-doc" class="input-edit" value="${esc(norm.segurado.CPF || norm.segurado.CNPJ || '')}">
+                    <div style="display:flex; gap:10px">
+                        <div class="field-group" style="flex:1">
+                            <label>CPF / CNPJ</label>
+                            <input type="text" id="edit-doc" class="input-edit" value="${esc(norm.segurado.CPF || norm.segurado.CNPJ || '')}">
+                        </div>
+                        <div class="field-group" style="flex:1">
+                            <label>RG</label>
+                            <input type="text" id="edit-rg" class="input-edit" value="${esc(norm.segurado.RG || '')}">
+                        </div>
                     </div>
-                    <div class="field-group">
-                        <label>E-mail</label>
-                        <input type="text" id="edit-email" class="input-edit" value="${esc(norm.segurado.Email || '')}">
+                    <div style="display:flex; gap:10px">
+                        <div class="field-group" style="flex:1">
+                            <label>Data Nascimento</label>
+                            <input type="date" id="edit-nascimento" class="input-edit" value="${formatDateForInput(norm.segurado.DataNascimento)}">
+                        </div>
+                        <div class="field-group" style="flex:1">
+                            <label>Estado Civil</label>
+                            <input type="text" id="edit-estado-civil" class="input-edit" value="${esc(norm.segurado.EstadoCivil || '')}">
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px">
+                        <div class="field-group" style="flex:1">
+                            <label>Profissão</label>
+                            <input type="text" id="edit-profissao" class="input-edit" value="${esc(norm.segurado.Profissao || '')}">
+                        </div>
+                        <div class="field-group" style="flex:1">
+                            <label>CPF Cônjuge</label>
+                            <input type="text" id="edit-doc-conjuge" class="input-edit" value="${esc(norm.segurado.CPFConjuge || '')}">
+                        </div>
+                    </div>
+
+                    <p style="color: var(--text-secondary); font-size:0.8rem; margin:1.5rem 0 0.8rem; border-bottom:1px solid var(--border); padding-bottom:0.8rem;">📞 CONTATOS</p>
+                    <div style="display:flex; gap:10px">
+                        <div class="field-group" style="flex:1">
+                            <label>E-mail Principal</label>
+                            <input type="text" id="edit-email" class="input-edit" value="${esc(norm.segurado.Email || '')}">
+                        </div>
+                        <div class="field-group" style="flex:1">
+                            <label>E-mail Alternativo</label>
+                            <input type="text" id="edit-email-2" class="input-edit" value="${esc(norm.segurado.Email2 || '')}">
+                        </div>
                     </div>
                     <div style="display:flex; gap:10px">
                         <div class="field-group" style="flex:1">
@@ -512,22 +588,71 @@
                             <label>Telefone Fixo</label>
                             <input type="text" id="edit-telefone" class="input-edit" value="${esc(norm.segurado.TelefoneFixo || '')}">
                         </div>
+                        <div class="field-group" style="flex:1">
+                            <label>Telefone 2</label>
+                            <input type="text" id="edit-telefone-2" class="input-edit" value="${esc(norm.segurado.Telefone2 || '')}">
+                        </div>
                     </div>
 
-                    <p style="color: var(--text-secondary); font-size:0.8rem; margin: 1.5rem 0 0.8rem; border-bottom:1px solid var(--border); padding-bottom:0.8rem;">📋 APÓLICE</p>
-
-                    <div class="field-group">
-                        <label>Nº Apólice</label>
-                        <input type="text" id="edit-apolice" class="input-edit" value="${esc(norm.apolice.NumeroApolice)}">
+                    <p style="color: var(--text-secondary); font-size:0.8rem; margin:1.5rem 0 0.8rem; border-bottom:1px solid var(--border); padding-bottom:0.8rem;">🏠 ENDEREÇO</p>
+                    <div style="display:flex; gap:10px">
+                        <div class="field-group" style="flex:3">
+                            <label>Logradouro</label>
+                            <input type="text" id="edit-logradouro" class="input-edit" value="${esc(norm.endereco.Logradouro)}">
+                        </div>
+                        <div class="field-group" style="flex:1">
+                            <label>Nº</label>
+                            <input type="text" id="edit-numero" class="input-edit" value="${esc(norm.endereco.Numero)}">
+                        </div>
                     </div>
                     <div style="display:flex; gap:10px">
                         <div class="field-group" style="flex:1">
-                            <label>Seguradora</label>
-                            <input type="text" id="edit-seguradora" class="input-edit" value="${esc(norm.apolice.Seguradora || '')}">
+                            <label>Complemento</label>
+                            <input type="text" id="edit-complemento" class="input-edit" value="${esc(norm.endereco.Complemento)}">
                         </div>
+                        <div class="field-group" style="flex:1">
+                            <label>Bairro</label>
+                            <input type="text" id="edit-bairro" class="input-edit" value="${esc(norm.endereco.Bairro)}">
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px">
+                        <div class="field-group" style="flex:2">
+                            <label>Cidade</label>
+                            <input type="text" id="edit-cidade" class="input-edit" value="${esc(norm.endereco.Cidade)}">
+                        </div>
+                        <div class="field-group" style="flex:1">
+                            <label>UF</label>
+                            <input type="text" id="edit-estado" class="input-edit" value="${esc(norm.endereco.Estado)}">
+                        </div>
+                        <div class="field-group" style="flex:1">
+                            <label>CEP</label>
+                            <input type="text" id="edit-cep" class="input-edit" value="${esc(norm.endereco.CEP)}">
+                        </div>
+                    </div>
+
+                    <p style="color: var(--text-secondary); font-size:0.8rem; margin: 1.5rem 0 0.8rem; border-bottom:1px solid var(--border); padding-bottom:0.8rem;">📋 APÓLICE</p>
+                    <div style="display:flex; gap:10px">
+                        <div class="field-group" style="flex:1">
+                            <label>Nº Apólice</label>
+                            <input type="text" id="edit-apolice" class="input-edit" value="${esc(norm.apolice.NumeroApolice)}">
+                        </div>
+                        <div class="field-group" style="flex:1">
+                            <label>Nº Proposta</label>
+                            <input type="text" id="edit-proposta" class="input-edit" value="${esc(norm.apolice.NumeroProposta || '')}">
+                        </div>
+                    </div>
+                    <div class="field-group">
+                        <label>Seguradora</label>
+                        <input type="text" id="edit-seguradora" class="input-edit" value="${esc(norm.apolice.Seguradora || '')}">
+                    </div>
+                    <div style="display:flex; gap:10px">
                         <div class="field-group" style="flex:1">
                             <label>Ramo</label>
                             <input type="text" id="edit-ramo" class="input-edit" value="${esc(norm.apolice.Ramo || '')}">
+                        </div>
+                        <div class="field-group" style="flex:1">
+                            <label>Produto</label>
+                            <input type="text" id="edit-produto" class="input-edit" value="${esc(norm.apolice.NomeProduto || '')}">
                         </div>
                     </div>
                     <div class="field-group">
@@ -537,8 +662,27 @@
                             <input type="date" id="edit-fim" class="input-edit" value="${esc(norm.apolice.VigenciaFim)}">
                         </div>
                     </div>
+                    <div style="display:flex; gap:10px">
+                        <div class="field-group" style="flex:1">
+                            <label>Prêmio Total</label>
+                            <input type="text" id="edit-premio" class="input-edit" value="${esc(norm.apolice.ValorPremioTotal || '')}">
+                        </div>
+                        <div class="field-group" style="flex:1">
+                            <label>Forma Pagto</label>
+                            <input type="text" id="edit-forma-pagto" class="input-edit" value="${esc(norm.apolice.FormaPagamento || '')}">
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px">
+                        <div class="field-group" style="flex:1">
+                            <label>Parcelas</label>
+                            <input type="text" id="edit-parcelas" class="input-edit" value="${esc(norm.apolice.NumeroParcelas || '')}">
+                        </div>
+                        <div class="field-group" style="flex:1">
+                            <label>Frequência</label>
+                            <input type="text" id="edit-frequencia" class="input-edit" value="${esc(norm.apolice.FrequenciaPagamento || '')}">
+                        </div>
+                    </div>
 
-                    ${(norm.apolice.Placa || norm.apolice.Chassi || norm.apolice.Modelo) ? `
                     <p style="color: var(--text-secondary); font-size:0.8rem; margin: 1.5rem 0 0.8rem; border-bottom:1px solid var(--border); padding-bottom:0.8rem;">🚗 VEÍCULO</p>
                     <div style="display:flex; gap:10px">
                         <div class="field-group" style="flex:1">
@@ -549,13 +693,75 @@
                             <label>Chassi</label>
                             <input type="text" id="edit-chassi" class="input-edit" value="${esc(norm.apolice.Chassi || '')}">
                         </div>
+                        <div class="field-group" style="flex:1">
+                            <label>Renavam</label>
+                            <input type="text" id="edit-renavam" class="input-edit" value="${esc(norm.apolice.Renavam || '')}">
+                        </div>
                     </div>
                     <div class="field-group">
-                        <label>Modelo</label>
-                        <input type="text" id="edit-modelo" class="input-edit" value="${esc(norm.apolice.Modelo || '')}">
-                    </div>` : ''}
+                        <label>Modelo / Fabricante</label>
+                        <div style="display:flex; gap:10px">
+                            <input type="text" id="edit-modelo" class="input-edit" style="flex:2" value="${esc(norm.apolice.Modelo || '')}">
+                            <input type="text" id="edit-fabricante" class="input-edit" style="flex:1" value="${esc(norm.apolice.Fabricante || '')}">
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px">
+                        <div class="field-group" style="flex:1">
+                            <label>Ano Fab/Mod</label>
+                            <div style="display:flex; gap:5px">
+                                <input type="text" id="edit-ano-fab" class="input-edit" placeholder="Fab" value="${esc(norm.apolice.AnoFabricacao || '')}">
+                                <input type="text" id="edit-ano-mod" class="input-edit" placeholder="Mod" value="${esc(norm.apolice.AnoModelo || '')}">
+                            </div>
+                        </div>
+                        <div class="field-group" style="flex:1">
+                            <label>Cor</label>
+                            <input type="text" id="edit-cor" class="input-edit" value="${esc(norm.apolice.CorVeiculo || '')}">
+                        </div>
+                        <div class="field-group" style="flex:1">
+                            <label>Combustível</label>
+                            <input type="text" id="edit-combustivel" class="input-edit" value="${esc(norm.apolice.Combustivel || '')}">
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px">
+                        <div class="field-group" style="flex:1">
+                            <label>Cód FIPE</label>
+                            <input type="text" id="edit-fipe" class="input-edit" value="${esc(norm.apolice.CodigoFIPE || '')}">
+                        </div>
+                        <div class="field-group" style="flex:1">
+                            <label>KM</label>
+                            <input type="text" id="edit-km" class="input-edit" value="${esc(norm.apolice.Kilometragem || '')}">
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px; flex-wrap: wrap;">
+                        <div class="field-group" style="flex:1; min-width: 100px;">
+                            <label>Blindado?</label>
+                            <select id="edit-blindado" class="input-edit">
+                                <option value="false" ${!norm.apolice.Blindado ? 'selected' : ''}>NÃO</option>
+                                <option value="true" ${norm.apolice.Blindado ? 'selected' : ''}>SIM</option>
+                            </select>
+                        </div>
+                        <div class="field-group" style="flex:1; min-width: 100px;">
+                            <label>Kit Gás?</label>
+                            <select id="edit-kitgas" class="input-edit">
+                                <option value="false" ${!norm.apolice.KitGas ? 'selected' : ''}>NÃO</option>
+                                <option value="true" ${norm.apolice.KitGas ? 'selected' : ''}>SIM</option>
+                            </select>
+                        </div>
+                        <div class="field-group" style="flex:1; min-width: 100px;">
+                            <label>Automático?</label>
+                            <select id="edit-automatico" class="input-edit">
+                                <option value="false" ${!norm.apolice.CambioAutomatico ? 'selected' : ''}>NÃO</option>
+                                <option value="true" ${norm.apolice.CambioAutomatico ? 'selected' : ''}>SIM</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="field-group">
+                        <label>Tipo Franquia</label>
+                        <input type="text" id="edit-franquia" class="input-edit" value="${esc(norm.apolice.FranquiaTipo || '')}">
+                    </div>
 
-                    <p style="color: var(--text-secondary); font-size:0.8rem; margin: 1.5rem 0 0.8rem; border-bottom:1px solid var(--border); padding-bottom:0.8rem;">📦 DADOS COMPLETOS EXTRAÍDOS</p>
+                    <p style="color: var(--text-secondary); font-size:0.8rem; margin: 1.5rem 0 0.8rem; border-bottom:1px solid var(--border); padding-bottom:0.8rem;">📦 DADOS COMPLETOS EXTRAÍDOS (JSON)</p>
+
                 `;
 
                 document.getElementById('edit-form').innerHTML = formHtml;
@@ -621,38 +827,80 @@
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
 
                 // 1. Atualizar o objeto JSON com os valores do formulário
-                const json = typeof currentFullItem.dados_json === 'string' ? JSON.parse(currentFullItem.dados_json) : currentFullItem.dados_json;
+                let json = typeof currentFullItem.dados_json === 'string' ? JSON.parse(currentFullItem.dados_json) : currentFullItem.dados_json;
 
-                // Garante estrutura para escrita (suporta ambos os formatos)
+                // Garante estrutura padrão para ingestão (OrganizaDados)
                 if (!json.IDENTIFICACAO) json.IDENTIFICACAO = {};
-                if (!json.DADOS_DA_APOLICE) json.DADOS_DA_APOLICE = {};
                 if (!json.CONTATOS) json.CONTATOS = {};
+                if (!json.ENDERECO) json.ENDERECO = {};
+                if (!json.DADOS_DA_APOLICE) json.DADOS_DA_APOLICE = {};
                 if (!json.DADOS_DO_BEM_AUTO) json.DADOS_DO_BEM_AUTO = {};
+                if (!json.EXTRAS) json.EXTRAS = {};
 
+                // ─── SEGURADO ──────────────────────────────────────────────
                 json.IDENTIFICACAO.Nome_Segurado = document.getElementById('edit-nome').value;
                 const doc = document.getElementById('edit-doc').value.replace(/\D/g, '');
-                if (doc.length === 11) json.IDENTIFICACAO.CPF = doc;
-                else if (doc.length === 14) json.IDENTIFICACAO.CNPJ = doc;
+                if (doc.length === 11) { json.IDENTIFICACAO.CPF = doc; delete json.IDENTIFICACAO.CNPJ; }
+                else if (doc.length === 14) { json.IDENTIFICACAO.CNPJ = doc; delete json.IDENTIFICACAO.CPF; }
 
-                const emailVal = document.getElementById('edit-email')?.value;
-                if (emailVal) json.CONTATOS.Emails = [emailVal];
-                const celVal = document.getElementById('edit-celular')?.value.replace(/\D/g, '');
-                if (celVal) json.CONTATOS.Celulares = [celVal];
-                const telVal = document.getElementById('edit-telefone')?.value.replace(/\D/g, '');
-                if (telVal) json.CONTATOS.Telefones_Fixos = [telVal];
+                json.IDENTIFICACAO.RG = document.getElementById('edit-rg').value;
+                json.IDENTIFICACAO.Data_Nascimento = document.getElementById('edit-nascimento').value;
+                json.IDENTIFICACAO.Estado_Civil = document.getElementById('edit-estado-civil').value;
+                json.IDENTIFICACAO.Profissao = document.getElementById('edit-profissao').value;
+                json.IDENTIFICACAO.CPF_Conjuge = document.getElementById('edit-doc-conjuge').value;
 
+                // ─── CONTATOS ──────────────────────────────────────────────
+                const emails = [document.getElementById('edit-email').value];
+                const email2 = document.getElementById('edit-email-2').value;
+                if (email2) emails.push(email2);
+                json.CONTATOS.Emails = emails;
+
+                const cels = [document.getElementById('edit-celular').value.replace(/\D/g, '')];
+                json.CONTATOS.Celulares = cels;
+
+                const fixos = [document.getElementById('edit-telefone').value.replace(/\D/g, '')];
+                const tel2 = document.getElementById('edit-telefone-2').value.replace(/\D/g, '');
+                if (tel2) fixos.push(tel2);
+                json.CONTATOS.Telefones_Fixos = fixos;
+
+                // ─── ENDERECO ──────────────────────────────────────────────
+                json.ENDERECO.Logradouro = document.getElementById('edit-logradouro').value;
+                json.ENDERECO.Numero = document.getElementById('edit-numero').value;
+                json.ENDERECO.Complemento = document.getElementById('edit-complemento').value;
+                json.ENDERECO.Bairro = document.getElementById('edit-bairro').value;
+                json.ENDERECO.Cidade = document.getElementById('edit-cidade').value;
+                json.ENDERECO.Estado = document.getElementById('edit-estado').value;
+                json.ENDERECO.CEP = document.getElementById('edit-cep').value.replace(/\D/g, '');
+
+                // ─── APOLICE ──────────────────────────────────────────────
                 json.DADOS_DA_APOLICE.Numero = document.getElementById('edit-apolice').value;
-                json.DADOS_DA_APOLICE.Seguradora = document.getElementById('edit-seguradora')?.value || json.DADOS_DA_APOLICE.Seguradora;
+                json.DADOS_DA_APOLICE.Numero_Proposta = document.getElementById('edit-proposta').value;
+                json.DADOS_DA_APOLICE.Seguradora = document.getElementById('edit-seguradora').value;
                 json.DADOS_DA_APOLICE.Ramo = document.getElementById('edit-ramo').value;
+                json.DADOS_DA_APOLICE.Nome_do_Produto = document.getElementById('edit-produto').value;
                 json.DADOS_DA_APOLICE.Vigencia_Inicio = document.getElementById('edit-inicio').value;
                 json.DADOS_DA_APOLICE.Vigencia_Fim = document.getElementById('edit-fim').value;
+                json.DADOS_DA_APOLICE.Valor_Premio_Total = document.getElementById('edit-premio').value;
+                json.DADOS_DA_APOLICE.Forma_Pagamento = document.getElementById('edit-forma-pagto').value;
+                json.DADOS_DA_APOLICE.Numero_Parcelas = document.getElementById('edit-parcelas').value;
+                json.DADOS_DA_APOLICE.Frequencia_Pagamento = document.getElementById('edit-frequencia').value;
 
-                const placaEl = document.getElementById('edit-placa');
-                if (placaEl) json.DADOS_DO_BEM_AUTO.Placa = placaEl.value;
-                const chassiEl = document.getElementById('edit-chassi');
-                if (chassiEl) json.DADOS_DO_BEM_AUTO.Chassi = chassiEl.value;
-                const modeloEl = document.getElementById('edit-modelo');
-                if (modeloEl) json.DADOS_DO_BEM_AUTO.Modelo = modeloEl.value;
+                // ─── VEICULO ──────────────────────────────────────────────
+                json.DADOS_DO_BEM_AUTO.Placa = document.getElementById('edit-placa').value;
+                json.DADOS_DO_BEM_AUTO.Chassi = document.getElementById('edit-chassi').value;
+                json.DADOS_DO_BEM_AUTO.Renavam = document.getElementById('edit-renavam').value;
+                json.DADOS_DO_BEM_AUTO.Modelo = document.getElementById('edit-modelo').value;
+                json.DADOS_DO_BEM_AUTO.Fabricante = document.getElementById('edit-fabricante').value;
+                json.DADOS_DO_BEM_AUTO.Ano_Fabricacao = document.getElementById('edit-ano-fab').value;
+                json.DADOS_DO_BEM_AUTO.Ano_Modelo = document.getElementById('edit-ano-mod').value;
+                json.DADOS_DO_BEM_AUTO.Cor = document.getElementById('edit-cor').value;
+                json.DADOS_DO_BEM_AUTO.Combustivel = document.getElementById('edit-combustivel').value;
+                json.DADOS_DO_BEM_AUTO.Codigo_FIPE = document.getElementById('edit-fipe').value;
+                json.DADOS_DO_BEM_AUTO.Kilometragem = document.getElementById('edit-km').value;
+                json.DADOS_DO_BEM_AUTO.Blindado = document.getElementById('edit-blindado').value === 'true';
+                json.DADOS_DO_BEM_AUTO.Kit_Gas = document.getElementById('edit-kitgas').value === 'true';
+                json.DADOS_DO_BEM_AUTO.Cambio_Automatico = document.getElementById('edit-automatico').value === 'true';
+                json.DADOS_DO_BEM_AUTO.Franquia_Tipo = document.getElementById('edit-franquia').value;
 
                 // 2. Enviar para o banco final (reutilizando a lógica de ingestão)
                 const token = localStorage.getItem('admin_token');

@@ -1,0 +1,180 @@
+const db = require('./db');
+
+/**
+ * Migração para o Banco do Portal (db-brokeriaweb)
+ * Cria as tabelas necessárias para o funcionamento do portal,
+ * incluindo a estrutura de seguros e tokens de acesso.
+ */
+async function migrate() {
+    try {
+        console.log('--- [PORTAL-MIGRATE] Iniciando v1.5.2 ---');
+
+        // 0. Estrutura de Seguros
+        console.log('[PORTAL-MIGRATE] Passo 0: Tabelas de Seguros...');
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS categorias_seguros (
+                id SERIAL PRIMARY KEY,
+                nome VARCHAR(255) UNIQUE NOT NULL,
+                ordem INTEGER DEFAULT 99
+            );
+
+            CREATE TABLE IF NOT EXISTS tipos_seguros (
+                id SERIAL PRIMARY KEY,
+                nome VARCHAR(255) NOT NULL,
+                categoria_id INTEGER REFERENCES categorias_seguros(id) ON DELETE CASCADE,
+                UNIQUE(nome, categoria_id)
+            );
+        `);
+
+        // 1. Veículos
+        console.log('[PORTAL-MIGRATE] Passo 1: Tabela de Veículos...');
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS veiculos_base (
+                id SERIAL PRIMARY KEY,
+                nome VARCHAR(255) NOT NULL,
+                tipo VARCHAR(50) NOT NULL, 
+                parent_id INTEGER REFERENCES veiculos_base(id) ON DELETE CASCADE,
+                categoria_veiculo VARCHAR(50), 
+                fipe_codigo VARCHAR(50)
+            );
+        `);
+
+        // 2. Organizações e Outros
+        console.log('[PORTAL-MIGRATE] Passo 2: Organizações...');
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS organizacoes (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                nome VARCHAR(255) NOT NULL,
+                logo_url TEXT,
+                ativo BOOLEAN DEFAULT TRUE,
+                config_json JSONB,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+            ALTER TABLE organizacoes ADD COLUMN IF NOT EXISTS slug VARCHAR(100) UNIQUE;
+            ALTER TABLE organizacoes ADD COLUMN IF NOT EXISTS dominio VARCHAR(255) UNIQUE;
+        `);
+
+        // 4. Popular Seguros
+        console.log('[PORTAL-MIGRATE] Passo 4: Verificando Dados de Seguros...');
+
+        // CORREÇÃO: Remove a categoria antiga se existir para garantir a separação
+        await db.query("DELETE FROM categorias_seguros WHERE nome = 'Automóvel e Transporte'");
+
+        const estruturaSeguros = {
+            "Automóvel": ["Carro Passeio", "App/Uber"],
+            "Motos": ["Moto"],
+            "Transporte": ["Caminhão", "Logística", "Transporte de Carga"],
+            "Náutica": ["Lancha", "Jet Ski", "Veleiro"],
+            "Patrimoniais": ["Residencial", "Condomínio", "Empresarial"],
+            "Vida": ["Vida Individual", "Vida em Grupo", "Saúde"],
+            "Responsabilidade Civil": ["RC Profissional", "RC Geral"],
+            "Financeiros": ["Fiança Locatícia", "Capitalização"]
+        };
+
+        const categoriasOrdem = {
+            "Automóvel": 1,
+            "Motos": 2,
+            "Transporte": 3,
+            "Náutica": 4,
+            "Patrimoniais": 5,
+            "Vida": 6,
+            "Responsabilidade Civil": 7,
+            "Financeiros": 8
+        };
+
+        for (const [categoria, tipos] of Object.entries(estruturaSeguros)) {
+            const resCat = await db.query(
+                `INSERT INTO categorias_seguros (nome, ordem) VALUES ($1, $2) 
+                 ON CONFLICT (nome) DO UPDATE SET ordem = EXCLUDED.ordem RETURNING id`,
+                [categoria, categoriasOrdem[categoria]]
+            );
+            const catId = resCat.rows[0].id;
+            for (const tipo of tipos) {
+                await db.query(`INSERT INTO tipos_seguros (nome, categoria_id) VALUES ($1, $2) ON CONFLICT (nome, categoria_id) DO NOTHING`, [tipo, catId]);
+            }
+        }
+        console.log('[PORTAL-MIGRATE] ✅ Seguros populados com separação Auto/Transporte.');
+
+        // 5. Popular Marcas
+        console.log('[PORTAL-MIGRATE] Passo 5: Verificando Marcas...');
+        const checkVeiculos = await db.query('SELECT COUNT(*) FROM veiculos_base');
+        if (parseInt(checkVeiculos.rows[0].count) === 0) {
+            console.log('[PORTAL-MIGRATE] Inserindo Marcas...');
+            const marcas = [
+                ['Chevrolet', 'CARRO'], ['Fiat', 'CARRO'], ['Volkswagen', 'CARRO'],
+                ['Toyota', 'CARRO'], ['Honda', 'CARRO'], ['Yamaha', 'MOTO']
+            ];
+            for (const [nome, categoria] of marcas) {
+                await db.query(`INSERT INTO veiculos_base (nome, tipo, categoria_veiculo) VALUES ($1, 'MARCA', $2)`, [nome, categoria]);
+            }
+            console.log('[PORTAL-MIGRATE] ✅ Marcas populadas.');
+        }
+
+        // 6. Tabela de Apólices (Atualizada com Contatos de Emergência)
+        console.log('[PORTAL-MIGRATE] Passo 6: Verificando Tabela de Apólices...');
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS apolices_brokeria (
+                id SERIAL PRIMARY KEY,
+                cliente_id UUID REFERENCES clientes_brokeria(id),
+                seguradora VARCHAR(255),
+                ramo VARCHAR(100),
+                numero_apolice VARCHAR(100),
+                vigencia_inicio DATE,
+                vigencia_fim DATE,
+                status_apolice VARCHAR(50),
+                link_url_apolice TEXT,
+                placa VARCHAR(20),
+                premio_total DECIMAL(10,2),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                telefone_capital VARCHAR(50),
+                telefone_0800 VARCHAR(50),
+                site_url TEXT
+            );
+            
+            -- Garante que as colunas existam caso a tabela já tenha sido criada antes
+            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS telefone_capital VARCHAR(50);
+            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS telefone_0800 VARCHAR(50);
+            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS site_url TEXT;
+        `);
+
+        // 7. Tabela de Cotações
+        console.log('[PORTAL-MIGRATE] Passo 7: Tabela de Cotações...');
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS cotacoes (
+                id SERIAL PRIMARY KEY,
+                cliente_id UUID,
+                tipo_cotacao VARCHAR(50) NOT NULL,
+                categoria VARCHAR(100) NOT NULL,
+                subtipo VARCHAR(100),
+                nome_cliente VARCHAR(255) NOT NULL,
+                cpf_cliente VARCHAR(20),
+                email_cliente VARCHAR(255),
+                telefone_cliente VARCHAR(255),
+                dados_json JSONB,
+                status VARCHAR(50) DEFAULT 'PENDENTE',
+                observacoes TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
+        console.log('[PORTAL-MIGRATE] Passo 8: Tabela de Tokens 2FA...');
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS tokens_acesso (
+                id SERIAL PRIMARY KEY,
+                cliente_id UUID UNIQUE NOT NULL,
+                token_hash VARCHAR(255) NOT NULL,
+                usado BOOLEAN DEFAULT FALSE,
+                expira_em TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
+        console.log('✅ [PORTAL-MIGRATE] Fim da v1.5.2');
+        return;
+    } catch (error) {
+        console.error('❌ [PORTAL] Erro na migração:', error);
+        throw error;
+    }
+}
+
+module.exports = { migrate };

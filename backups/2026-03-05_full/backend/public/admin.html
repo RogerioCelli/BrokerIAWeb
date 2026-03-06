@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Dados - Admin Broker IA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent: #3b82f6;
+            --border: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            padding: 2rem;
+        }
+
+        h1,
+        h2 {
+            margin-bottom: 1rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .tab-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .tab-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .data-panel {
+            display: none;
+        }
+
+        .data-panel.active {
+            display: block;
+        }
+
+        .db-badge {
+            font-size: 0.75rem;
+            background: #334155;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            margin-left: 0.5rem;
+            color: #fbbf24;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: #0f172a;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-ativa {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .status-cancelada {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .load-indicator {
+            color: var(--text-secondary);
+            font-style: italic;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .refresh-btn {
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .download-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #10b981;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.875rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            background: rgba(16, 185, 129, 0.1);
+            transition: all 0.2s;
+        }
+
+        .download-link:hover {
+            color: #60a5fa;
+            border-color: #60a5fa;
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .no-download {
+            color: #64748b;
+            font-size: 0.75rem;
+            font-style: italic;
+        }
+
+        /* SEARCH & SORT STYLES */
+        .controls-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .search-input {
+            flex: 1;
+            background: #0f172a;
+            border: 1px solid var(--border);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent);
+        }
+
+        .sort-select {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        /* [Manter estilos anteriores e adicionar novos] */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-dark);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.5s;
+        }
+
+        .login-box {
+            background: var(--card-bg);
+            padding: 3rem;
+            border-radius: 20px;
+            width: 400px;
+            text-align: center;
+            border: 1px solid var(--border);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .login-input {
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid var(--border);
+            padding: 0.75rem;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .btn-admin {
+            width: 100%;
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-admin:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .user-mgmt-btn {
+            background: rgba(251, 191, 36, 0.1);
+            color: #fbbf24;
+            border: 1px solid #fbbf24;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        /* Alerta de Importações Pendentes */
+        .pending-alert {
+            background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            animation: slideDown 0.5s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- OVERLAY DE LOGIN -->
+    <div id="login-overlay" class="login-overlay">
+        <div class="login-box">
+            <h2 style="margin-bottom: 0.5rem;">🔒 Acesso Admin</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.875rem;">Restrito a usuários
+                autorizados</p>
+
+            <div id="login-step-1">
+                <div class="input-group">
+                    <label>E-mail ou CPF</label>
+                    <input type="text" id="admin-id" class="login-input" placeholder="seu@email.com">
+                </div>
+                <button class="btn-admin" onclick="requestAdminToken()">Receber Código</button>
+            </div>
+
+            <div id="login-step-2" style="display: none;">
+                <p id="masked-email-display" style="font-size: 0.75rem; margin-bottom: 1rem; color: #10b981;"></p>
+                <div class="input-group">
+                    <label>Código de 6 dígitos</label>
+                    <input type="text" id="admin-token" class="login-input" placeholder="000000" maxlength="6"
+                        style="text-align: center; letter-spacing: 5px;">
+                </div>
+                <button class="btn-admin" onclick="validateAdminToken()">Entrar no Painel</button>
+                <p style="margin-top: 1rem; font-size: 0.75rem; color: var(--text-secondary); cursor: pointer;"
+                    onclick="showStep(1)">Voltar</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="header">
+        <div>
+            <h1>Painel de Dados - Multi-Database <span id="master-badge"
+                    style="display:none; background: #fbbf24; color: #000; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; vertical-align: middle; margin-left: 10px;">MASTER</span>
+            </h1>
+            <p style="color: var(--text-secondary)">Bem-vindo, <span id="admin-name"
+                    style="color: var(--accent); font-weight: 600;">-</span>
+                <span id="last-sync-header"
+                    style="margin-left: 15px; font-size: 0.85rem; color: #10b981; font-weight: 500;"></span>
+            </p>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <div id="sync-summary" style="text-align: right; margin-right: 10px; display: none;">
+                <div style="font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase;">Última
+                    Sincronização</div>
+                <div id="sync-time-val" style="font-size: 0.9rem; font-weight: 600; color: #10b981;">-</div>
+            </div>
+            <button id="sync-btn" class="refresh-btn" style="border-color: #10b981; color: #10b981;"
+                onclick="triggerSync()">
+                <i class="fas fa-sync"></i> Sincronizar Arquivos do Drive
+            </button>
+            <button class="refresh-btn" onclick="loadAllData()">Atualizar Dados</button>
+            <button class="refresh-btn" style="border-color: #ef4444; color: #ef4444;" onclick="logout()">Sair</button>
+        </div>
+    </div>
+
+    <!-- Alerta de Importações -->
+    <div id="pending-import-alert" class="pending-alert">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <i class="fas fa-file-import fa-lg"></i>
+            <div>
+                <strong id="pending-count">Existem 0 importações pendentes</strong>
+                <p style="font-size: 0.8rem; opacity: 0.9;">Novos dados foram extraídos dos PDFs e aguardam sua revisão.
+                </p>
+            </div>
+        </div>
+        <a href="valida_importacao.html" class="btn-admin"
+            style="width: auto; background: white; color: #1d4ed8; padding: 0.6rem 1.2rem; text-decoration: none;">Acessar
+            Validação</a>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('clients')">
+            Clientes
+        </button>
+        <button class="tab-btn" onclick="switchTab('policies')">
+            Apólices
+        </button>
+        <button id="users-tab" class="tab-btn" style="display: none;" onclick="switchTab('users')">Gestão de
+            Equipe</button>
+        <button class="tab-btn" onclick="window.location.href='valida_importacao.html'"
+            style="border-color: var(--accent); color: var(--accent);">
+            <i class="fas fa-file-import"></i> Validação de Importações
+            <span id="validation-badge"
+                style="display:none; background: #fbbf24; color: #000; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; margin-left: 5px; font-weight: bold;">0</span>
+        </button>
+    </div>
+
+    <!-- CLIENTES -->
+    <div id="clients-panel" class="data-panel active">
+        <div class="controls-row">
+            <input type="text" id="search-clients" class="search-input"
+                placeholder="🔍 Buscar por nome, CPF ou e-mail..." oninput="filterClients()">
+            <select id="sort-clients" class="sort-select" onchange="filterClients()">
+                <option value="data_cadastro">Ordenar por: Data Cadastro</option>
+                <option value="nome">Ordenar por: Nome</option>
+                <option value="cpf">Ordenar por: CPF</option>
+                <option value="total_apolices">Ordenar por: Qtd. Apólices</option>
+            </select>
+        </div>
+        <div id="clients-container">
+        </div>
+    </div>
+
+    <!-- APOLICES -->
+    <div id="policies-panel" class="data-panel">
+        <div class="controls-row">
+            <input type="text" id="search-policies" class="search-input"
+                placeholder="🔍 Buscar por número, seguradora, CPF ou placa..." oninput="filterPolicies()">
+            <select id="sort-policies" class="sort-select" onchange="filterPolicies()">
+                <option value="data_sincronizacao">Ordenar por: Mais Recentes (Sync)</option>
+                <option value="numero_apolice">Ordenar por: Nº Apólice</option>
+                <option value="cpf">Ordenar por: CPF</option>
+                <option value="seguradora">Ordenar por: Seguradora</option>
+            </select>
+        </div>
+        <div id="policies-container">
+        </div>
+    </div>
+
+    <!-- USUARIOS (MASTER ONLY) -->
+    <div id="users-panel" class="data-panel">
+        <div
+            style="margin-bottom: 1.5rem; background: var(--card-bg); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border);">
+            <h3 style="margin-bottom: 1rem;">Cadastrar Novo Administrador</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 100px 150px; gap: 10px;">
+                <input type="text" id="new-user-nome" class="login-input" placeholder="Nome Completo">
+                <input type="text" id="new-user-cpf" class="login-input" placeholder="CPF">
+                <input type="text" id="new-user-email" class="login-input" placeholder="E-mail">
+                <input type="text" id="new-user-celular" class="login-input" placeholder="Celular (DDI+DDD+N)">
+                <select id="new-user-role" class="login-input">
+                    <option value="admin">Admin</option>
+                    <option value="master">Master</option>
+                </select>
+                <button class="btn-admin" onclick="saveUser()">Adicionar</button>
+            </div>
+        </div>
+        <div id="users-container"></div>
+    </div>
+
+    <script>
+        const API_URL = '/api/admin';
+        let currentAdminId = null;
+        let allClientsData = [];
+        let allPoliciesData = [];
+
+        // --- AUTH LOGIC ---
+
+        function showStep(step) {
+            document.getElementById('login-step-1').style.display = step === 1 ? 'block' : 'none';
+            document.getElementById('login-step-2').style.display = step === 2 ? 'block' : 'none';
+        }
+
+        async function requestAdminToken() {
+            const id = document.getElementById('admin-id').value.trim();
+            if (!id) return alert('Insira seu E-mail ou CPF');
+
+            // Se não for e-mail, valida formato CPF ou CNPJ
+            const isEmail = id.includes('@');
+            if (!isEmail) {
+                const CPF_REGEX = /^(\d{3}\.\d{3}\.\d{3}-\d{2}|\d{11})$/;
+                const CNPJ_REGEX = /^(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}|\d{14})$/;
+                if (!CPF_REGEX.test(id) && !CNPJ_REGEX.test(id)) {
+                    return alert('Formato inválido. Use CPF (000.000.000-00) ou CNPJ.');
+                }
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/auth/request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier: id })
+                });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+
+                currentAdminId = data.admin_id;
+                document.getElementById('masked-email-display').innerText = `Código enviado para: ${data.masked_email}`;
+                showStep(2);
+            } catch (err) { alert(err.message); }
+        }
+
+        async function validateAdminToken() {
+            const token = document.getElementById('admin-token').value;
+            try {
+                const res = await fetch(`${API_URL}/auth/validate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ admin_id: currentAdminId, token })
+                });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+
+                localStorage.setItem('admin_token', data.token);
+                localStorage.setItem('admin_user', JSON.stringify(data.user));
+
+                checkAuth();
+            } catch (err) { alert(err.message); }
+        }
+
+        function checkAuth() {
+            const token = localStorage.getItem('admin_token');
+            const user = JSON.parse(localStorage.getItem('admin_user') || '{}');
+
+            if (token && user.id) {
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('admin-name').innerText = user.nome;
+
+                if (user.role === 'master') {
+                    document.getElementById('users-tab').style.display = 'block';
+                    document.getElementById('master-badge').style.display = 'inline-block';
+                }
+                loadAllData();
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            location.reload();
+        }
+
+        async function fetchWithAuth(url, options = {}) {
+            const token = localStorage.getItem('admin_token');
+            const headers = { ...options.headers, 'Authorization': `Bearer ${token}` };
+            const res = await fetch(url, { ...options, headers });
+
+            if (res.status === 401 || res.status === 403) {
+                alert('Sessão expirada. Faça login novamente.');
+                logout();
+            }
+            return res;
+        }
+
+        // --- DATA LOAD LOGIC ---
+
+        async function triggerSync() {
+            const btn = document.getElementById('sync-btn');
+            const originalText = btn.innerHTML;
+
+            if (!confirm('Deseja iniciar a sincronização? Este processo pode levar até 1 minuto para consolidar todos os arquivos.')) return;
+
+            try {
+                btn.innerHTML = '⏳ Sincronizando Drive...';
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+
+                const res = await fetchWithAuth(`${API_URL}/sync-drive`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    alert('✅ Processo Finalizado! Todos os arquivos foram verificados e os links atualizados no banco de dados.');
+                } else {
+                    throw new Error(data.error || 'Erro ao iniciar sincronização');
+                }
+            } catch (err) {
+                console.error('❌ Erro no sync:', err);
+                alert('Erro ao sincronizar: ' + err.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                loadAllData();
+            }
+        }
+
+        async function loadAllData() {
+            const btn = document.querySelector('.refresh-btn');
+            const originalText = btn.innerText;
+
+            try {
+                btn.innerText = '⏳ Atualizando...';
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+
+                document.getElementById('clients-container').innerHTML = '<div class="load-indicator">Atualizando clientes...</div>';
+                document.getElementById('policies-container').innerHTML = '<div class="load-indicator">Atualizando apólices...</div>';
+
+                const user = JSON.parse(localStorage.getItem('admin_user') || '{}');
+                await Promise.all([
+                    loadClients(),
+                    loadPolicies(),
+                    checkPendingImports(),
+                    user.role === 'master' ? loadUsers() : Promise.resolve()
+                ]);
+
+                console.log('✅ Dados atualizados com sucesso');
+            } catch (err) {
+                console.error('❌ Erro na atualização:', err);
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+            }
+        }
+
+        async function checkPendingImports() {
+            try {
+                const res = await fetchWithAuth(`${API_URL}/staging/list`);
+                const data = await res.json();
+                const alertBox = document.getElementById('pending-import-alert');
+                const countText = document.getElementById('pending-count');
+                const navBadge = document.getElementById('validation-badge');
+
+                if (data.length > 0) {
+                    countText.innerText = `Existem ${data.length} importações pendentes aguardando revisão`;
+                    alertBox.style.display = 'flex';
+                    if (navBadge) {
+                        navBadge.innerText = data.length;
+                        navBadge.style.display = 'inline-block';
+                    }
+                } else {
+                    alertBox.style.display = 'none';
+                    if (navBadge) navBadge.style.display = 'none';
+                }
+            } catch (err) { console.warn('Erro ao verificar pendências', err); }
+        }
+
+        async function loadClients() {
+            try {
+                const res = await fetchWithAuth(`${API_URL}/clients`);
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+                allClientsData = data;
+                filterClients();
+            } catch (error) {
+                document.getElementById('clients-container').innerHTML = `<p style="color: #ef4444; padding: 1rem">Erro ao carregar clientes: ${error.message}</p>`;
+            }
+        }
+
+        function filterClients() {
+            const searchTerm = document.getElementById('search-clients').value.toLowerCase();
+            const sortBy = document.getElementById('sort-clients').value;
+
+            let filtered = allClientsData.filter(c =>
+                (c.nome && c.nome.toLowerCase().includes(searchTerm)) ||
+                (c.cpf && c.cpf.includes(searchTerm)) ||
+                (c.email && c.email.toLowerCase().includes(searchTerm))
+            );
+
+            filtered.sort((a, b) => {
+                if (sortBy === 'nome') return (a.nome || '').localeCompare(b.nome || '');
+                if (sortBy === 'cpf') return (a.cpf || '').localeCompare(b.cpf || '');
+                if (sortBy === 'total_apolices') return (b.total_apolices || 0) - (a.total_apolices || 0);
+                if (sortBy === 'data_cadastro') return new Date(b.data_cadastro || 0) - new Date(a.data_cadastro || 0);
+                return 0;
+            });
+
+            renderClientsTable(filtered);
+        }
+
+        function renderClientsTable(data) {
+            const container = document.getElementById('clients-container');
+            if (data.length === 0) {
+                container.innerHTML = '<p style="padding: 1rem; color: var(--text-secondary)">Nenhum cliente encontrado.</p>';
+                return;
+            }
+
+            let html = `<table><thead><tr><th>ID</th><th>Nome Completo</th><th>CPF</th><th>Email</th><th>Celular</th><th style="text-align: center;">Qtd. Apólices</th><th>Data Cadastro</th></tr></thead><tbody>`;
+            data.forEach(client => {
+                const badgeColor = client.total_apolices > 0 ? '#10b981' : '#64748b';
+                html += `
+                    <tr onclick="toggleClientDetails('${client.cpf}', this)" style="cursor: pointer;">
+                        <td style="font-family: monospace; color: #64748b">${client.id}</td>
+                        <td style="font-weight: 500"><span style="margin-right: 8px; color: var(--accent)">▶</span>${client.nome}</td>
+                        <td>${client.cpf}</td>
+                        <td>${client.email}</td>
+                        <td>${client.celular || '-'}</td>
+                        <td style="text-align: center;"><span class="status-badge" style="background: ${badgeColor}20; color: ${badgeColor}; width: 30px; display: inline-block;">${client.total_apolices}</span></td>
+                        <td>${client.data_cadastro ? new Date(client.data_cadastro).toLocaleDateString('pt-BR') : '-'}</td>
+                    </tr>
+                    <tr id="details-${client.cpf}" style="display: none; background: rgba(0,0,0,0.2)">
+                        <td colspan="7" style="padding: 1.5rem; border-bottom: 2px solid var(--accent)"><div id="container-${client.cpf}"><div class="load-indicator">Buscando apólices detalhadas...</div></div></td>
+                    </tr>
+                `;
+            });
+            container.innerHTML = html + '</tbody></table>';
+        }
+
+        async function toggleClientDetails(cpf, row) {
+            const detailsRow = document.getElementById(`details-${cpf}`);
+            const container = document.getElementById(`container-${cpf}`);
+            const arrow = row.querySelector('span');
+
+            if (detailsRow.style.display === 'none') {
+                detailsRow.style.display = 'table-row';
+                arrow.style.transform = 'rotate(90deg)';
+                arrow.style.transition = 'transform 0.2s';
+
+                if (container.innerHTML.includes('Buscando')) {
+                    try {
+                        const res = await fetchWithAuth(`${API_URL}/clients/${cpf}/policies`);
+                        const policies = await res.json();
+                        if (policies.length === 0) {
+                            container.innerHTML = '<p style="color: var(--text-secondary)">Nenhuma apólice encontrada.</p>';
+                            return;
+                        }
+
+                        let pTable = `<h4 style="margin-bottom: 15px; color: var(--accent); font-size: 0.9rem; text-transform: uppercase;">Detalhes das Apólices</h4>
+                                     <table style="background: #0f172a; border: 1px solid var(--border);">
+                                     <thead><tr><th>Nº Apólice</th><th>Seguradora</th><th>Ramo</th><th>Vigência</th><th>Status</th><th>Upload</th><th>Ação</th></tr></thead><tbody>`;
+                        policies.forEach(p => {
+                            const statusCls = p.status === 'ATIVA' ? 'status-ativa' : 'status-cancelada';
+                            pTable += `<tr>
+                                <td>${p.numero_apolice}</td>
+                                <td>${p.seguradora}</td>
+                                <td>${p.ramo}</td>
+                                <td>${formatDate(p.data_inicio)} - ${formatDate(p.data_fim)}</td>
+                                <td><span class="status-badge ${statusCls}">${p.status}</span></td>
+                                <td style="color: #10b981; font-size: 0.8rem">${p.data_sincronizacao ? new Date(p.data_sincronizacao).toLocaleString('pt-BR') : 'Pendente'}</td>
+                                <td>${p.link_url_apolice ? `<a href="${p.link_url_apolice}" target="_blank" class="download-link">Abrir PDF</a>` : '-'}</td>
+                            </tr>`;
+                        });
+                        container.innerHTML = pTable + '</tbody></table>';
+                    } catch (err) { container.innerHTML = `<p style="color: #ef4444">Erro: ${err.message}</p>`; }
+                }
+            } else {
+                detailsRow.style.display = 'none';
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const date = new Date(dateStr);
+            return isNaN(date.getTime()) || date.getFullYear() < 2000 ? '-' : date.toLocaleDateString('pt-BR');
+        }
+
+        async function loadPolicies() {
+            try {
+                const res = await fetchWithAuth(`${API_URL}/policies`);
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+                allPoliciesData = data;
+                filterPolicies();
+
+                const lastSync = data.filter(p => p.data_sincronizacao).sort((a, b) => new Date(b.data_sincronizacao) - new Date(a.data_sincronizacao))[0];
+                if (lastSync) {
+                    const syncTime = new Date(lastSync.data_sincronizacao).toLocaleString('pt-BR');
+                    document.getElementById('sync-summary').style.display = 'block';
+                    document.getElementById('sync-time-val').innerText = syncTime;
+                    document.getElementById('last-sync-header').innerText = `• ÚLTIMA SINCRONIZAÇÃO: ${syncTime}`;
+                }
+            } catch (error) {
+                document.getElementById('policies-container').innerHTML = `<p style="color: #ef4444; padding: 1rem">Erro: ${error.message}</p>`;
+            }
+        }
+
+        function filterPolicies() {
+            const searchTerm = document.getElementById('search-policies').value.toLowerCase();
+            const sortBy = document.getElementById('sort-policies').value;
+
+            let filtered = allPoliciesData.filter(p =>
+                (p.numero_apolice && p.numero_apolice.toLowerCase().includes(searchTerm)) ||
+                (p.seguradora && p.seguradora.toLowerCase().includes(searchTerm)) ||
+                (p.cpf && p.cpf.includes(searchTerm)) ||
+                (p.placa && p.placa.toLowerCase().includes(searchTerm))
+            );
+
+            filtered.sort((a, b) => {
+                if (sortBy === 'numero_apolice') return (a.numero_apolice || '').localeCompare(b.numero_apolice || '');
+                if (sortBy === 'seguradora') return (a.seguradora || '').localeCompare(b.seguradora || '');
+                if (sortBy === 'cpf') return (a.cpf || '').localeCompare(b.cpf || '');
+                if (sortBy === 'data_sincronizacao') return new Date(b.data_sincronizacao || 0) - new Date(a.data_sincronizacao || 0);
+                return 0;
+            });
+
+            renderPoliciesTable(filtered);
+        }
+
+        function renderPoliciesTable(data) {
+            const container = document.getElementById('policies-container');
+            if (data.length === 0) {
+                container.innerHTML = '<p style="padding: 1rem; color: var(--text-secondary)">Nenhuma apólice encontrada.</p>';
+                return;
+            }
+
+            let html = `<table><thead><tr><th>ID</th><th>Apólice</th><th>Seguradora</th><th>Ramo</th><th>CPF Titular</th><th>Vigência</th><th>Placa</th><th>Status</th><th>Upload</th><th>Arquivo</th></tr></thead><tbody>`;
+            data.forEach(pol => {
+                const statusClass = pol.status === 'ATIVA' ? 'status-ativa' : 'status-cancelada';
+                const finalUrl = (pol.link_url_apolice && pol.link_url_apolice !== 'undefined') ? pol.link_url_apolice : (pol.url_pdf && pol.url_pdf !== 'undefined' ? pol.url_pdf : null);
+                html += `<tr>
+                    <td>${pol.id}</td>
+                    <td style="font-weight: 500">${pol.numero_apolice}</td>
+                    <td>${pol.seguradora}</td>
+                    <td>${pol.ramo}</td>
+                    <td>${pol.cpf}</td>
+                    <td>${formatDate(pol.data_inicio)} - ${formatDate(pol.data_fim)}</td>
+                    <td>${pol.placa || '-'}</td>
+                    <td><span class="status-badge ${statusClass}">${pol.status}</span></td>
+                    <td style="font-size: 0.85rem; color: #10b981">${pol.data_sincronizacao ? new Date(pol.data_sincronizacao).toLocaleString('pt-BR') : 'Pendente'}</td>
+                    <td>${finalUrl ? `<a href="${finalUrl}" target="_blank" class="download-link">PDF</a>` : '-'}</td>
+                </tr>`;
+            });
+            container.innerHTML = html + '</tbody></table>';
+        }
+
+        // GESTÃO DE USUÁRIOS (MASTER)
+        async function loadUsers() {
+            const container = document.getElementById('users-container');
+            try {
+                const res = await fetchWithAuth(`${API_URL}/users`);
+                const data = await res.json();
+                if (data.length === 0) { container.innerHTML = '<p>Nenhum usuário.</p>'; return; }
+                let html = `<table><thead><tr><th>Nome</th><th>CPF</th><th>E-mail</th><th>Celular</th><th>Função</th><th>Ações</th></tr></thead><tbody>`;
+                data.forEach(u => {
+                    html += `<tr>
+                            <td style="font-weight:600">${u.nome}</td>
+                            <td style="color:var(--text-secondary)">${u.cpf || '-'}</td>
+                            <td>${u.email}</td>
+                            <td>${u.celular || '-'}</td>
+                            <td><span class="db-badge">${u.role.toUpperCase()}</span></td>
+                            <td>${u.role !== 'master' ? `<button onclick="deleteUser(${u.id})" style="color:#ef4444; background:none; border:none; cursor:pointer">Excluir</button>` : '-'}</td></tr>`;
+                });
+                container.innerHTML = html + '</tbody></table>';
+            } catch (error) { container.innerHTML = `<p>Erro: ${error.message}</p>`; }
+        }
+
+        async function saveUser() {
+            const userData = {
+                nome: document.getElementById('new-user-nome').value,
+                cpf: document.getElementById('new-user-cpf').value,
+                email: document.getElementById('new-user-email').value,
+                celular: document.getElementById('new-user-celular').value,
+                role: document.getElementById('new-user-role').value
+            };
+            try {
+                const res = await fetchWithAuth(`${API_URL}/users`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(userData) });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+                alert('Sucesso!');
+                document.getElementById('new-user-nome').value = '';
+                document.getElementById('new-user-cpf').value = '';
+                document.getElementById('new-user-email').value = '';
+                document.getElementById('new-user-celular').value = '';
+                loadUsers();
+            } catch (err) { alert('Erro: ' + err.message); }
+        }
+
+        async function deleteUser(id) {
+            if (!confirm('Excluir?')) return;
+            try {
+                const res = await fetchWithAuth(`${API_URL}/users/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+                alert('Usuário excluído com sucesso!');
+                loadUsers();
+            } catch (err) { alert('Erro: ' + err.message); }
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.data-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById(`${tab}-panel`).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        // Init
+        checkAuth();
+    </script>
+</body>
+
+</html>

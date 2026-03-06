@@ -1,0 +1,262 @@
+{
+    "name": "BROKER_IA-WEB_PORTAL",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "portal-web-chat",
+                "responseMode": "lastNode",
+                "responseData": "body",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                -672,
+                -96
+            ],
+            "id": "17a4b01c-320f-44b4-b0e9-9a7ccbfd13f4",
+            "name": "Entrada Portal Web",
+            "webhookId": "portal-web-chat"
+        },
+        {
+            "parameters": {
+                "jsCode": "// ====================================================================\n// NORMALIZADOR DE ENTRADA - PORTAL WEB (OMNICHANNEL READY)\n// Aceita campos do policyController.js e do banco de dados\n// ====================================================================\nconst input = $input.first().json;\nconst data = input.body || input;\n\n// Extrai dados do cliente (o backend já enriquece com dados do banco)\nconst nomeCompleto = data.client_name || data.nome || \"Visitante\";\nconst emailPortal = data.email || data.target_email || null;\nconst cpfPortal = (data.cpf || data.identifier || data.user_cpf || \"\").toString().replace(/\\D/g, '');\nconst telefoneReal = (data.telefone || data.target || \"\").toString().replace(/\\D/g, '');\n\n// ====================================================================\n// CHAVE DE SESSÃO OMNICHANNEL\n// CRÍTICO: Usamos o CPF como base da chave — IGUAL ao WhatsApp!\n// No WhatsApp o agente salva memória com a chave baseada no telefone,\n// mas aqui forçamos a mesma lógica usando CPF para unificar.\n// Se o cliente tem telefone, a sessão fica idêntica à do WhatsApp.\n// ====================================================================\nlet sessionKey;\nif (cpfPortal) {\n    // Prioridade: CPF — garante omnichannel entre WhatsApp e Portal\n    sessionKey = \"CPF_\" + cpfPortal;\n} else if (emailPortal) {\n    sessionKey = \"MAIL_\" + emailPortal.replace(/[^a-zA-Z0-9]/g, \"\");\n} else {\n    sessionKey = \"ANON_\" + Date.now();\n}\n\n// Pergunta do cliente\nconst perguntaFinal = data.pergunta_cliente || data.message || data.pergunta || \"Olá\";\n\nconst contextoFinal = {\n    nome: nomeCompleto,\n    email_cadastrado: emailPortal,\n    telefone: telefoneReal,\n    cpf_real: cpfPortal,\n    origem: \"PORTAL_WEB\",\n    token_validado: \"NÃO\" // No portal autenticado via JWT, 2FA já foi feito no login\n};\n\nconsole.log(`[PORTAL] Sessão: ${sessionKey} | CPF: ${cpfPortal} | Msg: ${perguntaFinal.slice(0, 60)}`);\n\nreturn [{ \n    json: { \n        pergunta_cliente: perguntaFinal, \n        contexto: contextoFinal, \n        session_key: sessionKey,\n        telefone: telefoneReal,\n        cpf_real: cpfPortal,\n        nome_cliente: nomeCompleto,\n        origem: \"PORTAL_WEB\"\n    } \n}];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -416,
+                -96
+            ],
+            "id": "9df776b7-d8ee-400c-a7a2-7cd696e34312",
+            "name": "NormalizarEntrada"
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "={{ $json.pergunta_cliente }}",
+                "options": {
+                    "systemMessage": "=================================================================\n⚠️ REGRA CRÍTICA DE IDENTIDADE\n=================================================================\nVocê é o BROKER IA, assistente inteligente de seguros da corretora.\nVocê está atendendo via PORTAL WEB (navegador).\n\nDADOS DO CLIENTE AUTENTICADO:\n- Nome: {{ $json.contexto.nome }}\n- CPF: {{ $json.contexto.cpf_real ? '***.***.***-' + $json.contexto.cpf_real.slice(-2) : 'Não informado' }}\n- E-mail: {{ $json.contexto.email_cadastrado || 'Não informado' }}\n- Telefone: {{ $json.contexto.telefone || 'Não informado' }}\n- Canal: PORTAL WEB (autenticado via Magic Link)\n\n=================================================================\n🔄 PROTOCOLO OMNICHANNEL\n=================================================================\nEste cliente pode ter conversado com você antes pelo WhatsApp!\nA memória da conversa é compartilhada por CPF.\nSe ele mencionar algo que foi discutido antes, você tem acesso.\n\nNO PORTAL WEB:\n- O cliente já se autenticou com Magic Link — identidade CONFIRMADA.\n- Você pode discutir informações gerais de seguros livremente.\n- Para dados SENSÍVEIS (número de apólice, valores, datas exatas),\n  use a tool 'consultar_detalhes_apolices'.\n- Para enviar PDF por e-mail, use 'enviar_apolice_por_email'.\n\n=================================================================\n🛡️ REGRAS DE SEGURANÇA (LGPD)\n=================================================================\n- CPF: SEMPRE mascarado (ex: ***.***.***-80)\n- Placa de veículo: use ***-**** nos 3 primeiros dígitos\n- Dados sensíveis: só via ferramentas autorizadas\n- NUNCA invente informações de apólices\n\n=================================================================\n📝 COTAÇÕES\n=================================================================\nSe o cliente pedir cotação, informe que o corretor responsável\nentrará em contato. Colete: tipo de seguro, dados gerais do item,\ne-mail de contato.\n\nSempre seja prestativo, objetivo e profissional."
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 3,
+            "position": [
+                -112,
+                -96
+            ],
+            "id": "29824c1d-f167-443d-be77-7ef2e85af44d",
+            "name": "Portal_Master"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Garante que a resposta saia no formato { response: \"...\" }\n// que o dashboard.js e o policyController.js esperam\nconst agentOutput = $input.first().json;\n\n// O Langchain Agent retorna em output ou text\nconst texto = agentOutput.output || agentOutput.text || agentOutput.response\n    || 'Desculpe, não consegui gerar uma resposta. Tente novamente.';\n\nreturn [{ json: { response: texto } }];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                160,
+                -96
+            ],
+            "id": "f1a2b3c4-d5e6-7890-abcd-ef1234567890",
+            "name": "FormatarResposta"
+        },
+        {
+            "parameters": {
+                "model": "google/gemini-2.5-flash",
+                "options": {
+                    "maxTokens": 2048
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+            "typeVersion": 1,
+            "position": [
+                -304,
+                160
+            ],
+            "id": "466ac784-fe0b-43bc-be85-ff2ff072c2b6",
+            "name": "OpenRouter Model",
+            "credentials": {
+                "openRouterApi": {
+                    "id": "HzPUGkdiTBP5PHtz",
+                    "name": "OpenRouter account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "sessionIdType": "customKey",
+                "sessionKey": "={{ $('NormalizarEntrada').first().json.session_key }}",
+                "contextWindowLength": 10
+            },
+            "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+            "typeVersion": 1.3,
+            "position": [
+                -112,
+                160
+            ],
+            "id": "a42e2d09-1172-4096-8c14-d3203362af79",
+            "name": "Postgres Memory",
+            "credentials": {
+                "postgres": {
+                    "id": "5ijVVKEpFAWPNF6w",
+                    "name": "brokeria_postgres_geral"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "workflowId": "o4B6ABk9dbBuA2fV",
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "token": "={{ $json.token || $('NormalizarEntrada').first().json.contexto.token_portal }}",
+                        "cpf": "={{ $json.cpf || $('NormalizarEntrada').first().json.contexto.cpf_real }}",
+                        "telefone_destino": "={{ $json.telefone || $('NormalizarEntrada').first().json.contexto.telefone }}",
+                        "email_destino": "={{ $('NormalizarEntrada').first().json.contexto.email_cadastrado }}",
+                        "canal": "whatsapp"
+                    }
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "typeVersion": 2.2,
+            "position": [
+                160,
+                160
+            ],
+            "id": "1f162f7f-d906-4005-878f-e30c09bb95a9",
+            "name": "enviar_token_seguranca"
+        },
+        {
+            "parameters": {
+                "workflowId": "HQ5dmivnCQKjRyG3",
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "cpf": "={{ $json.cpf || $('NormalizarEntrada').first().json.contexto.cpf_real }}"
+                    }
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "typeVersion": 2.2,
+            "position": [
+                336,
+                160
+            ],
+            "id": "affbf0ed-151b-460c-a694-ac466356dd4c",
+            "name": "consultar_detalhes_apolices"
+        },
+        {
+            "parameters": {
+                "workflowId": "n-iiun3kommkr9sO5CPXG",
+                "workflowInputs": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "numero_apolice": "={{ $json.numero_apolice || $json.input }}",
+                        "email_destino": "={{ $('NormalizarEntrada').first().json.contexto.email_cadastrado }}",
+                        "cpf_cliente": "={{ $('NormalizarEntrada').first().json.contexto.cpf_real }}"
+                    }
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "typeVersion": 2.2,
+            "position": [
+                512,
+                160
+            ],
+            "id": "4870fc5b-8f9d-4184-81a9-242a41bf0f34",
+            "name": "enviar_apolice_por_email"
+        }
+    ],
+    "connections": {
+        "Entrada Portal Web": {
+            "main": [
+                [
+                    {
+                        "node": "NormalizarEntrada",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "NormalizarEntrada": {
+            "main": [
+                [
+                    {
+                        "node": "Portal_Master",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Portal_Master": {
+            "main": [
+                [
+                    {
+                        "node": "FormatarResposta",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenRouter Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Portal_Master",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Postgres Memory": {
+            "ai_memory": [
+                [
+                    {
+                        "node": "Portal_Master",
+                        "type": "ai_memory",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "enviar_token_seguranca": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "Portal_Master",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "consultar_detalhes_apolices": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "Portal_Master",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "enviar_apolice_por_email": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "Portal_Master",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

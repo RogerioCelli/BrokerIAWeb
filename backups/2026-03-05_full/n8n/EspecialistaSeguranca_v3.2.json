@@ -1,0 +1,459 @@
+{
+    "name": "EspecialistaSeguranca_v3.2",
+    "nodes": [
+        {
+            "parameters": {
+                "workflowInputs": {
+                    "values": [
+                        {
+                            "name": "email_destino"
+                        },
+                        {
+                            "name": "cpf_cliente"
+                        },
+                        {
+                            "name": "token_portal"
+                        },
+                        {
+                            "name": "telefone_destino"
+                        },
+                        {
+                            "name": "canal"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.executeWorkflowTrigger",
+            "typeVersion": 1.1,
+            "position": [
+                1620,
+                1780
+            ],
+            "id": "e3a123",
+            "name": "When Executed by Another Workflow"
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 3
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.canal }}",
+                                        "rightValue": "whatsapp",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            }
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 3
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.canal }}",
+                                        "rightValue": "email",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            }
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3,
+            "position": [
+                1840,
+                1780
+            ],
+            "id": "s1",
+            "name": "SwitchOrigemCheck"
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "SELECT telefone, celular, email FROM public.clientes_brokeria WHERE REGEXP_REPLACE(cpf, '\\D', '', 'g') = '{{ $json.cpf_cliente }}' LIMIT 1;",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.6,
+            "position": [
+                2100,
+                1600
+            ],
+            "id": "p1",
+            "name": "ValidarTelefoneCadastro",
+            "credentials": {
+                "postgres": {
+                    "id": "ELeomlpMAl5I3QcM",
+                    "name": "brokeria_clientes_postgres"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "const trigger = $node[\"When Executed by Another Workflow\"].json;\nconst telRecebido = (trigger.telefone_destino || \"\").replace(/\\D/g, '');\nconst telBanco = ($json.telefone || \"\").replace(/\\D/g, '');\nconst celBanco = ($json.celular || \"\").replace(/\\D/g, '');\nconst emailBanco = $json.email;\n\nif (!telBanco && !celBanco) {\n    return { json: { sucesso: false, erro: \"CPF não localizado no cadastro.\", acao: \"bloqueio_seguranca\" } };\n}\n\nconst bateTelefone = telBanco && telRecebido.includes(telBanco.slice(-8));\nconst bateCelular = celBanco && telRecebido.includes(celBanco.slice(-8));\n\nif (!bateTelefone && !bateCelular) {\n    return { json: { sucesso: false, erro: \"O celular informado não coincide com os dados de cadastro.\", acao: \"bloqueio_seguranca\" } };\n}\n\nconst token = trigger.token_portal ? parseInt(trigger.token_portal) : Math.floor(100000 + Math.random() * 900000);\nreturn { json: { ...trigger, token: token, sucesso: true, email_cadastro: emailBanco } };"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                2340,
+                1600
+            ],
+            "id": "c1",
+            "name": "CompararTelefoneSeguranca"
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "SELECT email FROM public.clientes_brokeria WHERE REGEXP_REPLACE(cpf, '\\D', '', 'g') = '{{ $json.cpf_cliente }}' LIMIT 1;",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.6,
+            "position": [
+                2100,
+                1960
+            ],
+            "id": "p2",
+            "name": "ValidarEmailCadastro",
+            "credentials": {
+                "postgres": {
+                    "id": "ELeomlpMAl5I3QcM",
+                    "name": "brokeria_clientes_postgres"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "const trigger = $node[\"When Executed by Another Workflow\"].json;\nconst emailBanco = ($json.email || \"\").toLowerCase().trim();\nconst emailRecebido = (trigger.email_destino || \"\").toLowerCase().trim();\n\nif (!emailBanco || emailBanco !== emailRecebido) {\n    return { json: { sucesso: false, erro: \"O e-mail informado não coincide com os dados de cadastro.\", acao: \"bloqueio_seguranca\" } };\n}\n\nconst token = trigger.token_portal ? parseInt(trigger.token_portal) : Math.floor(100000 + Math.random() * 900000);\nreturn { json: { ...trigger, token: token, sucesso: true, email_cadastro: emailBanco } };"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                2340,
+                1960
+            ],
+            "id": "c2",
+            "name": "CompararEmailSeguranca"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 3
+                    },
+                    "conditions": [
+                        {
+                            "leftValue": "={{ $json.sucesso }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "true",
+                                "singleValue": true
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                }
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                2600,
+                1780
+            ],
+            "id": "i1",
+            "name": "FiltroDeSucesso"
+        },
+        {
+            "parameters": {
+                "operation": "set",
+                "key": "=token_2fa:{{ $json.cpf_cliente }}",
+                "value": "={{ $json.token.toString() }}",
+                "expire": true,
+                "ttl": 300
+            },
+            "type": "n8n-nodes-base.redis",
+            "typeVersion": 1,
+            "position": [
+                2850,
+                1720
+            ],
+            "id": "r1",
+            "name": "SalvarTokenRedis",
+            "credentials": {
+                "redis": {
+                    "id": "bTJkLNg8xtKhZJgL",
+                    "name": "Redis account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 3
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.canal }}",
+                                        "rightValue": "portal",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            }
+                        }
+                    ]
+                },
+                "fallbackOutput": 1,
+                "options": {}
+            },
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3,
+            "position": [
+                3050,
+                1720
+            ],
+            "id": "s2",
+            "name": "SwitchCanalFinal"
+        },
+        {
+            "parameters": {
+                "resource": "Chatting",
+                "operation": "Send Text",
+                "session": "default",
+                "chatId": "={{ $json.telefone_destino }}@c.us",
+                "text": "=🔐 *Código de Segurança - Broker IA*\n\nSeu código de verificação é:\n\n*{{ $json.token }}*\n\nEste código expira em 5 minutos."
+            },
+            "type": "n8n-nodes-waha.WAHA",
+            "typeVersion": 202411,
+            "position": [
+                3300,
+                1620
+            ],
+            "id": "w1",
+            "name": "SendWhatsapp",
+            "credentials": {
+                "wahaApi": {
+                    "id": "RynISmV7FrfCHYOX",
+                    "name": "WAHA account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "fromEmail": "broker.ia2025@gmail.com",
+                "toEmail": "={{ $json.email_cadastro || $json.email_destino }}",
+                "subject": "Código de Segurança - Broker IA",
+                "html": "=Olá, seu código de verificação é: <b>{{ $json.token }}</b>"
+            },
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 2.1,
+            "position": [
+                3300,
+                1840
+            ],
+            "id": "e1",
+            "name": "SendEmail",
+            "credentials": {
+                "smtp": {
+                    "id": "KC1XLlTSdvaxvOE3",
+                    "name": "SMTP account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "const input = $json;\nif (input.sucesso === false) {\n  return { json: { sucesso: false, mensagem: input.erro, acao: \"erro_seguranca\", data: new Date().toISOString() } };\n}\nreturn { json: { sucesso: true, mensagem: \"Código enviado com sucesso.\", acao: \"envio_token\", data: new Date().toISOString() } };"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                3600,
+                1780
+            ],
+            "id": "f1",
+            "name": "FormatarRetorno"
+        }
+    ],
+    "connections": {
+        "When Executed by Another Workflow": {
+            "main": [
+                [
+                    {
+                        "node": "SwitchOrigemCheck",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "SwitchOrigemCheck": {
+            "main": [
+                [
+                    {
+                        "node": "ValidarTelefoneCadastro",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "ValidarEmailCadastro",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "ValidarTelefoneCadastro": {
+            "main": [
+                [
+                    {
+                        "node": "CompararTelefoneSeguranca",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "CompararTelefoneSeguranca": {
+            "main": [
+                [
+                    {
+                        "node": "FiltroDeSucesso",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "ValidarEmailCadastro": {
+            "main": [
+                [
+                    {
+                        "node": "CompararEmailSeguranca",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "CompararEmailSeguranca": {
+            "main": [
+                [
+                    {
+                        "node": "FiltroDeSucesso",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "FiltroDeSucesso": {
+            "main": [
+                [
+                    {
+                        "node": "SalvarTokenRedis",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "FormatarRetorno",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "SalvarTokenRedis": {
+            "main": [
+                [
+                    {
+                        "node": "SwitchCanalFinal",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "SwitchCanalFinal": {
+            "main": [
+                [
+                    {
+                        "node": "SendWhatsapp",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "SendEmail",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "SendWhatsapp": {
+            "main": [
+                [
+                    {
+                        "node": "FormatarRetorno",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "SendEmail": {
+            "main": [
+                [
+                    {
+                        "node": "FormatarRetorno",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

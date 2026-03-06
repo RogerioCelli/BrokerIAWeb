@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broker IA | Portal do Segurado</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Clerk Auth -->
+    <script async crossorigin="anonymous"
+        data-clerk-publishable-key="pk_test_dG91Y2hlZC1seW54LTYuY2xlcmsuYWNjb3VudHMuZGV2JA"
+        src="https://touched-lynx-6.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+        type="text/javascript"></script>
+    <link rel="shortcut icon" href="https://img.icons8.com/fluency/48/shield.png" type="image/x-icon">
+</head>
+
+<body class="login-page">
+    <!-- Scroll Progress Bar -->
+    <div id="scrollProgress"></div>
+    <!-- Decorative background elements -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <main class="main-container">
+        <div class="login-card">
+            <div class="logo-section">
+                <h1>Broker IA</h1>
+                <p>O futuro dos seus seguros agora é inteligente.</p>
+            </div>
+
+            <form id="loginForm">
+                <div class="form-group" id="identifierGroup">
+                    <label for="identifier">Identificação</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="identifier" name="identifier" class="premium-input"
+                            placeholder="CPF ou CNPJ" required>
+                    </div>
+                </div>
+
+                <!-- Canal fixo: E-mail -->
+                <div class="form-group" id="channelGroup" style="display: none;">
+                    <label>Código de segurança será enviado para:</label>
+                    <div class="channel-options">
+                        <label class="channel-card" style="pointer-events: none; opacity: 0.9;">
+                            <input type="radio" name="auth_channel" value="email" checked>
+                            <i class="fas fa-envelope"></i>
+                            <div class="channel-info">
+                                <span class="channel-name">E-mail</span>
+                                <span class="channel-detail" id="maskedEmail"></span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group" style="display: none;" id="tokenGroup">
+                    <label for="token">Token de Segurança</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="token" name="token" class="premium-input"
+                            placeholder="Digite o código enviado" maxlength="6">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-login" id="mainButton">Solicitar Acesso</button>
+            </form>
+
+            <div class="footer-links">
+                <a href="#">Ainda não é cliente? <span style="color: var(--primary);">Entre em contato</span></a>
+                <br><br>
+                <a href="admin.html" style="font-size: 0.7rem; opacity: 0.3;">Governança de Agentes IA</a>
+            </div>
+        </div>
+    </main>
+
+    <script src="main.js"></script>
+
+    <!-- Interface do Assistente IA para Novos Clientes -->
+    <!-- Chat styles handled by style.css -->
+
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-header">
+            <span>Agente de Vendas Broker IA</span>
+            <button id="closeChat" style="background:none; border:none; color:white; cursor:pointer;"><i
+                    class="fas fa-times"></i></button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot">Olá! Visitante. Sou o assistente da Broker IA. Como posso te ajudar na escolha do
+                seu seguro hoje?</div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chatInput" placeholder="Sua pergunta...">
+            <button id="sendMessage"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <div class="ai-assistant-fab" id="chatFab">
+        <i class="fas fa-robot"></i>
+    </div>
+</body>
+
+</html>

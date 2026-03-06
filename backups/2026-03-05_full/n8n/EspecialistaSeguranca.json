@@ -1,0 +1,386 @@
+{
+    "name": "EspecialistaSeguranca",
+    "nodes": [
+        {
+            "parameters": {
+                "workflowInputs": {
+                    "values": [
+                        {
+                            "name": "email_destino"
+                        },
+                        {
+                            "name": "cpf_cliente"
+                        },
+                        {
+                            "name": "token_portal"
+                        },
+                        {
+                            "name": "telefone_destino"
+                        },
+                        {
+                            "name": "canal"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.executeWorkflowTrigger",
+            "typeVersion": 1.1,
+            "position": [
+                0,
+                0
+            ],
+            "id": "5fff1b39-87f3-4c81-8b70-92f935b05d17",
+            "name": "When Executed by Another Workflow"
+        },
+        {
+            "parameters": {
+                "jsCode": "// ==========================================\n// GerarToken6Digitos (OMNICHANNEL - PRODUÇÃO)\n// Compatível com WhatsApp e Portal Web\n// ==========================================\n\nconst maskCpf = (cpf) => {\n  if (!cpf) return 'VAZIO';\n  const d = String(cpf).replace(/\\D/g, '');\n  if (d.length < 5) return '***';\n  return `${d.slice(0, 3)}***${d.slice(-2)}`;\n};\n\nconst maskEmail = (email) => {\n  if (!email) return 'VAZIO';\n  const s = String(email).trim();\n  const at = s.indexOf('@');\n  if (at <= 0) return 'INVALIDO';\n  const user = s.slice(0, at);\n  const domain = s.slice(at + 1);\n  const userMasked = user.length <= 2 ? `${user[0]}*` : `${user[0]}***${user.slice(-1)}`;\n  return `${userMasked}@${domain}`;\n};\n\n// 1) Captura Omnichannel (Aceita padrões WhatsApp e Portal)\nlet emailInput = $json.email || $json.email_cliente || $json.email_destino;\nlet cpfInput = $json.cpf || $json.cpf_cliente || $json.cpf_real || $json.documento;\nlet tokenPortal = $json.token || $json.token_portal;\nlet telefoneInput = $json.telefone || $json.telefone_destino || $json.target;\nlet canalInput = $json.canal || ($json.telefone_destino ? \"whatsapp\" : \"email\");\n\n// 2) Fallback: se veio encapsulado em $json.query\nif ((!emailInput || !cpfInput) && $json.query) {\n  try {\n    const parsed = typeof $json.query === 'string' ? JSON.parse($json.query) : $json.query;\n    emailInput = emailInput || parsed.email || parsed.email_cliente || parsed.email_destino;\n    cpfInput = cpfInput || parsed.cpf || parsed.cpf_cliente || parsed.cpf_real || parsed.documento;\n    tokenPortal = tokenPortal || parsed.token || parsed.token_portal;\n    telefoneInput = telefoneInput || parsed.telefone || parsed.telefone_destino;\n  } catch (e) {}\n}\n\n// 3) Validação obrigatória \nif (!cpfInput || !emailInput) {\n  throw new Error(\n    `❌ DADOS OBRIGATÓRIOS FALTANDO:\\nCPF: ${maskCpf(cpfInput)}\\nEmail: ${maskEmail(emailInput)}`\n  );\n}\n\n// 4) Limpar CPF\nconst cpfLimpo = String(cpfInput).replace(/\\D/g, '');\n\n// 5) Validação simples do e-mail\nconst emailStr = String(emailInput).trim();\nif (!emailStr.includes('@') || !emailStr.includes('.') || emailStr.length < 6) {\n  throw new Error(`❌ SEGURANÇA: Email inválido (mascarado): ${maskEmail(emailStr)}`);\n}\n\n// 6) Gerar/Validar Token (INTELIGENTE - Pass-through do Portal)\nconst token = tokenPortal ? parseInt(tokenPortal) : Math.floor(100000 + Math.random() * 900000);\n\n// 7) Saída Unificada\nreturn {\n  json: {\n    token,\n    cpf: cpfLimpo,\n    email_cliente: emailStr,\n    telefone: telefoneInput,\n    canal: canalInput,\n    origem: tokenPortal ? \"PORTAL_SYNC\" : \"CHAT_DIRECT\"\n  },\n};"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                192,
+                0
+            ],
+            "id": "4b613607-441d-4cee-9d30-93a1c6441bbf",
+            "name": "GerarToken6Digitos"
+        },
+        {
+            "parameters": {
+                "operation": "set",
+                "key": "=token_2fa:{{ $json.cpf }}",
+                "value": "={{ $json.token.toString() }}",
+                "expire": true,
+                "ttl": 300
+            },
+            "type": "n8n-nodes-base.redis",
+            "typeVersion": 1,
+            "position": [
+                736,
+                0
+            ],
+            "id": "0723841b-f61c-49d6-8bb3-3c152c5d8b6d",
+            "name": "SalvarTokenRedis",
+            "credentials": {
+                "redis": {
+                    "id": "bTJkLNg8xtKhZJgL",
+                    "name": "Redis account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "fromEmail": "broker.ia2025@gmail.com",
+                "toEmail": "={{ $node[\"ValidarEmailCadastrado\"].json.email }}",
+                "subject": "Código de Segurança - Broker IA",
+                "html": "=Olá, seu código de verificação é: {{ $('GerarToken6Digitos').first().json.token }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 2.1,
+            "position": [
+                1280,
+                0
+            ],
+            "id": "9e4d5167-e25f-4b4b-89a8-b0ef76d8bafa",
+            "name": "Send email",
+            "webhookId": "3eec4c9f-a72a-4bbf-9088-a2fb391e0ed8",
+            "credentials": {
+                "smtp": {
+                    "id": "KC1XLlTSdvaxvOE3",
+                    "name": "SMTP account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// Pegar resultado do envio de e-mail\nconst emailResult = $input.first().json;\n\n// Verificar se enviou com sucesso (padrão de retorno do nó SMTP do n8n)\nconst enviouComSucesso = emailResult.accepted && emailResult.accepted.length > 0;\n\nif (enviouComSucesso) {\n  return {\n    json: {\n      status: \"ENVIADO\",\n      mensagem_final: \"✅ *Código Enviado!* Verifique o e-mail cadastrado em nossa base. Assim que receber os 6 dígitos, digite-os aqui abaixo.\"\n    }\n  };\n} else {\n  return {\n    json: {\n      status: \"ERRO\",\n      mensagem_final: \"⚠️ *Falha no Envio:* Tivemos um problema técnico ao enviar seu código por e-mail. Por favor, tente novamente em alguns instantes ou fale com um consultor.\"\n    }\n  };\n}"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1440,
+                0
+            ],
+            "id": "1c299d8a-5823-456c-8c67-13a31d98dadc",
+            "name": "LimparOutput"
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "SELECT email \nFROM public.clientes_brokeria \nWHERE REGEXP_REPLACE(cpf, '\\D', '', 'g') = '{{ $json.cpf }}'\nLIMIT 1;",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.6,
+            "position": [
+                368,
+                0
+            ],
+            "id": "a48e08ff-1797-4026-a06f-dbfc1ca9c0f6",
+            "name": "ValidarEmailCadastrado",
+            "alwaysOutputData": true,
+            "executeOnce": false,
+            "credentials": {
+                "postgres": {
+                    "id": "ELeomlpMAl5I3QcM",
+                    "name": "brokeria_clientes_postgres"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// 1. Captura o email que o AI Agent quer usar\nconst emailAgente = $('GerarToken6Digitos').first().json.email_cliente;\n\n// 2. Captura o email vindo do banco (ValidarEmailCadastrado)\n// Se a query não retornou nada, emailBanco será undefined\nconst emailBanco = $json.email;\n\nconsole.log(\"🔐 VALIDAÇÃO DE SEGURANÇA:\");\nconsole.log(\"- Email do AI Agent:\", emailAgente);\nconsole.log(\"- Email cadastrado no banco:\", emailBanco || \"NÃO ENCONTRADO\");\n\n// 3. Validação Crítica: Verifica se o email do banco existe\nif (!emailBanco) {\n  throw new Error(`🚨 SEGURANÇA: Cliente não encontrado no banco de dados para este CPF. Envio abortado.`);\n}\n\n// 4. Comparação case-insensitive (Protegida)\nif (emailAgente.toLowerCase().trim() !== emailBanco.toLowerCase().trim()) {\n  throw new Error(`🚨 TENTATIVA DE FRAUDE BLOQUEADA:\\n    O Agente tentou enviar para: ${emailAgente}\\n    Mas o email real cadastrado é outro.\\n    Ação: Fluxo interrompido por segurança.`);\n}\n\n// Se os emails forem iguais, libera o envio do token\nreturn $('GerarToken6Digitos').all();"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                560,
+                0
+            ],
+            "id": "8e10f2b8-5a23-4443-858a-6933a083d0ab",
+            "name": "CompararEmailSeguranca"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Validar se o Redis salvou com sucesso\nconst redisResponse = $input.first().json;\n\n// Redis retorna a string \"OK\" quando salva com sucesso\nif (redisResponse !== \"OK\" && !redisResponse.token) {\n  throw new Error(\"❌ Falha ao salvar token no Redis. Tentativa de envio de email abortada.\");\n}\n\n// Se chegou aqui, pode prosseguir\nreturn $input.all();\n"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                896,
+                0
+            ],
+            "id": "119db791-c58a-4ce0-ad4b-959cdf8c54a6",
+            "name": "CheckTokenSaved"
+        },
+        {
+            "parameters": {
+                "jsCode": "let sucesso = false;\nlet mensagem = \"\";\ntry {\n  // Usamos o opcional encadeamento (?.) para evitar erros se o nó não existir\n  const emailNode = $('Send email')?.first();\n  \n  if (emailNode && emailNode.json && emailNode.json.accepted && emailNode.json.accepted.length > 0) {\n    sucesso = true;\n    mensagem = \"Email enviado com sucesso\";\n  } else {\n    // Se o nó existe mas não tem 'accepted', pegamos o erro que o próprio nó SMTP soltou\n    mensagem = emailNode?.json?.message || \"Erro ao enviar email - verifique configuração SMTP\";\n  }\n} catch(err) {\n  mensagem = \"Erro técnico: \" + String(err.message || err);\n}\nreturn [{\n  json: {\n    sucesso: sucesso,\n    mensagem: mensagem,\n    acao: \"envio_token_2fa\",\n    timestamp: new Date().toISOString()\n  }\n}];\n\n"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1648,
+                0
+            ],
+            "id": "a55549ba-f8ab-4247-b24b-9d9eaf355f9f",
+            "name": "FormatarRetorno"
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 3
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $('GerarToken6Digitos').first().json.canal }}",
+                                        "rightValue": "whatsapp",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        },
+                                        "id": "f2fae488-99f5-4d99-855a-70b0ffbfad4c"
+                                    }
+                                ],
+                                "combinator": "and"
+                            }
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 3
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "a3e2a686-12bc-4f4b-a2cc-7ebed4a62f2d",
+                                        "leftValue": "={{ $('GerarToken6Digitos').first().json.canal }}",
+                                        "rightValue": "email",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals",
+                                            "name": "filter.operator.equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            }
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3.4,
+            "position": [
+                1056,
+                -192
+            ],
+            "id": "f074c4cd-2bcb-4af9-ae79-7fd9dd046726",
+            "name": "SwitchOrigemDestino"
+        },
+        {
+            "parameters": {
+                "resource": "Chatting",
+                "operation": "Send Text",
+                "session": "=default",
+                "chatId": "={{ $('GerarToken6Digitos').first().json.telefone }}@c.us",
+                "text": "=🔐 *Código de Segurança - Broker IA*\n\nSeu código de verificação é:\n\n*{{ $('GerarToken6Digitos').first().json.token }}*\n\nEste código expira em 5 minutos.",
+                "requestOptions": {}
+            },
+            "type": "n8n-nodes-waha.WAHA",
+            "typeVersion": 202411,
+            "position": [
+                1264,
+                -288
+            ],
+            "id": "10939e61-c8d2-4aca-ba35-71a03315c028",
+            "name": "Enviar WhatsApp",
+            "credentials": {
+                "wahaApi": {
+                    "id": "RynISmV7FrfCHYOX",
+                    "name": "WAHA account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "When Executed by Another Workflow": {
+            "main": [
+                [
+                    {
+                        "node": "GerarToken6Digitos",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "GerarToken6Digitos": {
+            "main": [
+                [
+                    {
+                        "node": "ValidarEmailCadastrado",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "SalvarTokenRedis": {
+            "main": [
+                [
+                    {
+                        "node": "CheckTokenSaved",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send email": {
+            "main": [
+                [
+                    {
+                        "node": "LimparOutput",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "LimparOutput": {
+            "main": [
+                [
+                    {
+                        "node": "FormatarRetorno",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "ValidarEmailCadastrado": {
+            "main": [
+                [
+                    {
+                        "node": "CompararEmailSeguranca",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "CompararEmailSeguranca": {
+            "main": [
+                [
+                    {
+                        "node": "SalvarTokenRedis",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "CheckTokenSaved": {
+            "main": [
+                [
+                    {
+                        "node": "SwitchOrigemDestino",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "FormatarRetorno": {
+            "main": [
+                []
+            ]
+        },
+        "SwitchOrigemDestino": {
+            "main": [
+                [
+                    {
+                        "node": "Enviar WhatsApp",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Send email",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Enviar WhatsApp": {
+            "main": [
+                [
+                    {
+                        "node": "FormatarRetorno",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "6d0cb3eea1c119e43144d997ea344d5015b9ba9f4a6acb5364cecf80271874e3"
+    }
+}

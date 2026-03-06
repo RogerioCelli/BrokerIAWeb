@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Broker IA</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+
+<body>
+    <!-- Scroll Progress Bar -->
+    <div id="scrollProgress"></div>
+
+    <div class="dashboard-container">
+        <header class="header">
+            <div class="user-info">
+                <h1 id="welcomeName">Olá, Carregando...</h1>
+                <p id="orgName">Corretora Parceira</p>
+            </div>
+            <button class="logout-btn" id="logoutBtn">
+                <i class="fas fa-sign-out-alt"></i> Sair
+            </button>
+        </header>
+
+        <section class="reveal">
+            <h2 class="section-title">
+                <i class="fas fa-shield-halved"></i>
+                Minhas Apólices
+            </h2>
+            <div class="policies-grid" id="policiesGrid">
+                <!-- Apólices serão carregadas aqui via JS -->
+                <div class="policy-card loading">
+                    <p style="color: var(--text-dim); opacity: 0;">Carregando seguros ativos...</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Rodapé da Corretora Full Width -->
+    <footer class="institutional-footer" id="institutionalFooter">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <h3 id="footerOrgName">Broker IA</h3>
+                <p id="footerAddress">Carregando endereço comercial...</p>
+            </div>
+            <div class="footer-contacts" id="footerContacts">
+                <!-- Contatos serão injetados via JS -->
+            </div>
+        </div>
+    </footer>
+
+    <!-- Interface do Assistente IA -->
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-header">
+            <div class="chat-header-info">
+                <i class="fas fa-robot"></i>
+                <div>
+                    <span class="chat-bot-name">Broker IA</span>
+                    <span class="chat-bot-status">Online e pronto para ajudar</span>
+                </div>
+            </div>
+            <button class="chat-close" id="closeChat"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot">
+                Olá! Sou o seu assistente inteligente. Como posso ajudar com seus seguros hoje?
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chatInput" placeholder="Pergunte sobre sua apólice..." autocomplete="off">
+            <button id="sendMessage"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <div class="ai-assistant-fab" id="chatFab" title="Falar com IA">
+        <i class="fas fa-robot"></i>
+    </div>
+
+    <!-- Modal de Detalhes da Apólice -->
+    <div class="modal-overlay" id="policyModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeModal"><i class="fas fa-times"></i></button>
+            <div id="modalBody">
+                <!-- Conteúdo injetado via JS -->
+            </div>
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+
+    <!-- Scroll Progress + Reveal + Sticky Header -->
+    <script>
+        // Scroll progress bar
+        const scrollBar = document.getElementById('scrollProgress');
+        window.addEventListener('scroll', () => {
+            const scrolled = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
+            if (scrollBar) scrollBar.style.width = scrolled + '%';
+
+            // Sticky header glow on scroll
+            const header = document.querySelector('.header');
+            if (header) header.classList.toggle('scrolled', window.scrollY > 20);
+        }, { passive: true });
+
+        // Intersection Observer for reveal animations
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+        document.querySelectorAll('.reveal, .reveal-left, .reveal-right').forEach(el => {
+            revealObserver.observe(el);
+        });
+    </script>
+</body>
+
+</html>

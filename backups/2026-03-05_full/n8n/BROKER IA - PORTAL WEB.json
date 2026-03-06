@@ -1,0 +1,271 @@
+{
+  "name": "BROKER IA - PORTAL WEB",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "portal-web-chat",
+        "responseMode": "lastNode",
+        "responseData": "body",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -672,
+        -96
+      ],
+      "id": "17a4b01c-320f-44b4-b0e9-9a7ccbfd13f4",
+      "name": "Entrada Portal Web",
+      "webhookId": "portal-web-chat"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst data = input.body || input;\n\nconst nomeCompleto = data.client_name || \"Visitante\";\nconst cpfPortal = (data.cpf || data.identifier || \"\").toString().replace(/\\D/g, '');\n\n// 🎯 CAPTURA CORRETA: Email e Telefone vêm em campos separados do backend\nconst emailReal = data.email || null;\nconst telefoneReal = data.target ? data.target.replace(/\\D/g, '') : null;\n\nlet contextoFinal = {\n    nome: nomeCompleto,\n    email_cadastrado: emailReal,\n    telefone: telefoneReal,\n    cpf_real: cpfPortal,\n    origem: \"PORTAL_WEB\",\n    token_portal: data.token || null,\n    action: data.action || null\n};\n\n// Session ID para memória do chat (separado do telefone real)\nlet sessionID = cpfPortal ? \"WEB_\" + cpfPortal : \"WEB_MAIL_\" + (emailReal || \"ANONIMO\").replace(/[^a-zA-Z0-9]/g, \"\");\n\nlet perguntaFinal = data.pergunta_cliente || data.pergunta || \"Olá\";\n\nif (data.action === \"SEND_2FA_TOKEN\") {\n    const meioComunicacao = data.channel === \"email\" ? \"e-mail\" : \"WhatsApp\";\n\n    perguntaFinal = `[LOGIN PORTAL]: O cliente ${nomeCompleto} solicita acesso via ${meioComunicacao}.\n                     DADOS CONFIRMADOS:\n                     - CPF: ${cpfPortal}\n                     - TELEFONE: ${telefoneReal}\n                     - E-MAIL: ${emailReal}\n                     - TOKEN: ${contextoFinal.token_portal}\n                     \n                     AÇÃO OBRIGATÓRIA:\n                     1. Saude o cliente.\n                     2. Confirme o envio.\n                     3. Chame 'enviar_token_seguranca' agora.`;\n}\n\nreturn [{ json: { pergunta_cliente: perguntaFinal, contexto: contextoFinal, telefone: sessionID, nome_whatsapp: nomeCompleto, origem: \"PORTAL_WEB\" } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        -96
+      ],
+      "id": "9df776b7-d8ee-400c-a7a2-7cd696e34312",
+      "name": "Normalizar Portal"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.pergunta_cliente }}",
+        "options": {
+          "systemMessage": "Você é o Agente Master da DWF Seguros para o Portal Web. \nCLIENTE: {{ $json.contexto.nome }}\nCPF: {{ $json.contexto.cpf_real }}\nSESSÃO: {{ $json.telefone }}\n\n🛡️ PROTOCOLO DE SEGURANÇA (2FA):\n1. Se o cliente pedir dados sensíveis e 2FA for 'NÃO', chame 'enviar_token_seguranca'.\n2. Se o cliente informar o código, chame 'validar_codigo_6_digitos'.\n3. Após validação bem-sucedida, chame 'consultar_detalhes_apolices' para responder ao cliente.\n\n⚠️ REGRAS:\n- Nunca invente dados. Use as ferramentas.\n- Use um tom profissional e consultivo (Washington).\n- Mascare dados sensíveis (CPF ***.123.***-**)."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -112,
+        -96
+      ],
+      "id": "29824c1d-f167-443d-be77-7ef2e85af44d",
+      "name": "Portal_Master"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-2.5-flash",
+        "options": {
+          "maxTokens": 2048
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -272,
+        160
+      ],
+      "id": "466ac784-fe0b-43bc-be85-ff2ff072c2b6",
+      "name": "OpenRouter Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "HzPUGkdiTBP5PHtz",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.telefone + '_v2' }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        -64,
+        160
+      ],
+      "id": "a42e2d09-1172-4096-8c14-d3203362af79",
+      "name": "Postgres Memory",
+      "credentials": {
+        "postgres": {
+          "id": "5ijVVKEpFAWPNF6w",
+          "name": "brokeria_postgres_geral"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "OBRIGATÓRIO: Use esta ferramenta para enviar o código de 6 dígitos. Aceita e-mail ou WhatsApp como destino.",
+        "workflowId": "o4B6ABk9dbBuA2fV",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "token": "={{ $json.token || $json.token_portal || $('Normalizar Portal').first().json.contexto.token_portal }}",
+            "email_destino": "={{ $json.email_destino || $json.email || $('Normalizar Portal').first().json.contexto.email_cadastrado }}",
+            "telefone_destino": "={{ $json.telefone || $('Normalizar Portal').first().json.contexto.telefone }}",
+            "cpf_cliente": "={{ $json.cpf_cliente || $json.cpf || $('Normalizar Portal').first().json.contexto.cpf_real }}",
+            "canal": "={{ $json.action === 'SEND_2FA_TOKEN' ? 'portal' : 'chat' }}"
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        150,
+        160
+      ],
+      "id": "tool-envia",
+      "name": "enviar_token_seguranca"
+    },
+    {
+      "parameters": {
+        "workflowId": "0EJQn58sZIskd09p",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cpf": "={{ $json.cpf || $json.cpf_real || $('Normalizar Portal').first().json.contexto.cpf_real }}",
+            "telefone": "={{ $json.telefone || $('Normalizar Portal').first().json.contexto.telefone }}",
+            "codigo": "={{ $json.codigo || $json.token || $json.input }}"
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        330,
+        160
+      ],
+      "id": "tool-valida",
+      "name": "validar_codigo_6_digitos"
+    },
+    {
+      "parameters": {
+        "workflowId": "HQ5dmivnCQKjRyG3",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cpf": "={{ $json.cpf || $json.cpf_real || $('Normalizar Portal').first().json.contexto.cpf_real }}"
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        510,
+        160
+      ],
+      "id": "tool-consulta",
+      "name": "consultar_detalhes_apolices"
+    },
+    {
+      "parameters": {
+        "workflowId": "n-iiun3kommkr9sO5CPXG",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "numero_apolice": "={{ $json.numero_apolice || $json.input }}",
+            "email_destino": "={{ $json.email_destino || $('Normalizar Portal').first().json.contexto.email_cadastrado }}",
+            "cpf_cliente": "={{ $json.cpf_cliente || $('Normalizar Portal').first().json.contexto.cpf_real }}"
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        690,
+        160
+      ],
+      "id": "tool-pdf",
+      "name": "enviar_apolice_por_email"
+    }
+  ],
+  "connections": {
+    "Entrada Portal Web": {
+      "main": [
+        [
+          {
+            "node": "Normalizar Portal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar Portal": {
+      "main": [
+        [
+          {
+            "node": "Portal_Master",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Portal_Master",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Portal_Master",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "enviar_token_seguranca": {
+      "ai_tool": [
+        [
+          {
+            "node": "Portal_Master",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "validar_codigo_6_digitos": {
+      "ai_tool": [
+        [
+          {
+            "node": "Portal_Master",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "consultar_detalhes_apolices": {
+      "ai_tool": [
+        [
+          {
+            "node": "Portal_Master",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "enviar_apolice_por_email": {
+      "ai_tool": [
+        [
+          {
+            "node": "Portal_Master",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -181,53 +181,6 @@ async function runMigrations() {
             ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS data_criacao TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW();
         `);
 
-        // ─── EXPANSÃO SCHEMA: Novos campos extraídos pelo EspecialistaExtracao ───
-
-        // Clientes — campos de endereço, perfil e contatos adicionais
-        await db.apolicesQuery(`
-            ALTER TABLE clientes_brokeria ADD COLUMN IF NOT EXISTS endereco TEXT;
-            ALTER TABLE clientes_brokeria ADD COLUMN IF NOT EXISTS bairro TEXT;
-            ALTER TABLE clientes_brokeria ADD COLUMN IF NOT EXISTS cidade TEXT;
-            ALTER TABLE clientes_brokeria ADD COLUMN IF NOT EXISTS estado TEXT;
-            ALTER TABLE clientes_brokeria ADD COLUMN IF NOT EXISTS cep TEXT;
-            ALTER TABLE clientes_brokeria ADD COLUMN IF NOT EXISTS data_nascimento TEXT;
-            ALTER TABLE clientes_brokeria ADD COLUMN IF NOT EXISTS rg TEXT;
-            ALTER TABLE clientes_brokeria ADD COLUMN IF NOT EXISTS profissao TEXT;
-            ALTER TABLE clientes_brokeria ADD COLUMN IF NOT EXISTS estado_civil TEXT;
-            ALTER TABLE clientes_brokeria ADD COLUMN IF NOT EXISTS telefone2 TEXT;
-            ALTER TABLE clientes_brokeria ADD COLUMN IF NOT EXISTS email2 TEXT;
-            ALTER TABLE clientes_brokeria ADD COLUMN IF NOT EXISTS cpf_conjuge TEXT;
-        `);
-
-        // Apólices — veículo completo, pagamento, corretor, condutor, coberturas
-        await db.apolicesQuery(`
-            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS modelo TEXT;
-            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS fabricante TEXT;
-            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS ano_modelo TEXT;
-            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS ano_fabricacao TEXT;
-            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS cor_veiculo TEXT;
-            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS combustivel TEXT;
-            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS codigo_fipe TEXT;
-            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS renavam TEXT;
-            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS kilometragem TEXT;
-            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS blindado TEXT;
-            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS kit_gas TEXT;
-            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS cambio_automatico TEXT;
-            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS franquia_tipo TEXT;
-            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS numero_parcelas TEXT;
-            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS frequencia_pagamento TEXT;
-            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS numero_proposta TEXT;
-            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS corretor_nome TEXT;
-            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS corretor_codigo TEXT;
-            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS coberturas JSONB;
-            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS condutor_detalhes JSONB;
-            ALTER TABLE apolices_brokeria ADD COLUMN IF NOT EXISTS dados_adicionais JSONB;
-        `);
-        console.log('✅ [DB] Schema expandido com todos os novos campos do EspecialistaExtracao (nomes limpos).');
-
-        console.log('✅ [DB] Schema expandido com todos os novos campos do EspecialistaExtracao.');
-
-
         // 3. Atualizar Org Demo com dados de contato (Somente se não houver alteração manual)
         await db.query(`
             UPDATE organizacoes SET 

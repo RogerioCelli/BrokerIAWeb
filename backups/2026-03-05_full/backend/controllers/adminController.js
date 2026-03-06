@@ -229,123 +229,51 @@ const adminController = {
     // --- ÁREA DE STAGING (IMPORTAÇÕES PENDENTES) ---
 
     normalizeData: (raw) => {
-        if (!raw) return { Segurado: {}, DadosApolice: {}, Endereco: {}, BemAuto: {} };
         let data = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
         // n8n frequentemente envia um array com um objeto dentro
-        if (Array.isArray(data)) data = data[0];
-        if (!data) return { Segurado: {}, DadosApolice: {}, Endereco: {}, BemAuto: {} };
+        if (Array.isArray(data)) {
+            data = data[0];
+        }
 
-        // Suporte para wrapper "OrganizaDados" (Case Insensitive)
-        const wrapperKey = Object.keys(data).find(k => k.toLowerCase() === 'organizadados');
-        if (wrapperKey) data = data[wrapperKey];
-
-        // Se após extrair o wrapper ainda for array
-        if (Array.isArray(data)) data = data[0];
+        // Suporte para o wrapper "OrganizaDados" do n8n
+        if (data && data.OrganizaDados) {
+            data = data.OrganizaDados;
+        }
 
         const norm = {
-            Segurado: {},
-            DadosApolice: {},
-            Endereco: {},
-            BemAuto: {}
+            Segurado: data.Segurado || data.cliente || {},
+            DadosApolice: data.DadosApolice || data.apolice || {},
+            Endereco: data.EnderecoCompleto || data.endereco || {}
         };
 
-        // ─── HELPER: busca chave case-insensitive em um objeto ───────────────
-        const getKey = (obj, ...aliases) => {
-            if (!obj || typeof obj !== 'object') return undefined;
-            const found = Object.keys(obj).find(k => aliases.includes(k.toLowerCase()));
-            return found ? obj[found] : undefined;
-        };
+        // Fallback para formato n8n (Identificacao)
+        if (data.Identificacao) {
+            norm.Segurado = {
+                NomeCompleto: data.Identificacao.nome_completo || data.Identificacao.NomeCompleto,
+                CPF: data.Identificacao.cpf_cnpj?.replace(/\D/g, '').length === 11 ? data.Identificacao.cpf_cnpj : null,
+                CNPJ: data.Identificacao.cpf_cnpj?.replace(/\D/g, '').length === 14 ? data.Identificacao.cpf_cnpj : null,
+                Email: (data.contatos?.emails && data.contatos.emails[0]) || data.Identificacao.Email,
+                Celular: (data.contatos?.celulares && data.contatos.celulares[0]) || data.Identificacao.Celular
+            };
 
-        // ─── 1. IDENTIFICACAO / Segurado ─────────────────────────────────────
-        const iden = getKey(data, 'identificacao', 'identificação', 'segurado', 'cliente') || data;
+            // Se os dados da apólice estiverem DENTRO de Identificacao (raro, mas possível no n8n dependendo do nó)
+            if (data.Identificacao.dados_da_apolice && !data.dados_da_apolice) {
+                data.dados_da_apolice = data.Identificacao.dados_da_apolice;
+            }
+        }
 
-        const cpfRaw = String(iden.CPF || iden.cpf || iden.cpf_cnpj || iden.CPF_CNPJ || '').replace(/\D/g, '');
-        const cnpjRaw = String(iden.CNPJ || iden.cnpj || '').replace(/\D/g, '');
-        const docRaw = cpfRaw || cnpjRaw || '';
-
-        norm.Segurado = {
-            NomeCompleto: iden.Nome_Segurado || iden.NomeCompleto || iden.nome_completo || iden.nome || iden.Nome || 'Não Identificado',
-            CPF: docRaw.length === 11 ? docRaw : (cpfRaw.length === 11 ? cpfRaw : null),
-            CNPJ: docRaw.length === 14 ? docRaw : (cnpjRaw.length === 14 ? cnpjRaw : null),
-            RG: iden.RG || iden.rg || '',
-            DataNascimento: iden.Data_Nascimento || iden.data_nascimento || iden.DataNascimento || null,
-            Profissao: iden.Profissao || iden.profissao || '',
-            EstadoCivil: iden.Estado_Civil || iden.estado_civil || iden.EstadoCivil || '',
-            CPFConjuge: iden.CPF_Conjuge || iden.cpf_conjuge || ''
-        };
-
-        // ─── 2. CONTATOS ─────────────────────────────────────────────────────
-        const cont = getKey(data, 'contatos') || iden.Contatos || iden.contatos || {};
-        const emails = cont.Emails || cont.emails || [];
-        const celulares = cont.Celulares || cont.celulares || [];
-        const fixos = cont.Telefones_Fixos || cont.Telefones_fixos || cont.telefones_fixos || [];
-        norm.Segurado.Email = (Array.isArray(emails) ? emails[0] : emails) || cont.Email || cont.email || iden.Email || '';
-        norm.Segurado.Email2 = (Array.isArray(emails) && emails.length > 1 ? emails[1] : '');
-        norm.Segurado.Celular = (Array.isArray(celulares) ? celulares[0] : celulares) || cont.Celular || cont.celular || iden.Celular || '';
-        norm.Segurado.TelefoneFixo = (Array.isArray(fixos) ? fixos[0] : fixos) || '';
-        norm.Segurado.Telefone2 = (Array.isArray(fixos) && fixos.length > 1 ? fixos[1] : '');
-
-        // ─── 3. ENDERECO ─────────────────────────────────────────────────────
-        const end = getKey(data, 'endereco_principal', 'endereco', 'enderecocompleto') || iden.Endereco || iden.Endereço || {};
-        norm.Endereco = {
-            Logradouro: end.Logradouro || end.logradouro || '',
-            Numero: end.Numero || end.numero || '',
-            Complemento: end.Complemento || end.complemento || '',
-            Bairro: end.Bairro || end.bairro || '',
-            Cidade: end.Cidade || end.cidade || '',
-            Estado: end.Estado || end.estado || '',
-            CEP: String(end.CEP || end.cep || '').replace(/\D/g, ''),
-        };
-
-        // ─── 4. DADOS_DA_APOLICE ─────────────────────────────────────────────
-        const apol = getKey(data, 'dados_da_apolice', 'dados_da_apólice', 'dadosapolice', 'apolice') || {};
-        norm.DadosApolice = {
-            NumeroApolice: apol.Numero || apol.numero_apolice || apol.NumeroApolice || apol.numero || '',
-            Seguradora: apol.Seguradora || apol.seguradora || '',
-            Ramo: apol.Ramo || apol.ramo || '',
-            NomeProduto: apol.Nome_do_Produto || apol.NomeProduto || apol.nome_produto || apol.produto || '',
-            ValorPremioTotal: apol.Valor_Premio_Total || apol.ValorPremioTotal || apol.valor_premio_total || null,
-            FormaPagamento: apol.Forma_Pagamento || apol.FormaPagamento || apol.forma_pagamento || '',
-            NumeroParcelas: apol.Numero_Parcelas || apol.NumeroParcelas || apol.numero_parcelas || null,
-            FrequenciaPagamento: apol.Frequencia_Pagamento || apol.frequencia_pagamento || '',
-            NumeroProposta: apol.Numero_Proposta || apol.numero_proposta || '',
-            VigenciaInicio: apol.Vigencia_Inicio || apol.vigencia_inicio || apol.VigenciaInicio || '',
-            VigenciaFim: apol.Vigencia_Fim || apol.vigencia_fim || apol.VigenciaFim || '',
-        };
-
-        // ─── 5. DADOS_DO_BEM_AUTO ────────────────────────────────────────────
-        const auto = getKey(data, 'dados_do_bem_auto', 'dados_bem_auto', 'bemauto', 'veículo', 'veiculo', 'itemsegurado') || {};
-        norm.BemAuto = {
-            Placa: auto.Placa || auto.placa || '',
-            Chassi: auto.Chassi || auto.chassi || '',
-            Modelo: auto.Modelo || auto.modelo || '',
-            Fabricante: auto.Fabricante || auto.fabricante || '',
-            AnoModelo: auto.Ano_Modelo || auto.AnoModelo || auto.ano_modelo || '',
-            AnoFabricacao: auto.Ano_Fabricacao || auto.AnoFabricacao || auto.ano_fabricacao || '',
-            Renavam: auto.Renavam || auto.renavam || '',
-            CodigoFIPE: auto.Codigo_FIPE || auto.CodigoFIPE || auto.codigo_fipe || '',
-            CorVeiculo: auto.Cor || auto.cor || auto.cor_veiculo || '',
-            Combustivel: auto.Combustivel || auto.combustivel || '',
-            Kilometragem: auto.Kilometragem || auto.kilometragem || '',
-            Blindado: auto.Blindado || auto.blindado || false,
-            KitGas: auto.Kit_Gas || auto.kit_gas || false,
-            CambioAutomatico: auto.Cambio_Automatico || auto.cambio_automatico || false,
-            FranquiaTipo: auto.Franquia_Tipo || auto.franquia_tipo || '',
-        };
-
-        // ─── 6. EXTRAS / OUTROS ──────────────────────────────────────────────
-        const extras = getKey(data, 'extras', 'outros') || {};
-        norm.Extras = {
-            Coberturas: extras.Coberturas_Principais || extras.coberturas || [],
-            Condutor: extras.Principal_Condutor || extras.condutor || {},
-            Corretor: extras.Corretor || {},
-            DadosBancarios: extras.Banco_Debito_Conta || {},
-            DadosAdicionais: extras.OutrosDados || extras
-        };
+        if (data.dados_da_apolice) {
+            norm.DadosApolice = {
+                NumeroApolice: data.dados_da_apolice.numero_apolice || data.dados_da_apolice.NumeroApolice,
+                Seguradora: data.dados_da_apolice.seguradora || data.dados_da_apolice.Seguradora,
+                Ramo: data.dados_da_apolice.ramo || data.dados_da_apolice.Ramo,
+                VigenciaInicio: data.dados_da_apolice.vigencia_inicio || data.dados_da_apolice.VigenciaInicio,
+                VigenciaFim: data.dados_da_apolice.vigencia_fim || data.dados_da_apolice.VigenciaFim
+            };
+        }
 
         return norm;
-
     },
 
     saveToStaging: async (req, res) => {
@@ -453,17 +381,17 @@ const adminController = {
             const rawData = req.body;
             console.log("[INGEST] Recebendo dados para ingestão...");
 
-            // Normalização Obrigatória (suporta formato antigo e novo MAIUSCULO)
+            // Normalização Obrigatória
             const norm = adminController.normalizeData(rawData);
             const cliente = norm.Segurado;
             const apolice = norm.DadosApolice;
-            // Campos directos do rawBody para retrocompatibilidade com v19
-            const item = rawData.ItemSegurado || rawData.detalhes_especificos || rawData.DADOS_DO_BEM_AUTO || {};
+            const item = rawData.ItemSegurado || rawData.detalhes_especificos || {};
             const seguradora = rawData.Seguradora || {};
 
-            const nomeCli = cliente.NomeCompleto;
-            const docCli = cliente.CPF || cliente.CNPJ;
-            const numApo = apolice.NumeroApolice;
+            // Mapeamento de campos internos (Extraindo do novo padrão)
+            const nomeCli = cliente.NomeCompleto || cliente.nome || cliente.nome_completo;
+            const docCli = cliente.CPF || cliente.CNPJ || cliente.cpf_cnpj;
+            const numApo = apolice.NumeroApolice || apolice.numero_apolice;
 
             if (!docCli || !numApo) {
                 return res.status(400).json({ error: 'Dados obrigatórios ausentes (CPF/CNPJ ou Número da Apólice)' });
@@ -474,22 +402,21 @@ const adminController = {
             const clienteCpf = !isCnpj ? rawIdentifier : null;
             const clienteCnpj = isCnpj ? rawIdentifier : null;
 
-            // Tratamento de Telefones — suporta formato normalizado e formato v19 direto
-            const emailCli = cliente.Email || null;
-            const clienteCelular = String(cliente.Celular || '').replace(/\D/g, '');
-            const clienteTelefone = String(cliente.TelefoneFixo || '').replace(/\D/g, '');
+            // Tratamento de Telefones (Múltiplos campos no novo padrão)
+            const contatos = cliente.Contatos || {};
+            const emailCli = cliente.Email || contatos.Email || cliente.email || null;
+            let clienteCelular = (contatos.Celular || cliente.celular || "").replace(/\D/g, '');
+            let clienteTelefone = (contatos.TelefoneFixoResidencial || contatos.TelefoneFixoComercial || cliente.telefone_fixo || cliente.telefone || "").replace(/\D/g, '');
 
-            // Endereço — usa Endereco normalizado (cobre ambos os formatos)
-            const endNorm = norm.Endereco;
-            const enderecoStr = endNorm.Logradouro
-                ? `${endNorm.Logradouro}${endNorm.Numero ? ', ' + endNorm.Numero : ''}${endNorm.Complemento ? ' ' + endNorm.Complemento : ''}`
-                : null;
-            const bairro = endNorm.Bairro || null;
-            const cidade = endNorm.Cidade || null;
-            const estado = endNorm.Estado || null;
-            const cep = endNorm.CEP || null;
+            // Endereço (Novo padrão objeto vs antigo flat)
+            const end = cliente.EnderecoCompleto || {};
+            const enderecoStr = end.Logradouro ? `${end.Logradouro}${end.Numero ? ', ' + end.Numero : ''}` : (cliente.endereco || null);
+            const bairro = end.Bairro || cliente.bairro || null;
+            const cidade = end.Cidade || cliente.cidade || null;
+            const estado = end.Estado || cliente.estado || null;
+            const cep = end.CEP ? String(end.CEP).replace(/\D/g, '') : (cliente.cep ? String(cliente.cep).replace(/\D/g, '') : null);
 
-            const clienteNomeEmpresa = isCnpj ? nomeCli : null;
+            const clienteNomeEmpresa = isCnpj ? (cliente.nome_empresa || cliente.nome || cliente.NomeCompleto) : null;
 
             // 1. Buscar ou Criar Cliente
             const existingClient = await db.clientesQuery(`
@@ -506,7 +433,7 @@ const adminController = {
                     UPDATE clientes_brokeria SET 
                         nome_completo = COALESCE($1, nome_completo),
                         email = COALESCE($2, email),
-                        celular = COALESCE($3, celular) ,
+                        celular = COALESCE($3, celular),
                         telefone = COALESCE($4, telefone),
                         cpf = COALESCE($5, cpf),
                         cnpj = COALESCE($6, cnpj),
@@ -516,60 +443,39 @@ const adminController = {
                         bairro = COALESCE($10, bairro),
                         cidade = COALESCE($11, cidade),
                         estado = COALESCE($12, estado),
-                        cep = COALESCE($13, cep),
-                        rg = COALESCE($14, rg),
-                        profissao = COALESCE($15, profissao),
-                        estado_civil = COALESCE($16, estado_civil),
-                        telefone2 = COALESCE($17, telefone2),
-                        email2 = COALESCE($18, email2),
-                        cpf_conjuge = COALESCE($19, cpf_conjuge)
-                    WHERE id_cliente = $20
+                        cep = COALESCE($13, cep)
+                    WHERE id_cliente = $14
                 `, [
                     nomeCli, cliente.email || cliente.Email, clienteCelular, clienteTelefone,
                     clienteCpf, clienteCnpj, clienteNomeEmpresa, cliente.data_nascimento || cliente.DataNascimento,
                     enderecoStr, bairro, cidade, estado, cep,
-                    cliente.RG, cliente.Profissao, cliente.EstadoCivil, cliente.Telefone2, cliente.Email2, cliente.CPFConjuge,
                     clienteId
                 ]);
             } else {
                 const insertRes = await db.clientesQuery(`
                     INSERT INTO clientes_brokeria (
                         nome_completo, cpf, cnpj, email, celular, telefone, nome_empresa, 
-                        data_nascimento, endereco, bairro, cidade, estado, cep, 
-                        rg, profissao, estado_civil, telefone2, email2, cpf_conjuge,
-                        data_cadastro
+                        data_nascimento, endereco, bairro, cidade, estado, cep, data_cadastro
                     )
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, NOW())
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
                     RETURNING id_cliente
                 `, [
-                    nomeCli, clienteCpf, clienteCnpj, emailCli, clienteCelular, clienteTelefone,
-                    clienteNomeEmpresa, cliente.DataNascimento || null, enderecoStr, bairro,
-                    cidade, estado, cep,
-                    cliente.RG, cliente.Profissao, cliente.EstadoCivil, cliente.Telefone2, cliente.Email2, cliente.CPFConjuge
+                    nomeCli, clienteCpf, clienteCnpj, cliente.email || cliente.Email, clienteCelular, clienteTelefone,
+                    clienteNomeEmpresa, cliente.data_nascimento || cliente.DataNascimento, enderecoStr, bairro,
+                    cidade, estado, cep
                 ]);
                 clienteId = insertRes.rows[0].id_cliente;
             }
 
             // 2. Upsert APOLICE com Máximo de Dados
-            const bem = norm.BemAuto;
-            const extras = norm.Extras || {};
-
+            // Nota: Campos como RG, Profissao, Renda, NumeroParcelas, etc serão salvos no dados_adicionais_json
             await db.apolicesQuery(`
                 INSERT INTO apolices_brokeria (
                     numero_apolice, seguradora, ramo, produto, chassi, premio_total, forma_pagamento,
                     vigencia_inicio, vigencia_fim, status_apolice, cpf, cnpj, placa, id_cliente,
-                    modelo, fabricante, ano_modelo, ano_fabricacao, cor_veiculo, combustivel,
-                    codigo_fipe, renavam, kilometragem, blindado, kit_gas, cambio_automatico,
-                    franquia_tipo, numero_parcelas, frequencia_pagamento, numero_proposta,
-                    corretor_nome, corretor_codigo, coberturas, condutor_detalhes, dados_adicionais,
-                    data_criacao, data_ultima_atualizacao
+                    dados_adicionais_json, data_criacao, data_ultima_atualizacao
                 )
-                VALUES (
-                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
-                    $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26,
-                    $27, $28, $29, $30, $31, $32, $33, $34, $35,
-                    NOW(), NOW()
-                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW())
                 ON CONFLICT (numero_apolice)
                 DO UPDATE SET
                     seguradora = EXCLUDED.seguradora,
@@ -585,69 +491,32 @@ const adminController = {
                     cnpj = EXCLUDED.cnpj,
                     placa = COALESCE(EXCLUDED.placa, apolices_brokeria.placa),
                     id_cliente = EXCLUDED.id_cliente,
-                    modelo = COALESCE(EXCLUDED.modelo, apolices_brokeria.modelo),
-                    fabricante = COALESCE(EXCLUDED.fabricante, apolices_brokeria.fabricante),
-                    ano_modelo = COALESCE(EXCLUDED.ano_modelo, apolices_brokeria.ano_modelo),
-                    ano_fabricacao = COALESCE(EXCLUDED.ano_fabricacao, apolices_brokeria.ano_fabricacao),
-                    cor_veiculo = COALESCE(EXCLUDED.cor_veiculo, apolices_brokeria.cor_veiculo),
-                    combustivel = COALESCE(EXCLUDED.combustivel, apolices_brokeria.combustivel),
-                    codigo_fipe = COALESCE(EXCLUDED.codigo_fipe, apolices_brokeria.codigo_fipe),
-                    renavam = COALESCE(EXCLUDED.renavam, apolices_brokeria.renavam),
-                    kilometragem = COALESCE(EXCLUDED.kilometragem, apolices_brokeria.kilometragem),
-                    blindado = COALESCE(EXCLUDED.blindado, apolices_brokeria.blindado),
-                    kit_gas = COALESCE(EXCLUDED.kit_gas, apolices_brokeria.kit_gas),
-                    cambio_automatico = COALESCE(EXCLUDED.cambio_automatico, apolices_brokeria.cambio_automatico),
-                    franquia_tipo = COALESCE(EXCLUDED.franquia_tipo, apolices_brokeria.franquia_tipo),
-                    numero_parcelas = COALESCE(EXCLUDED.numero_parcelas, apolices_brokeria.numero_parcelas),
-                    frequencia_pagamento = COALESCE(EXCLUDED.frequencia_pagamento, apolices_brokeria.frequencia_pagamento),
-                    numero_proposta = COALESCE(EXCLUDED.numero_proposta, apolices_brokeria.numero_proposta),
-                    corretor_nome = COALESCE(EXCLUDED.corretor_nome, apolices_brokeria.corretor_nome),
-                    corretor_codigo = COALESCE(EXCLUDED.corretor_codigo, apolices_brokeria.corretor_codigo),
-                    coberturas = COALESCE(EXCLUDED.coberturas, apolices_brokeria.coberturas),
-                    condutor_detalhes = COALESCE(EXCLUDED.condutor_detalhes, apolices_brokeria.condutor_detalhes),
-                    dados_adicionais = EXCLUDED.dados_adicionais,
+                    dados_adicionais_json = EXCLUDED.dados_adicionais_json,
                     data_ultima_atualizacao = NOW()
             `, [
                 numApo,
-                seguradora.Nome || apolice.Seguradora || apolice.seguradora || 'Não informada',
-                apolice.Ramo || null,
-                apolice.NomeProduto || null,
-                bem.Chassi || item.Chassi || item.chassi || null,
-                apolice.ValorPremioTotal || null,
-                apolice.FormaPagamento || null,
-                apolice.VigenciaInicio || null,
-                apolice.VigenciaFim || null,
-                'ATIVA',
+                seguradora.Nome || apolice.seguradora || apolice.seguradora?.nome || "Não informada",
+                apolice.Ramo || apolice.ramo,
+                apolice.NomeProduto || apolice.produto || apolice.nome_produto || null,
+                apolice.Chassi || item.Chassi || apolice.chassi || null,
+                apolice.ValorPremioTotal || apolice.premio_total || apolice.valor_premio_total || null,
+                apolice.FormaPagamento || apolice.forma_pagamento || null,
+                apolice.VigenciaInicio || apolice.data_inicio || apolice.vigencia_inicio,
+                apolice.VigenciaFim || apolice.data_fim || apolice.vigencia_fim,
+                apolice.status || 'ATIVA',
                 clienteCpf,
                 clienteCnpj,
-                bem.Placa || item.Placa || item.placa || null,
+                item.Placa || item.placa || null,
                 clienteId,
-                bem.Modelo || null,
-                bem.Fabricante || null,
-                bem.AnoModelo || null,
-                bem.AnoFabricacao || null,
-                bem.CorVeiculo || null,
-                bem.Combustivel || null,
-                bem.CodigoFIPE || null,
-                bem.Renavam || null,
-                bem.Kilometragem || null,
-                bem.Blindado ? 'SIM' : 'NÃO',
-                bem.KitGas ? 'SIM' : 'NÃO',
-                bem.CambioAutomatico ? 'SIM' : 'NÃO',
-                bem.FranquiaTipo || null,
-                apolice.NumeroParcelas ? String(apolice.NumeroParcelas) : null,
-                apolice.FrequenciaPagamento || null,
-                apolice.NumeroProposta || null,
-                extras.Corretor?.Nome || null,
-                extras.Corretor?.Codigo || null,
-                JSON.stringify(extras.Coberturas || []),
-                JSON.stringify(extras.Condutor || {}),
-                JSON.stringify(extras.DadosAdicionais || {}),
+                JSON.stringify({
+                    ...req.body,
+                    ingestion_timestamp: new Date().toISOString()
+                })
             ]);
 
             res.json({
                 success: true,
-                message: `Ingestão concluída para ${nomeCli} (Apólice ${numApo})`
+                message: `Ingestão concluída para ${cliente.nome} (Apólice ${apolice.numero_apolice})`
             });
 
         } catch (error) {

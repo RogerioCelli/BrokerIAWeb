@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BrokerIA - Validação de Acesso</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            background: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .icon-circle {
+            width: 80px;
+            height: 80px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            color: var(--primary);
+            font-size: 2.5rem;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        p {
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn:disabled {
+            background: #475569;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        #status-message {
+            margin-top: 1.5rem;
+            font-size: 0.95rem;
+            min-height: 24px;
+        }
+
+        .success-state {
+            color: var(--success);
+        }
+
+        .error-state {
+            color: #f87171;
+        }
+
+        .pulse {
+            animation: pulse-animation 2s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% {
+                box-shadow: 0 0 0 0px rgba(99, 102, 241, 0.4);
+            }
+
+            100% {
+                box-shadow: 0 0 0 20px rgba(99, 102, 241, 0);
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="logo">BrokerIA</div>
+
+        <div id="loading">
+            <div class="icon-circle">⏳</div>
+            <h1>Verificando link...</h1>
+            <p>Aguarde um instante enquanto validamos sua solicitação.</p>
+        </div>
+
+        <div id="ready" class="hidden">
+            <div class="icon-circle pulse">🛡️</div>
+            <h1>Autorizar Acesso?</h1>
+            <p>Olá <strong id="user-name">...</strong>, recebemos um pedido de acesso aos seus dados via WhatsApp.
+                Deseja autorizar?</p>
+            <button id="btn-authorize" class="btn">Autorizar Agora</button>
+        </div>
+
+        <div id="success" class="hidden">
+            <div class="icon-circle" style="color: var(--success); background: rgba(16, 185, 129, 0.1);">✅</div>
+            <h1>Acesso Autorizado!</h1>
+            <p>Tudo pronto! Você já pode fechar esta aba e voltar para sua conversa no WhatsApp.</p>
+        </div>
+
+        <div id="error" class="hidden">
+            <div class="icon-circle" style="color: #f87171; background: rgba(248, 113, 113, 0.1);">❌</div>
+            <h1>Oops! Algo deu errado.</h1>
+            <p id="error-text">O link de validação é inválido ou já expirou.</p>
+            <button onclick="window.close()" class="btn" style="background: #475569;">Fechar Página</button>
+        </div>
+
+        <div id="status-message"></div>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('t');
+        const apiBase = '/api/magic-link';
+
+        const loadingDiv = document.getElementById('loading');
+        const readyDiv = document.getElementById('ready');
+        const successDiv = document.getElementById('success');
+        const errorDiv = document.getElementById('error');
+        const errorText = document.getElementById('error-text');
+        const userNameSpan = document.getElementById('user-name');
+        const btnAuthorize = document.getElementById('btn-authorize');
+
+        async function verifyToken() {
+            if (!token) {
+                showError('Token de validação não encontrado.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${apiBase}/verify/${token}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    userNameSpan.textContent = data.nome;
+                    loadingDiv.classList.add('hidden');
+                    readyDiv.classList.remove('hidden');
+                } else {
+                    showError(data.error || 'Link inválido.');
+                }
+            } catch (err) {
+                showError('Erro de conexão com o servidor.');
+            }
+        }
+
+        function showError(msg) {
+            loadingDiv.classList.add('hidden');
+            errorDiv.classList.remove('hidden');
+            errorText.textContent = msg;
+        }
+
+        btnAuthorize.addEventListener('click', async () => {
+            btnAuthorize.disabled = true;
+            btnAuthorize.textContent = 'Processando...';
+
+            try {
+                const response = await fetch(`${apiBase}/confirm`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uuid: token })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    readyDiv.classList.add('hidden');
+                    successDiv.classList.remove('hidden');
+                } else {
+                    alert(data.error || 'Erro ao autorizar.');
+                    btnAuthorize.disabled = false;
+                    btnAuthorize.textContent = 'Autorizar Agora';
+                }
+            } catch (err) {
+                alert('Erro na comunicação.');
+                btnAuthorize.disabled = false;
+            }
+        });
+
+        // Iniciar verificação
+        verifyToken();
+    </script>
+</body>
+
+</html>
