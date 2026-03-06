@@ -452,36 +452,113 @@
                 currentFullItem = item;
 
                 const norm = normalizeData(item.dados_json);
-                document.getElementById('raw-json').innerText = JSON.stringify(item.dados_json, null, 2);
 
+                // ─── Formulário de Edição Completo ───────────────────────────
                 let formHtml = `
+                    <p style="color: var(--text-secondary); font-size:0.8rem; margin-bottom:1.5rem; border-bottom:1px solid var(--border); padding-bottom:0.8rem;">🧑 SEGURADO</p>
+
                     <div class="field-group">
                         <label>Nome Completo</label>
-                        <input type="text" id="edit-nome" class="input-edit" value="${norm.segurado.NomeCompleto}">
+                        <input type="text" id="edit-nome" class="input-edit" value="${esc(norm.segurado.NomeCompleto)}">
                     </div>
                     <div class="field-group">
-                        <label>CPF / CNPJ (Apenas números)</label>
-                        <input type="text" id="edit-doc" class="input-edit" value="${norm.segurado.CPF || norm.segurado.CNPJ || ''}">
+                        <label>CPF / CNPJ (apenas números)</label>
+                        <input type="text" id="edit-doc" class="input-edit" value="${esc(norm.segurado.CPF || norm.segurado.CNPJ || '')}">
                     </div>
+                    <div class="field-group">
+                        <label>E-mail</label>
+                        <input type="text" id="edit-email" class="input-edit" value="${esc(norm.segurado.Email || '')}">
+                    </div>
+                    <div style="display:flex; gap:10px">
+                        <div class="field-group" style="flex:1">
+                            <label>Celular</label>
+                            <input type="text" id="edit-celular" class="input-edit" value="${esc(norm.segurado.Celular || '')}">
+                        </div>
+                        <div class="field-group" style="flex:1">
+                            <label>Telefone Fixo</label>
+                            <input type="text" id="edit-telefone" class="input-edit" value="${esc(norm.segurado.TelefoneFixo || '')}">
+                        </div>
+                    </div>
+
+                    <p style="color: var(--text-secondary); font-size:0.8rem; margin: 1.5rem 0 0.8rem; border-bottom:1px solid var(--border); padding-bottom:0.8rem;">📋 APÓLICE</p>
+
                     <div class="field-group">
                         <label>Nº Apólice</label>
-                        <input type="text" id="edit-apolice" class="input-edit" value="${norm.apolice.NumeroApolice}">
+                        <input type="text" id="edit-apolice" class="input-edit" value="${esc(norm.apolice.NumeroApolice)}">
                     </div>
-                    <div class="field-group">
-                        <label>Ramo</label>
-                        <input type="text" id="edit-ramo" class="input-edit" value="${norm.apolice.Ramo}">
+                    <div style="display:flex; gap:10px">
+                        <div class="field-group" style="flex:1">
+                            <label>Seguradora</label>
+                            <input type="text" id="edit-seguradora" class="input-edit" value="${esc(norm.apolice.Seguradora || '')}">
+                        </div>
+                        <div class="field-group" style="flex:1">
+                            <label>Ramo</label>
+                            <input type="text" id="edit-ramo" class="input-edit" value="${esc(norm.apolice.Ramo || '')}">
+                        </div>
                     </div>
                     <div class="field-group">
                         <label>Vigência</label>
                         <div style="display:flex; gap:10px">
-                            <input type="date" id="edit-inicio" class="input-edit" value="${norm.apolice.VigenciaInicio}">
-                            <input type="date" id="edit-fim" class="input-edit" value="${norm.apolice.VigenciaFim}">
+                            <input type="date" id="edit-inicio" class="input-edit" value="${esc(norm.apolice.VigenciaInicio)}">
+                            <input type="date" id="edit-fim" class="input-edit" value="${esc(norm.apolice.VigenciaFim)}">
                         </div>
                     </div>
+
+                    ${(norm.apolice.Placa || norm.apolice.Chassi || norm.apolice.Modelo) ? `
+                    <p style="color: var(--text-secondary); font-size:0.8rem; margin: 1.5rem 0 0.8rem; border-bottom:1px solid var(--border); padding-bottom:0.8rem;">🚗 VEÍCULO</p>
+                    <div style="display:flex; gap:10px">
+                        <div class="field-group" style="flex:1">
+                            <label>Placa</label>
+                            <input type="text" id="edit-placa" class="input-edit" value="${esc(norm.apolice.Placa || '')}">
+                        </div>
+                        <div class="field-group" style="flex:1">
+                            <label>Chassi</label>
+                            <input type="text" id="edit-chassi" class="input-edit" value="${esc(norm.apolice.Chassi || '')}">
+                        </div>
+                    </div>
+                    <div class="field-group">
+                        <label>Modelo</label>
+                        <input type="text" id="edit-modelo" class="input-edit" value="${esc(norm.apolice.Modelo || '')}">
+                    </div>` : ''}
+
+                    <p style="color: var(--text-secondary); font-size:0.8rem; margin: 1.5rem 0 0.8rem; border-bottom:1px solid var(--border); padding-bottom:0.8rem;">📦 DADOS COMPLETOS EXTRAÍDOS</p>
                 `;
+
                 document.getElementById('edit-form').innerHTML = formHtml;
+
+                // ─── JSON Bruto: exibição legível ────────────────────────────
+                document.getElementById('raw-json').innerHTML = renderJsonReadable(item.dados_json);
+
                 document.getElementById('edit-panel').classList.add('active');
             } catch (err) { alert(err.message); }
+        }
+
+        // Escapa aspas para usar em atributos HTML
+        function esc(str) {
+            return String(str || '').replace(/"/g, '&quot;');
+        }
+
+        // Renderiza JSON como pares chave: valor legíveis
+        function renderJsonReadable(obj, indent = 0) {
+            if (!obj) return '';
+            const data = typeof obj === 'string' ? JSON.parse(obj) : obj;
+            let html = '';
+            const pad = indent * 16;
+
+            for (const [key, val] of Object.entries(data)) {
+                if (val === null || val === undefined || val === '') continue;
+                if (typeof val === 'object' && !Array.isArray(val)) {
+                    html += `<div style="margin-left:${pad}px; margin-top:8px;"><span style="color:#94a3b8; font-size:0.75rem; text-transform:uppercase;">${key}</span>`;
+                    html += renderJsonReadable(val, indent + 1);
+                    html += `</div>`;
+                } else if (Array.isArray(val)) {
+                    const joined = val.filter(Boolean).join(', ');
+                    if (joined) html += `<div style="margin-left:${pad}px; padding:3px 0;"><span style="color:#64748b; font-size:0.75rem;">${key}:</span> <span style="color:#e2e8f0;">${joined}</span></div>`;
+                } else {
+                    html += `<div style="margin-left:${pad}px; padding:3px 0;"><span style="color:#64748b; font-size:0.75rem;">${key}:</span> <span style="color:#10b981; font-weight:500;">${val}</span></div>`;
+                }
+            }
+            return html;
         }
 
         function closeEdit() {
@@ -499,18 +576,36 @@
                 // 1. Atualizar o objeto JSON com os valores do formulário
                 const json = typeof currentFullItem.dados_json === 'string' ? JSON.parse(currentFullItem.dados_json) : currentFullItem.dados_json;
 
-                if (!json.Segurado) json.Segurado = {};
-                if (!json.DadosApolice) json.DadosApolice = {};
+                // Garante estrutura para escrita (suporta ambos os formatos)
+                if (!json.IDENTIFICACAO) json.IDENTIFICACAO = {};
+                if (!json.DADOS_DA_APOLICE) json.DADOS_DA_APOLICE = {};
+                if (!json.CONTATOS) json.CONTATOS = {};
+                if (!json.DADOS_DO_BEM_AUTO) json.DADOS_DO_BEM_AUTO = {};
 
-                json.Segurado.NomeCompleto = document.getElementById('edit-nome').value;
+                json.IDENTIFICACAO.Nome_Segurado = document.getElementById('edit-nome').value;
                 const doc = document.getElementById('edit-doc').value.replace(/\D/g, '');
-                if (doc.length === 11) json.Segurado.CPF = doc;
-                else json.Segurado.CNPJ = doc;
+                if (doc.length === 11) json.IDENTIFICACAO.CPF = doc;
+                else if (doc.length === 14) json.IDENTIFICACAO.CNPJ = doc;
 
-                json.DadosApolice.NumeroApolice = document.getElementById('edit-apolice').value;
-                json.DadosApolice.Ramo = document.getElementById('edit-ramo').value;
-                json.DadosApolice.VigenciaInicio = document.getElementById('edit-inicio').value;
-                json.DadosApolice.VigenciaFim = document.getElementById('edit-fim').value;
+                const emailVal = document.getElementById('edit-email')?.value;
+                if (emailVal) json.CONTATOS.Emails = [emailVal];
+                const celVal = document.getElementById('edit-celular')?.value.replace(/\D/g, '');
+                if (celVal) json.CONTATOS.Celulares = [celVal];
+                const telVal = document.getElementById('edit-telefone')?.value.replace(/\D/g, '');
+                if (telVal) json.CONTATOS.Telefones_Fixos = [telVal];
+
+                json.DADOS_DA_APOLICE.Numero = document.getElementById('edit-apolice').value;
+                json.DADOS_DA_APOLICE.Seguradora = document.getElementById('edit-seguradora')?.value || json.DADOS_DA_APOLICE.Seguradora;
+                json.DADOS_DA_APOLICE.Ramo = document.getElementById('edit-ramo').value;
+                json.DADOS_DA_APOLICE.Vigencia_Inicio = document.getElementById('edit-inicio').value;
+                json.DADOS_DA_APOLICE.Vigencia_Fim = document.getElementById('edit-fim').value;
+
+                const placaEl = document.getElementById('edit-placa');
+                if (placaEl) json.DADOS_DO_BEM_AUTO.Placa = placaEl.value;
+                const chassiEl = document.getElementById('edit-chassi');
+                if (chassiEl) json.DADOS_DO_BEM_AUTO.Chassi = chassiEl.value;
+                const modeloEl = document.getElementById('edit-modelo');
+                if (modeloEl) json.DADOS_DO_BEM_AUTO.Modelo = modeloEl.value;
 
                 // 2. Enviar para o banco final (reutilizando a lógica de ingestão)
                 const token = localStorage.getItem('admin_token');
