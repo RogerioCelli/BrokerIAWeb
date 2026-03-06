@@ -404,12 +404,17 @@
             norm.segurado.Telefone2 = normalizePhone(comPhone && resPhone ? resPhone : '');
 
             // ─── 3. ENDERECO ─────────────────────────────────────────────────────
-            let endObj = getKey(data, 'enderecos_segurado', 'endereco_principal', 'endereco', 'enderecocompleto') || iden.Endereco || iden.Endereço || {};
-            // novo n8n manda um array de enderecos
-            if (Array.isArray(endObj) && endObj.length > 0) endObj = endObj[0];
+            let endObj = getKey(data, 'enderecos_segurado', 'endereco_principal', 'endereco', 'enderecocompleto', 'enderecos') || iden.Endereco || iden.Endereço || {};
+            // novo n8n manda um array de enderecos ou um objeto com 'residencial' e 'comercial'
+            if (Array.isArray(endObj) && endObj.length > 0) {
+                endObj = endObj[0];
+            } else if (endObj && (endObj.residencial || endObj.comercial)) {
+                endObj = endObj.residencial || endObj.comercial; // Pega o primeiro que existir
+            }
 
             norm.endereco.Logradouro = endObj.logradouro || endObj.Logradouro || '';
-            norm.endereco.Numero = endObj.numero || endObj.Numero || '';
+            let nNum = endObj.numero || endObj.Numero || '';
+            norm.endereco.Numero = (nNum && nNum !== 'S/N' && nNum !== 'SN') ? nNum : '';
             norm.endereco.Complemento = endObj.complemento || endObj.Complemento || '';
             norm.endereco.Bairro = endObj.bairro || endObj.Bairro || '';
             norm.endereco.Cidade = endObj.cidade || endObj.Cidade || '';
@@ -423,7 +428,7 @@
             norm.apolice.Seguradora = (typeof segRaw === 'object' && segRaw !== null) ? (segRaw.nome || segRaw.Nome || JSON.stringify(segRaw)) : segRaw;
             norm.apolice.Ramo = apol.ramo || apol.Ramo || '';
             norm.apolice.NomeProduto = apol.nome_produto || apol.Nome_do_Produto || apol.NomeProduto || apol.produto || '';
-            norm.apolice.ValorPremioTotal = apol.premio_total || apol.Valor_Premio_Total || apol.ValorPremioTotal || apol.valor_premio_total || '';
+            norm.apolice.ValorPremioTotal = apol.valor_premio_total || apol.premio_total || apol.Valor_Premio_Total || apol.ValorPremioTotal || '';
             norm.apolice.FormaPagamento = apol.forma_pagamento || apol.Forma_Pagamento || apol.FormaPagamento || '';
             norm.apolice.NumeroParcelas = apol.numero_parcelas || apol.Numero_Parcelas || apol.NumeroParcelas || '';
             norm.apolice.FrequenciaPagamento = apol.frequencia_pagamento || apol.Frequencia_Pagamento || '';
@@ -438,7 +443,7 @@
             norm.apolice.VigenciaFim = formatDateForInput(apol.vigencia_fim || apol.Vigencia_Fim || apol.VigenciaFim || '');
 
             // ─── 5. DADOS_DO_BEM_AUTO ────────────────────────────────────────────
-            const auto = getKey(data, 'dados_bem_auto', 'dados_do_bem_auto', 'bemauto', 'itemsegurado') || {};
+            const auto = getKey(data, 'dados_do_bem', 'dados_bem_auto', 'dados_do_bem_auto', 'bemauto', 'itemsegurado') || {};
             norm.apolice.Placa = auto.placa || auto.Placa || '';
             norm.apolice.Chassi = auto.chassi || auto.Chassi || '';
             norm.apolice.Modelo = auto.modelo || auto.Modelo || '';
@@ -446,27 +451,29 @@
             norm.apolice.AnoModelo = auto.ano_modelo || auto.Ano_Modelo || auto.AnoModelo || '';
             norm.apolice.AnoFabricacao = auto.ano_fabricacao || auto.Ano_Fabricacao || auto.AnoFabricacao || '';
             norm.apolice.Renavam = auto.renavam || auto.Renavam || '';
-            norm.apolice.CodigoFIPE = auto.codigo_fipe || auto.Codigo_FIPE || auto.CodigoFIPE || '';
+            norm.apolice.CodigoFIPE = auto.cod_fipe || auto.codigo_fipe || auto.Codigo_FIPE || auto.CodigoFIPE || '';
             norm.apolice.CorVeiculo = auto.cor || auto.Cor || auto.cor_veiculo || '';
             norm.apolice.Combustivel = auto.combustivel || auto.Combustivel || '';
-            norm.apolice.Kilometragem = auto.kilometragem || auto.Kilometragem || '';
+            norm.apolice.Kilometragem = auto.quilometragem || auto.kilometragem || auto.Kilometragem || '';
             norm.apolice.Blindado = auto.blindado || auto.Blindado || false;
             norm.apolice.KitGas = auto.kit_gas || auto.Kit_Gas || false;
             norm.apolice.CambioAutomatico = auto.cambio_automatico || auto.Cambio_Automatico || false;
 
             // Franquia geral
-            let franq = auto.franquia_geral || auto.Franquia_Tipo || auto.franquia_tipo || '';
+            let franq = auto.franquia_geral || auto.Franquia_Tipo || auto.franquia_tipo || (data.franquias ? data.franquias.tipo_franquia : '') || '';
             if (!franq && Array.isArray(data.franquias) && data.franquias.length > 0) {
                 franq = data.franquias.map(f => `${f.tipo}: ${f.valor}`).join(', ');
+            } else if (!franq && data.franquias && typeof data.franquias === 'object' && data.franquias.casco) {
+                franq = `${data.franquias.tipo_franquia || 'Casco'}: R$ ${data.franquias.casco}`;
             }
             norm.apolice.FranquiaTipo = franq;
 
             // ─── 6. EXTRAS ───────────────────────────────────────────────────────
             norm.extras = {
-                Corretor: extrasBlock.corretora || extrasBlock.Corretor || {},
+                Corretor: apol.corretora || extrasBlock.corretora || extrasBlock.Corretor || {},
                 Coberturas: Array.isArray(data.coberturas) ? data.coberturas.map(c => typeof c === 'string' ? c : `${c.tipo}${c.limite_indenizacao ? ` (${c.limite_indenizacao})` : ''}`) : (extrasBlock.Coberturas_Principais || extrasBlock.coberturas || []),
-                Condutor: data.condutores || extrasBlock.Principal_Condutor || extrasBlock.condutor || {},
-                DadosAdicionais: extrasBlock.dados_bancarios_debito || extrasBlock.OutrosDados || extrasBlock
+                Condutor: data.principal_condutor || data.condutores || extrasBlock.Principal_Condutor || extrasBlock.condutor || {},
+                DadosAdicionais: data.pagamento_debito_em_conta || extrasBlock.dados_bancarios_debito || extrasBlock.OutrosDados || extrasBlock
             };
 
             return norm;

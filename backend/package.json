@@ -1,6 +1,6 @@
 {
   "name": "brokeriaweb-backend",
-  "version": "1.7.96",
+  "version": "1.7.98",
   "description": "Backend System for BrokerIAWeb",
   "main": "server.js",
   "scripts": {
