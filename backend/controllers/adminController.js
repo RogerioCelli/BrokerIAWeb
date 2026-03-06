@@ -229,12 +229,12 @@ const adminController = {
     // --- ÁREA DE STAGING (IMPORTAÇÕES PENDENTES) ---
 
     normalizeData: (raw) => {
-        if (!raw) return { Segurado: {}, DadosApolice: {}, Endereco: {} };
+        if (!raw) return { Segurado: {}, DadosApolice: {}, Endereco: {}, BemAuto: {} };
         let data = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
         // n8n frequentemente envia um array com um objeto dentro
         if (Array.isArray(data)) data = data[0];
-        if (!data) return { Segurado: {}, DadosApolice: {}, Endereco: {} };
+        if (!data) return { Segurado: {}, DadosApolice: {}, Endereco: {}, BemAuto: {} };
 
         // Suporte para wrapper "OrganizaDados" (Case Insensitive)
         const wrapperKey = Object.keys(data).find(k => k.toLowerCase() === 'organizadados');
@@ -244,36 +244,82 @@ const adminController = {
         if (Array.isArray(data)) data = data[0];
 
         const norm = {
-            Segurado: data.Segurado || data.cliente || {},
-            DadosApolice: data.DadosApolice || data.apolice || {},
-            Endereco: data.EnderecoCompleto || data.endereco || {}
+            Segurado: {},
+            DadosApolice: {},
+            Endereco: {},
+            BemAuto: {}
         };
 
-        // Fallback para formato n8n (Identificacao)
-        if (data.Identificacao) {
-            norm.Segurado = {
-                NomeCompleto: data.Identificacao.nome_completo || data.Identificacao.NomeCompleto,
-                CPF: data.Identificacao.cpf_cnpj?.replace(/\D/g, '').length === 11 ? data.Identificacao.cpf_cnpj : null,
-                CNPJ: data.Identificacao.cpf_cnpj?.replace(/\D/g, '').length === 14 ? data.Identificacao.cpf_cnpj : null,
-                Email: (data.contatos?.emails && data.contatos.emails[0]) || data.Identificacao.Email,
-                Celular: (data.contatos?.celulares && data.contatos.celulares[0]) || data.Identificacao.Celular
-            };
+        // ─── HELPER: busca chave case-insensitive em um objeto ───────────────
+        const getKey = (obj, ...aliases) => {
+            if (!obj || typeof obj !== 'object') return undefined;
+            const found = Object.keys(obj).find(k => aliases.includes(k.toLowerCase()));
+            return found ? obj[found] : undefined;
+        };
 
-            // Se os dados da apólice estiverem DENTRO de Identificacao (raro, mas possível no n8n dependendo do nó)
-            if (data.Identificacao.dados_da_apolice && !data.dados_da_apolice) {
-                data.dados_da_apolice = data.Identificacao.dados_da_apolice;
-            }
-        }
+        // ─── 1. IDENTIFICACAO / Segurado ─────────────────────────────────────
+        // Suporta: IDENTIFICACAO (novo), Identificacao (antigo), segurado, cliente
+        const iden = getKey(data, 'identificacao', 'identificação', 'segurado', 'cliente') || data;
 
-        if (data.dados_da_apolice) {
-            norm.DadosApolice = {
-                NumeroApolice: data.dados_da_apolice.numero_apolice || data.dados_da_apolice.NumeroApolice,
-                Seguradora: data.dados_da_apolice.seguradora || data.dados_da_apolice.Seguradora,
-                Ramo: data.dados_da_apolice.ramo || data.dados_da_apolice.Ramo,
-                VigenciaInicio: data.dados_da_apolice.vigencia_inicio || data.dados_da_apolice.VigenciaInicio,
-                VigenciaFim: data.dados_da_apolice.vigencia_fim || data.dados_da_apolice.VigenciaFim
-            };
-        }
+        const cpfRaw = String(iden.CPF || iden.cpf || iden.cpf_cnpj || iden.CPF_CNPJ || '').replace(/\D/g, '');
+        const cnpjRaw = String(iden.CNPJ || iden.cnpj || '').replace(/\D/g, '');
+        const docRaw = cpfRaw || cnpjRaw || '';
+
+        norm.Segurado = {
+            NomeCompleto: iden.Nome_Segurado || iden.NomeCompleto || iden.nome_completo || iden.nome || iden.Nome || 'Não Identificado',
+            CPF: docRaw.length === 11 ? docRaw : (cpfRaw.length === 11 ? cpfRaw : null),
+            CNPJ: docRaw.length === 14 ? docRaw : (cnpjRaw.length === 14 ? cnpjRaw : null),
+            DataNascimento: iden.data_nascimento || iden.DataNascimento || null,
+        };
+
+        // ─── 2. CONTATOS ─────────────────────────────────────────────────────
+        const cont = getKey(data, 'contatos') || iden.Contatos || iden.contatos || {};
+        const emails = cont.Emails || cont.emails || [];
+        const celulares = cont.Celulares || cont.celulares || [];
+        const fixos = cont.Telefones_Fixos || cont.Telefones_fixos || cont.telefones_fixos || [];
+        norm.Segurado.Email = (Array.isArray(emails) ? emails[0] : emails) || cont.Email || cont.email || iden.Email || '';
+        norm.Segurado.Celular = (Array.isArray(celulares) ? celulares[0] : celulares) || cont.Celular || cont.celular || iden.Celular || '';
+        norm.Segurado.TelefoneFixo = (Array.isArray(fixos) ? fixos[0] : fixos) || '';
+
+        // ─── 3. ENDERECO ─────────────────────────────────────────────────────
+        const end = getKey(data, 'endereco_principal', 'endereco', 'enderecocompleto') || {};
+        norm.Endereco = {
+            Logradouro: end.Logradouro || end.logradouro || '',
+            Numero: end.Numero || end.numero || '',
+            Complemento: end.Complemento || end.complemento || '',
+            Bairro: end.Bairro || end.bairro || '',
+            Cidade: end.Cidade || end.cidade || '',
+            Estado: end.Estado || end.estado || '',
+            CEP: String(end.CEP || end.cep || '').replace(/\D/g, ''),
+        };
+
+        // ─── 4. DADOS_DA_APOLICE ─────────────────────────────────────────────
+        // Suporta: DADOS_DA_APOLICE (novo), dados_da_apolice (antigo)
+        const apol = getKey(data, 'dados_da_apolice', 'dados_da_apólice', 'dadosapolice', 'apolice') || {};
+        norm.DadosApolice = {
+            NumeroApolice: apol.Numero || apol.numero_apolice || apol.NumeroApolice || apol.numero || '',
+            Seguradora: apol.Seguradora || apol.seguradora || '',
+            Ramo: apol.Ramo || apol.ramo || '',
+            NomeProduto: apol.Nome_do_Produto || apol.NomeProduto || apol.nome_produto || apol.produto || '',
+            ValorPremioTotal: apol.Valor_Premio_Total || apol.ValorPremioTotal || apol.valor_premio_total || null,
+            FormaPagamento: apol.Forma_Pagamento || apol.FormaPagamento || apol.forma_pagamento || '',
+            NumeroParcelas: apol.Numero_Parcelas || apol.NumeroParcelas || apol.numero_parcelas || null,
+            VigenciaInicio: apol.Vigencia_Inicio || apol.vigencia_inicio || apol.VigenciaInicio || '',
+            VigenciaFim: apol.Vigencia_Fim || apol.vigencia_fim || apol.VigenciaFim || '',
+        };
+
+        // ─── 5. DADOS_DO_BEM_AUTO ────────────────────────────────────────────
+        const auto = getKey(data, 'dados_do_bem_auto', 'dados_bem_auto', 'bemauto', 'veículo', 'veiculo', 'itemsegurado') || {};
+        norm.BemAuto = {
+            Placa: auto.Placa || auto.placa || '',
+            Chassi: auto.Chassi || auto.chassi || '',
+            Modelo: auto.Modelo || auto.modelo || '',
+            Fabricante: auto.Fabricante || auto.fabricante || '',
+            AnoModelo: auto.Ano_Modelo || auto.AnoModelo || auto.ano_modelo || '',
+            AnoFabricacao: auto.Ano_Fabricacao || auto.AnoFabricacao || auto.ano_fabricacao || '',
+            Renavam: auto.Renavam || auto.renavam || '',
+            CodigoFIPE: auto.Codigo_FIPE || auto.CodigoFIPE || auto.codigo_fipe || '',
+        };
 
         return norm;
     },
@@ -383,17 +429,17 @@ const adminController = {
             const rawData = req.body;
             console.log("[INGEST] Recebendo dados para ingestão...");
 
-            // Normalização Obrigatória
+            // Normalização Obrigatória (suporta formato antigo e novo MAIUSCULO)
             const norm = adminController.normalizeData(rawData);
             const cliente = norm.Segurado;
             const apolice = norm.DadosApolice;
-            const item = rawData.ItemSegurado || rawData.detalhes_especificos || {};
+            // Campos directos do rawBody para retrocompatibilidade com v19
+            const item = rawData.ItemSegurado || rawData.detalhes_especificos || rawData.DADOS_DO_BEM_AUTO || {};
             const seguradora = rawData.Seguradora || {};
 
-            // Mapeamento de campos internos (Extraindo do novo padrão)
-            const nomeCli = cliente.NomeCompleto || cliente.nome || cliente.nome_completo;
-            const docCli = cliente.CPF || cliente.CNPJ || cliente.cpf_cnpj;
-            const numApo = apolice.NumeroApolice || apolice.numero_apolice;
+            const nomeCli = cliente.NomeCompleto;
+            const docCli = cliente.CPF || cliente.CNPJ;
+            const numApo = apolice.NumeroApolice;
 
             if (!docCli || !numApo) {
                 return res.status(400).json({ error: 'Dados obrigatórios ausentes (CPF/CNPJ ou Número da Apólice)' });
@@ -404,21 +450,22 @@ const adminController = {
             const clienteCpf = !isCnpj ? rawIdentifier : null;
             const clienteCnpj = isCnpj ? rawIdentifier : null;
 
-            // Tratamento de Telefones (Múltiplos campos no novo padrão)
-            const contatos = cliente.Contatos || {};
-            const emailCli = cliente.Email || contatos.Email || cliente.email || null;
-            let clienteCelular = (contatos.Celular || cliente.celular || "").replace(/\D/g, '');
-            let clienteTelefone = (contatos.TelefoneFixoResidencial || contatos.TelefoneFixoComercial || cliente.telefone_fixo || cliente.telefone || "").replace(/\D/g, '');
+            // Tratamento de Telefones — suporta formato normalizado e formato v19 direto
+            const emailCli = cliente.Email || null;
+            const clienteCelular = String(cliente.Celular || '').replace(/\D/g, '');
+            const clienteTelefone = String(cliente.TelefoneFixo || '').replace(/\D/g, '');
 
-            // Endereço (Novo padrão objeto vs antigo flat)
-            const end = cliente.EnderecoCompleto || {};
-            const enderecoStr = end.Logradouro ? `${end.Logradouro}${end.Numero ? ', ' + end.Numero : ''}` : (cliente.endereco || null);
-            const bairro = end.Bairro || cliente.bairro || null;
-            const cidade = end.Cidade || cliente.cidade || null;
-            const estado = end.Estado || cliente.estado || null;
-            const cep = end.CEP ? String(end.CEP).replace(/\D/g, '') : (cliente.cep ? String(cliente.cep).replace(/\D/g, '') : null);
+            // Endereço — usa Endereco normalizado (cobre ambos os formatos)
+            const endNorm = norm.Endereco;
+            const enderecoStr = endNorm.Logradouro
+                ? `${endNorm.Logradouro}${endNorm.Numero ? ', ' + endNorm.Numero : ''}${endNorm.Complemento ? ' ' + endNorm.Complemento : ''}`
+                : null;
+            const bairro = endNorm.Bairro || null;
+            const cidade = endNorm.Cidade || null;
+            const estado = endNorm.Estado || null;
+            const cep = endNorm.CEP || null;
 
-            const clienteNomeEmpresa = isCnpj ? (cliente.nome_empresa || cliente.nome || cliente.NomeCompleto) : null;
+            const clienteNomeEmpresa = isCnpj ? nomeCli : null;
 
             // 1. Buscar ou Criar Cliente
             const existingClient = await db.clientesQuery(`
@@ -435,7 +482,7 @@ const adminController = {
                     UPDATE clientes_brokeria SET 
                         nome_completo = COALESCE($1, nome_completo),
                         email = COALESCE($2, email),
-                        celular = COALESCE($3, celular),
+                        celular = COALESCE($3, celular) ,
                         telefone = COALESCE($4, telefone),
                         cpf = COALESCE($5, cpf),
                         cnpj = COALESCE($6, cnpj),
@@ -462,8 +509,8 @@ const adminController = {
                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
                     RETURNING id_cliente
                 `, [
-                    nomeCli, clienteCpf, clienteCnpj, cliente.email || cliente.Email, clienteCelular, clienteTelefone,
-                    clienteNomeEmpresa, cliente.data_nascimento || cliente.DataNascimento, enderecoStr, bairro,
+                    nomeCli, clienteCpf, clienteCnpj, emailCli, clienteCelular, clienteTelefone,
+                    clienteNomeEmpresa, cliente.DataNascimento || null, enderecoStr, bairro,
                     cidade, estado, cep
                 ]);
                 clienteId = insertRes.rows[0].id_cliente;
@@ -497,18 +544,21 @@ const adminController = {
                     data_ultima_atualizacao = NOW()
             `, [
                 numApo,
-                seguradora.Nome || apolice.seguradora || apolice.seguradora?.nome || "Não informada",
-                apolice.Ramo || apolice.ramo,
-                apolice.NomeProduto || apolice.produto || apolice.nome_produto || null,
-                apolice.Chassi || item.Chassi || apolice.chassi || null,
-                apolice.ValorPremioTotal || apolice.premio_total || apolice.valor_premio_total || null,
-                apolice.FormaPagamento || apolice.forma_pagamento || null,
-                apolice.VigenciaInicio || apolice.data_inicio || apolice.vigencia_inicio,
-                apolice.VigenciaFim || apolice.data_fim || apolice.vigencia_fim,
-                apolice.status || 'ATIVA',
+                // Suporta seguradora como objeto (v19) ou como string no norm (novo)
+                seguradora.Nome || apolice.Seguradora || apolice.seguradora || 'Não informada',
+                apolice.Ramo || null,
+                apolice.NomeProduto || null,
+                // Chassi: tenta pelo norm (novo formato) depois pelo item direto (v19)
+                norm.BemAuto?.Chassi || item.Chassi || item.chassi || null,
+                apolice.ValorPremioTotal || null,
+                apolice.FormaPagamento || null,
+                apolice.VigenciaInicio || null,
+                apolice.VigenciaFim || null,
+                'ATIVA',
                 clienteCpf,
                 clienteCnpj,
-                item.Placa || item.placa || null,
+                // Placa: tenta pelo norm (novo formato) depois pelo item direto (v19)
+                norm.BemAuto?.Placa || item.Placa || item.placa || null,
                 clienteId,
                 JSON.stringify({
                     ...req.body,
@@ -518,7 +568,7 @@ const adminController = {
 
             res.json({
                 success: true,
-                message: `Ingestão concluída para ${cliente.nome} (Apólice ${apolice.numero_apolice})`
+                message: `Ingestão concluída para ${nomeCli} (Apólice ${numApo})`
             });
 
         } catch (error) {

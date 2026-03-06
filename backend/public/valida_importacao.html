@@ -295,41 +295,52 @@
             if (Array.isArray(data)) data = data[0];
             if (!data) return { segurado: {}, apolice: {}, endereco: {} };
 
-            // Suporte para wrapper "OrganizaDados" ou "organizadados"
+            // Suporte para wrapper "OrganizaDados" (case-insensitive)
             const wrapperKey = Object.keys(data).find(k => k.toLowerCase() === 'organizadados');
             if (wrapperKey) data = data[wrapperKey];
 
-            const norm = {
-                segurado: {},
-                apolice: {},
-                endereco: {}
+            // Helper: busca chave por alias case-insensitive
+            const getKey = (obj, ...aliases) => {
+                if (!obj || typeof obj !== 'object') return undefined;
+                const found = Object.keys(obj).find(k => aliases.includes(k.toLowerCase()));
+                return found ? obj[found] : undefined;
             };
 
-            // 1. Mapear Segurado (Identificacao, Identificação, Segurado, cliente)
-            const idenKey = Object.keys(data).find(k => ['identificacao', 'identificação', 'segurado', 'cliente'].includes(k.toLowerCase()));
-            const iden = idenKey ? data[idenKey] : data; // Fallback para a raiz se não achar chave
+            const norm = { segurado: {}, apolice: {}, endereco: {} };
 
-            norm.segurado.NomeCompleto = iden.nome_completo || iden.NomeCompleto || iden.nome || iden.Nome || "Não Identificado";
+            // ─── 1. IDENTIFICACAO ────────────────────────────────────────────────
+            // Suporta: IDENTIFICACAO (novo), Identificacao / segurado / cliente (antigo)
+            const iden = getKey(data, 'identificacao', 'identificação', 'segurado', 'cliente') || data;
 
-            const doc = (String(iden.cpf_cnpj || iden.CPF || iden.CNPJ || iden.cpf || iden.cnpj || "")).replace(/\D/g, '');
-            if (doc.length === 11) norm.segurado.CPF = doc;
-            else if (doc.length === 14) norm.segurado.CNPJ = doc;
+            const cpfRaw = String(iden.CPF || iden.cpf || iden.cpf_cnpj || iden.CPF_CNPJ || '').replace(/\D/g, '');
+            const cnpjRaw = String(iden.CNPJ || iden.cnpj || '').replace(/\D/g, '');
+            const docRaw = cpfRaw || cnpjRaw || '';
 
-            // 2. Mapear Contatos
-            const contKey = Object.keys(data).find(k => k.toLowerCase() === 'contatos');
-            const cont = contKey ? data[contKey] : (iden.Contatos || iden.contatos || {});
-            norm.segurado.Email = (cont.emails && cont.emails[0]) || cont.Email || iden.Email || cont.email || "";
-            norm.segurado.Celular = (cont.celulares && cont.celulares[0]) || cont.Celular || iden.Celular || cont.celular || "";
+            norm.segurado.NomeCompleto = iden.Nome_Segurado || iden.NomeCompleto || iden.nome_completo || iden.nome || iden.Nome || 'Não Identificado';
+            if (docRaw.length === 11) norm.segurado.CPF = docRaw;
+            else if (docRaw.length === 14) norm.segurado.CNPJ = docRaw;
 
-            // 3. Mapear Apólice (dados_da_apolice, DadosApolice, apolice)
-            const apolKey = Object.keys(data).find(k => ['dados_da_apolice', 'dados_da_apólice', 'dadosapolice', 'apolice'].includes(k.toLowerCase()));
-            const apol = apolKey ? data[apolKey] : (iden.dados_da_apolice || {});
+            // ─── 2. CONTATOS ─────────────────────────────────────────────────────
+            const cont = getKey(data, 'contatos') || iden.Contatos || iden.contatos || {};
+            const emails = cont.Emails || cont.emails || [];
+            const celulares = cont.Celulares || cont.celulares || [];
+            norm.segurado.Email = (Array.isArray(emails) ? emails[0] : emails) || cont.Email || cont.email || iden.Email || '';
+            norm.segurado.Celular = (Array.isArray(celulares) ? celulares[0] : celulares) || cont.Celular || cont.celular || iden.Celular || '';
 
-            norm.apolice.NumeroApolice = apol.numero_apolice || apol.NumeroApolice || apol.numero || "";
-            norm.apolice.Seguradora = apol.seguradora || apol.Seguradora || "";
-            norm.apolice.Ramo = apol.ramo || apol.Ramo || "";
-            norm.apolice.VigenciaInicio = formatDateForInput(apol.vigencia_inicio || apol.VigenciaInicio || apol.inicio);
-            norm.apolice.VigenciaFim = formatDateForInput(apol.vigencia_fim || apol.VigenciaFim || apol.fim);
+            // ─── 3. DADOS_DA_APOLICE ─────────────────────────────────────────────
+            // Suporta: DADOS_DA_APOLICE (novo), dados_da_apolice / apolice (antigo)
+            const apol = getKey(data, 'dados_da_apolice', 'dados_da_apólice', 'dadosapolice', 'apolice') || {};
+            norm.apolice.NumeroApolice = apol.Numero || apol.numero_apolice || apol.NumeroApolice || apol.numero || '';
+            norm.apolice.Seguradora = apol.Seguradora || apol.seguradora || '';
+            norm.apolice.Ramo = apol.Ramo || apol.ramo || '';
+            norm.apolice.VigenciaInicio = formatDateForInput(apol.Vigencia_Inicio || apol.vigencia_inicio || apol.VigenciaInicio || '');
+            norm.apolice.VigenciaFim = formatDateForInput(apol.Vigencia_Fim || apol.vigencia_fim || apol.VigenciaFim || '');
+
+            // ─── 4. DADOS_DO_BEM_AUTO ────────────────────────────────────────────
+            const auto = getKey(data, 'dados_do_bem_auto', 'dados_bem_auto', 'bemauto', 'itemsegurado') || {};
+            norm.apolice.Placa = auto.Placa || auto.placa || '';
+            norm.apolice.Chassi = auto.Chassi || auto.chassi || '';
+            norm.apolice.Modelo = auto.Modelo || auto.modelo || '';
 
             return norm;
         }
