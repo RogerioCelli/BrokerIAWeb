@@ -809,6 +809,14 @@
                         <label>Coberturas Principais (Separadas por vírgula)</label>
                         <textarea id="edit-coberturas" class="input-edit" rows="3" style="font-family:inherit; resize:vertical;">${Array.isArray(norm.extras.Coberturas) ? esc(norm.extras.Coberturas.join(', ')) : esc(norm.extras.Coberturas || '')}</textarea>
                     </div>
+                    <div class="field-group">
+                        <label>Condutor Principal (JSON/Texto)</label>
+                        <textarea id="edit-condutor" class="input-edit" rows="3" style="font-family:monospace; resize:vertical; font-size:0.85rem;">${typeof norm.extras.Condutor === 'object' ? esc(JSON.stringify(norm.extras.Condutor, null, 2)) : esc(norm.extras.Condutor || '')}</textarea>
+                    </div>
+                    <div class="field-group">
+                        <label>Dados Adicionais Extraídos (JSON)</label>
+                        <textarea id="edit-adicionais" class="input-edit" rows="3" style="font-family:monospace; resize:vertical; font-size:0.85rem;">${typeof norm.extras.DadosAdicionais === 'object' ? esc(JSON.stringify(norm.extras.DadosAdicionais, null, 2)) : esc(norm.extras.DadosAdicionais || '')}</textarea>
+                    </div>
 
                     <p style="color: var(--text-secondary); font-size:0.8rem; margin: 1.5rem 0 0.8rem; border-bottom:1px solid var(--border); padding-bottom:0.8rem;">📦 DADOS COMPLETOS EXTRAÍDOS (JSON)</p>
 
@@ -959,6 +967,20 @@
 
                 const coberturasRaw = document.getElementById('edit-coberturas').value;
                 json.EXTRAS.Coberturas_Principais = coberturasRaw ? coberturasRaw.split(',').map(c => c.trim()).filter(c => c) : [];
+
+                const condutorRaw = document.getElementById('edit-condutor').value;
+                try {
+                    json.EXTRAS.Principal_Condutor = condutorRaw ? JSON.parse(condutorRaw) : {};
+                } catch (e) {
+                    json.EXTRAS.Principal_Condutor = { descricao_bruta: condutorRaw };
+                }
+
+                const adicionaisRaw = document.getElementById('edit-adicionais').value;
+                try {
+                    json.EXTRAS.OutrosDados = adicionaisRaw ? JSON.parse(adicionaisRaw) : {};
+                } catch (e) {
+                    json.EXTRAS.OutrosDados = { descricao_bruta: adicionaisRaw };
+                }
 
                 // 2. Enviar para o banco final (reutilizando a lógica de ingestão)
                 const token = localStorage.getItem('admin_token');
