@@ -47,7 +47,8 @@ function startDailyExpirationJob() {
 
                         // Se a data que montamos for válida E estiver no passado em relação a HOJE
                         if (!isNaN(dataFim.getTime()) && dataFim < hoje) {
-                            idsToExpire.push(row.id_apolice);
+                            // Garante que o ID adicionado seja inteiro
+                            idsToExpire.push(parseInt(row.id_apolice, 10));
                         }
                     }
                 } catch (e) {
@@ -56,14 +57,14 @@ function startDailyExpirationJob() {
             }
 
             if (idsToExpire.length > 0) {
-                // Atualiza todas em um único IN pra performance
+                // Atualiza todas em um único IN pra performance, usando casting explícito
                 const updateQuery = `
                     UPDATE apolices_brokeria
                     SET status_apolice = 'VENCIDA'
-                    WHERE id_apolice = ANY($1)
+                    WHERE id_apolice = ANY($1::int[])
                 `;
                 const updateResult = await db.apolicesQuery(updateQuery, [idsToExpire]);
-                console.log(`[CRON-EXPIRATION] Sucesso! ${updateResult.rowCount} apólices foram marcadas como VENCIDAS.`);
+                console.log(`[CRON-EXPIRATION] Sucesso! ${updateResult.rowCount} apólices foram marcadas como VENCIDAS dentre ${idsToExpire.length} detectadas.`);
             } else {
                 console.log(`[CRON-EXPIRATION] Checagem concluída. Nenhuma apólice nova precisou ser vencida hoje.`);
             }
