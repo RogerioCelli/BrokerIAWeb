@@ -34,14 +34,21 @@ async function runTest() {
         for (const row of rows) {
             try {
                 const vigenciaFormat = String(row.vigencia_fim).trim();
-                const parts = vigenciaFormat.split('/');
+                let dataFim = null;
 
-                if (parts.length === 3) {
-                    const dia = parseInt(parts[0], 10);
-                    const mes = parseInt(parts[1], 10) - 1; // 0-11
-                    const ano = parseInt(parts[2], 10);
+                if (vigenciaFormat.includes('/')) {
+                    const parts = vigenciaFormat.split('/');
+                    if (parts.length === 3) {
+                        const dia = parseInt(parts[0], 10);
+                        const mes = parseInt(parts[1], 10) - 1; // 0-11
+                        const ano = parseInt(parts[2], 10);
+                        dataFim = new Date(ano, mes, dia);
+                    }
+                } else if (vigenciaFormat.includes('-')) {
+                    dataFim = new Date(vigenciaFormat);
+                }
 
-                    const dataFim = new Date(ano, mes, dia);
+                if (dataFim) {
                     dataFim.setHours(0, 0, 0, 0);
 
                     if (!isNaN(dataFim.getTime()) && dataFim < hoje) {
