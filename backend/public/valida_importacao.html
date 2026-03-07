@@ -918,99 +918,101 @@
                 // 1. Atualizar o objeto JSON com os valores do formulário
                 let json = typeof currentFullItem.dados_json === 'string' ? JSON.parse(currentFullItem.dados_json) : currentFullItem.dados_json;
 
-                // Garante estrutura padrão para ingestão (OrganizaDados)
-                if (!json.IDENTIFICACAO) json.IDENTIFICACAO = {};
-                if (!json.CONTATOS) json.CONTATOS = {};
-                if (!json.ENDERECO) json.ENDERECO = {};
-                if (!json.DADOS_DA_APOLICE) json.DADOS_DA_APOLICE = {};
-                if (!json.DADOS_DO_BEM_AUTO) json.DADOS_DO_BEM_AUTO = {};
-                if (!json.EXTRAS) json.EXTRAS = {};
+                // Garante estrutura padrão para ingestão (OrganizaDados/Novo Schema)
+                if (!json.segurado) json.segurado = {};
+                if (!json.segurado.contatos) json.segurado.contatos = {};
+                if (!json.segurado.endereco_principal) json.segurado.endereco_principal = {};
+                if (!json.dados_apolice) json.dados_apolice = {};
+                if (!json.dados_do_bem_auto) json.dados_do_bem_auto = {};
+                if (!json.extras) json.extras = {};
 
                 // ─── SEGURADO ──────────────────────────────────────────────
-                json.IDENTIFICACAO.Nome_Segurado = document.getElementById('edit-nome').value;
+                json.segurado.nome = document.getElementById('edit-nome').value;
                 const doc = document.getElementById('edit-doc').value.replace(/\D/g, '');
-                if (doc.length === 11) { json.IDENTIFICACAO.CPF = doc; delete json.IDENTIFICACAO.CNPJ; }
-                else if (doc.length === 14) { json.IDENTIFICACAO.CNPJ = doc; delete json.IDENTIFICACAO.CPF; }
+                if (doc.length === 11) { json.segurado.cpf = doc; json.segurado.cnpj = ""; }
+                else if (doc.length === 14) { json.segurado.cnpj = doc; json.segurado.cpf = ""; }
 
-                json.IDENTIFICACAO.RG = document.getElementById('edit-rg').value;
-                json.IDENTIFICACAO.Data_Nascimento = document.getElementById('edit-nascimento').value;
-                json.IDENTIFICACAO.Estado_Civil = document.getElementById('edit-estado-civil').value;
-                json.IDENTIFICACAO.Profissao = document.getElementById('edit-profissao').value;
-                json.IDENTIFICACAO.CPF_Conjuge = document.getElementById('edit-doc-conjuge').value;
+                json.segurado.rg = document.getElementById('edit-rg').value;
+                json.segurado.data_nascimento = document.getElementById('edit-nascimento').value;
+                json.segurado.estado_civil = document.getElementById('edit-estado-civil').value;
+                json.segurado.profissao = document.getElementById('edit-profissao').value;
+                json.extras.cpf_conjuge = document.getElementById('edit-doc-conjuge').value;
 
                 // ─── CONTATOS ──────────────────────────────────────────────
                 const emails = [document.getElementById('edit-email').value];
                 const email2 = document.getElementById('edit-email-2').value;
                 if (email2) emails.push(email2);
-                json.CONTATOS.Emails = emails;
+                json.segurado.contatos.email = emails[0]; // Simplificado p/ string principal
+                json.segurado.contatos.emails = emails;   // Array de fallback
 
                 const cels = [document.getElementById('edit-celular').value.replace(/\D/g, '')];
-                json.CONTATOS.Celulares = cels;
+                json.segurado.contatos.celular = cels[0];
 
                 const fixos = [document.getElementById('edit-telefone').value.replace(/\D/g, '')];
                 const tel2 = document.getElementById('edit-telefone-2').value.replace(/\D/g, '');
                 if (tel2) fixos.push(tel2);
-                json.CONTATOS.Telefones_Fixos = fixos;
+                json.segurado.contatos.telefone_residencial = fixos[0] || '';
+                json.segurado.contatos.telefone_comercial = fixos[1] || '';
 
                 // ─── ENDERECO ──────────────────────────────────────────────
-                json.ENDERECO.Logradouro = document.getElementById('edit-logradouro').value;
-                json.ENDERECO.Numero = document.getElementById('edit-numero').value;
-                json.ENDERECO.Complemento = document.getElementById('edit-complemento').value;
-                json.ENDERECO.Bairro = document.getElementById('edit-bairro').value;
-                json.ENDERECO.Cidade = document.getElementById('edit-cidade').value;
-                json.ENDERECO.Estado = document.getElementById('edit-estado').value;
-                json.ENDERECO.CEP = document.getElementById('edit-cep').value.replace(/\D/g, '');
+                json.segurado.endereco_principal.logradouro = document.getElementById('edit-logradouro').value;
+                json.segurado.endereco_principal.numero = document.getElementById('edit-numero').value;
+                json.segurado.endereco_principal.complemento = document.getElementById('edit-complemento').value;
+                json.segurado.endereco_principal.bairro = document.getElementById('edit-bairro').value;
+                json.segurado.endereco_principal.cidade = document.getElementById('edit-cidade').value;
+                json.segurado.endereco_principal.estado = document.getElementById('edit-estado').value;
+                json.segurado.endereco_principal.cep = document.getElementById('edit-cep').value.replace(/\D/g, '');
 
                 // ─── APOLICE ──────────────────────────────────────────────
-                json.DADOS_DA_APOLICE.Numero = document.getElementById('edit-apolice').value;
-                json.DADOS_DA_APOLICE.Numero_Proposta = document.getElementById('edit-proposta').value;
-                json.DADOS_DA_APOLICE.Seguradora = document.getElementById('edit-seguradora').value;
-                json.DADOS_DA_APOLICE.Ramo = document.getElementById('edit-ramo').value;
-                json.DADOS_DA_APOLICE.Nome_do_Produto = document.getElementById('edit-produto').value;
-                json.DADOS_DA_APOLICE.Vigencia_Inicio = document.getElementById('edit-inicio').value;
-                json.DADOS_DA_APOLICE.Vigencia_Fim = document.getElementById('edit-fim').value;
-                json.DADOS_DA_APOLICE.Valor_Premio_Total = document.getElementById('edit-premio').value;
-                json.DADOS_DA_APOLICE.Forma_Pagamento = document.getElementById('edit-forma-pagto').value;
-                json.DADOS_DA_APOLICE.Numero_Parcelas = document.getElementById('edit-parcelas').value;
-                json.DADOS_DA_APOLICE.Frequencia_Pagamento = document.getElementById('edit-frequencia').value;
+                json.dados_apolice.numero_apolice = document.getElementById('edit-apolice').value;
+                json.dados_apolice.numero_proposta = document.getElementById('edit-proposta').value;
+                json.dados_apolice.seguradora = document.getElementById('edit-seguradora').value;
+                json.dados_apolice.ramo = document.getElementById('edit-ramo').value;
+                json.dados_apolice.nome_produto = document.getElementById('edit-produto').value;
+                json.dados_apolice.vigencia_inicio = document.getElementById('edit-inicio').value;
+                json.dados_apolice.vigencia_fim = document.getElementById('edit-fim').value;
+                json.dados_apolice.valor_premio_total = document.getElementById('edit-premio').value;
+                json.dados_apolice.forma_pagamento = document.getElementById('edit-forma-pagto').value;
+                json.dados_apolice.numero_parcelas = document.getElementById('edit-parcelas').value;
+                json.dados_apolice.frequencia_pagamento = document.getElementById('edit-frequencia').value;
 
                 // ─── VEICULO ──────────────────────────────────────────────
-                json.DADOS_DO_BEM_AUTO.Placa = document.getElementById('edit-placa').value;
-                json.DADOS_DO_BEM_AUTO.Chassi = document.getElementById('edit-chassi').value;
-                json.DADOS_DO_BEM_AUTO.Renavam = document.getElementById('edit-renavam').value;
-                json.DADOS_DO_BEM_AUTO.Modelo = document.getElementById('edit-modelo').value;
-                json.DADOS_DO_BEM_AUTO.Fabricante = document.getElementById('edit-fabricante').value;
-                json.DADOS_DO_BEM_AUTO.Ano_Fabricacao = document.getElementById('edit-ano-fab').value;
-                json.DADOS_DO_BEM_AUTO.Ano_Modelo = document.getElementById('edit-ano-mod').value;
-                json.DADOS_DO_BEM_AUTO.Cor = document.getElementById('edit-cor').value;
-                json.DADOS_DO_BEM_AUTO.Combustivel = document.getElementById('edit-combustivel').value;
-                json.DADOS_DO_BEM_AUTO.Codigo_FIPE = document.getElementById('edit-fipe').value;
-                json.DADOS_DO_BEM_AUTO.Kilometragem = document.getElementById('edit-km').value;
-                json.DADOS_DO_BEM_AUTO.Blindado = document.getElementById('edit-blindado').value === 'true';
-                json.DADOS_DO_BEM_AUTO.Kit_Gas = document.getElementById('edit-kitgas').value === 'true';
-                json.DADOS_DO_BEM_AUTO.Cambio_Automatico = document.getElementById('edit-automatico').value === 'true';
-                json.DADOS_DO_BEM_AUTO.Franquia_Tipo = document.getElementById('edit-franquia').value;
+                json.dados_do_bem_auto.placa = document.getElementById('edit-placa').value;
+                json.dados_do_bem_auto.chassi = document.getElementById('edit-chassi').value;
+                json.dados_do_bem_auto.renavam = document.getElementById('edit-renavam').value;
+                json.dados_do_bem_auto.modelo = document.getElementById('edit-modelo').value;
+                json.dados_do_bem_auto.fabricante = document.getElementById('edit-fabricante').value;
+                json.dados_do_bem_auto.ano_fabricacao = document.getElementById('edit-ano-fab').value;
+                json.dados_do_bem_auto.ano_modelo = document.getElementById('edit-ano-mod').value;
+                json.dados_do_bem_auto.cor = document.getElementById('edit-cor').value;
+                json.dados_do_bem_auto.combustivel = document.getElementById('edit-combustivel').value;
+                json.dados_do_bem_auto.codigo_fipe = document.getElementById('edit-fipe').value;
+                json.dados_do_bem_auto.kilometragem = document.getElementById('edit-km').value;
+                json.dados_do_bem_auto.blindado = document.getElementById('edit-blindado').value === 'true';
+                json.dados_do_bem_auto.kit_gas = document.getElementById('edit-kitgas').value === 'true';
+                json.dados_do_bem_auto.cambio_automatico = document.getElementById('edit-automatico').value === 'true';
+                json.dados_do_bem_auto.franquia_tipo = document.getElementById('edit-franquia').value;
 
                 // ─── EXTRAS / CORRETOR E COBERTURAS ───────────────────────
-                if (!json.EXTRAS.Corretor) json.EXTRAS.Corretor = {};
-                json.EXTRAS.Corretor.Nome = document.getElementById('edit-corretor-nome').value;
-                json.EXTRAS.Corretor.Susep = document.getElementById('edit-corretor-codigo').value;
+                if (!json.extras.corretora) json.extras.corretora = {};
+                json.extras.corretora.nome = document.getElementById('edit-corretor-nome').value;
+                json.extras.corretora.susep = document.getElementById('edit-corretor-codigo').value;
 
                 const coberturasRaw = document.getElementById('edit-coberturas').value;
-                json.EXTRAS.Coberturas_Principais = coberturasRaw ? coberturasRaw.split(',').map(c => c.trim()).filter(c => c) : [];
+                json.coberturas = coberturasRaw ? coberturasRaw.split(',').map(c => c.trim()).filter(c => c) : [];
 
                 const condutorRaw = document.getElementById('edit-condutor').value;
                 try {
-                    json.EXTRAS.Principal_Condutor = condutorRaw ? JSON.parse(condutorRaw) : {};
+                    json.condutores = condutorRaw ? JSON.parse(condutorRaw) : {};
                 } catch (e) {
-                    json.EXTRAS.Principal_Condutor = { descricao_bruta: condutorRaw };
+                    json.condutores = { descricao_bruta: condutorRaw };
                 }
 
                 const adicionaisRaw = document.getElementById('edit-adicionais').value;
                 try {
-                    json.EXTRAS.OutrosDados = adicionaisRaw ? JSON.parse(adicionaisRaw) : {};
+                    json.extras.dados_bancarios_debito = adicionaisRaw ? JSON.parse(adicionaisRaw) : {};
                 } catch (e) {
-                    json.EXTRAS.OutrosDados = { descricao_bruta: adicionaisRaw };
+                    json.extras.dados_bancarios_debito = { descricao_bruta: adicionaisRaw };
                 }
 
                 // 2. Enviar para o banco final (reutilizando a lógica de ingestão)
