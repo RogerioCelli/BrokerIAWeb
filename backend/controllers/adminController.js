@@ -279,7 +279,12 @@ const adminController = {
         norm.Segurado.Email = (Array.isArray(emails) ? emails[0] : emails) || cont.email || cont.Email || iden.email || iden.Email || '';
         norm.Segurado.Email2 = (Array.isArray(emails) && emails.length > 1 ? emails[1] : '');
 
-        norm.Segurado.Celular = cont.celular || cont.Celular || iden.celular || iden.Celular || '';
+        // Formatação Automática do Celular (13 dígitos com "55" para WhatsApp)
+        let rawCelular = String(cont.celular || cont.Celular || iden.celular || iden.Celular || '').replace(/\D/g, '');
+        if (rawCelular.length === 10 || rawCelular.length === 11) {
+            rawCelular = '55' + rawCelular; // Adiciona o DDI do Brasil se vier só DDD+Número
+        }
+        norm.Segurado.Celular = rawCelular;
 
         const comPhone = cont.telefone_comercial || cont.Telefone_Comercial || '';
         const resPhone = cont.telefone_residencial || cont.Telefone_Residencial || '';
