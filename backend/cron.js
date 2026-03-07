@@ -57,13 +57,14 @@ function startDailyExpirationJob() {
             }
 
             if (idsToExpire.length > 0) {
-                // Atualiza todas em um único IN pra performance, usando casting explícito
+                // Montar query literal de IN (ids) para burlar bugs silenciosos de array do pg driver
+                const inList = idsToExpire.join(',');
                 const updateQuery = `
                     UPDATE apolices_brokeria
                     SET status_apolice = 'VENCIDA'
-                    WHERE id_apolice = ANY($1::int[])
+                    WHERE id_apolice IN (${inList})
                 `;
-                const updateResult = await db.apolicesQuery(updateQuery, [idsToExpire]);
+                const updateResult = await db.apolicesQuery(updateQuery);
                 console.log(`[CRON-EXPIRATION] Sucesso! ${updateResult.rowCount} apólices foram marcadas como VENCIDAS dentre ${idsToExpire.length} detectadas.`);
             } else {
                 console.log(`[CRON-EXPIRATION] Checagem concluída. Nenhuma apólice nova precisou ser vencida hoje.`);
