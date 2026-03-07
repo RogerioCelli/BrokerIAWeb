@@ -380,6 +380,12 @@ const adminController = {
             const nomeSegurado = norm.Segurado.NomeCompleto || norm.Segurado.nome || "Não Identificado";
             const tipoDoc = norm.DadosApolice.Ramo || data.Identificacao?.TipoDocumento || "Documento";
 
+            const cpfRaw = String(norm.Segurado.CPF || norm.Segurado.CNPJ || '').replace(/\D/g, '');
+            if (!cpfRaw || (cpfRaw.length !== 11 && cpfRaw.length !== 14)) {
+                console.error(`[STAGING-REJECTED] Ingestão bloqueada: CPF/CNPJ ausente ou inválido (${cpfRaw}) para o cliente ${nomeSegurado}.`);
+                return res.status(400).json({ error: 'Validação Falhou: CPF ou CNPJ é obrigatório e precisa ter 11 ou 14 dígitos.' });
+            }
+
             await db.query(`
                 INSERT INTO importacoes_pendentes (dados_json, tipo_documento, nome_segurado)
                 VALUES ($1, $2, $3)
