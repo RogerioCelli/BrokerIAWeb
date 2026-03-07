@@ -61,11 +61,15 @@ app.get('/api/health', (req, res) => {
 });
 
 const { runMigrations } = require('./db/init');
+const { startDailyExpirationJob } = require('./cron');
 
 // Inicialização
 app.listen(PORT, async () => {
     // Garantir que o banco de dados está sincronizado antes de atender requisições
     await runMigrations();
+
+    // Iniciar o Cron Job de Expiração de Apólices (VENCIDA)
+    startDailyExpirationJob();
 
     // Listar rotas registradas para debug
     console.log('🛣️  Rotas de API registradas:');
