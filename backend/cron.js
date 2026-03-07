@@ -8,36 +8,64 @@ function startDailyExpirationJob() {
         try {
             console.log(`[CRON-EXPIRATION] Iniciando verificação de apólices vencidas em ${new Date().toLocaleString()}`);
 
-            // A regra: se a data atual (CURRENT_DATE) for MAIOR que a vigencia_fim (ou seja, vigencia_fim = hoje - 1 ou antes)
-            // Somente altera se o status não for 'VENCIDA' para evitar updates desnecessários
+            // Buscamos todas as apólices que NÃO estão vencidas e POSSUEM alguma data
             const query = `
-                UPDATE apolices_brokeria
-                SET status_apolice = 'VENCIDA'
-                WHERE 
-                    vigencia_fim IS NOT NULL 
-                    AND CURRENT_DATE > TO_DATE(vigencia_fim, 'DD/MM/YYYY')
-                    AND status_apolice != 'VENCIDA'
-                RETURNING id_apolice, numero_apolice;
+                SELECT id_apolice, numero_apolice, vigencia_fim 
+                FROM apolices_brokeria 
+                WHERE status_apolice != 'VENCIDA' 
+                  AND vigencia_fim IS NOT NULL 
+                  AND TRIM(vigencia_fim) != ''
             `;
 
-            // Tratamento especial pois no banco algumas datas podem estar em formatos estranhos
-            // O ideal real no regex puro:
-            const safeQuery = `
-                UPDATE apolices_brokeria
-                SET status_apolice = 'VENCIDA'
-                WHERE 
-                    vigencia_fim LIKE '%/%/%'
-                    AND TO_DATE(vigencia_fim, 'DD/MM/YYYY') < CURRENT_DATE
-                    AND status_apolice != 'VENCIDA'
-                RETURNING numero_apolice;
-            `;
+            const { rows } = await db.apolicesQuery(query);
 
-            const result = await db.apolicesQuery(safeQuery);
+            if (rows.length === 0) {
+                console.log(`[CRON-EXPIRATION] Nenhuma apólice ativa com data encontrada para verificar hoje.`);
+                return;
+            }
 
-            if (result.rowCount > 0) {
-                console.log(`[CRON-EXPIRATION] Sucesso! ${result.rowCount} apólices foram marcadas como VENCIDAS.`);
+            // Hoje, zerado meia-noite pra comparar apenas o DIA
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+
+            let expiredCount = 0;
+            const idsToExpire = [];
+
+            for (const row of rows) {
+                try {
+                    // Padrão esperado do banco: DD/MM/YYYY
+                    const vigenciaFormat = String(row.vigencia_fim).trim();
+                    const parts = vigenciaFormat.split('/');
+
+                    if (parts.length === 3) {
+                        const dia = parseInt(parts[0], 10);
+                        const mes = parseInt(parts[1], 10) - 1; // 0-11
+                        const ano = parseInt(parts[2], 10);
+
+                        const dataFim = new Date(ano, mes, dia);
+                        dataFim.setHours(0, 0, 0, 0);
+
+                        // Se a data que montamos for válida E estiver no passado em relação a HOJE
+                        if (!isNaN(dataFim.getTime()) && dataFim < hoje) {
+                            idsToExpire.push(row.id_apolice);
+                        }
+                    }
+                } catch (e) {
+                    // Ignora silenciosamente registros com formatos de data lixo ('VITALICIA', '000', etc)
+                }
+            }
+
+            if (idsToExpire.length > 0) {
+                // Atualiza todas em um único IN pra performance
+                const updateQuery = `
+                    UPDATE apolices_brokeria
+                    SET status_apolice = 'VENCIDA'
+                    WHERE id_apolice = ANY($1)
+                `;
+                const updateResult = await db.apolicesQuery(updateQuery, [idsToExpire]);
+                console.log(`[CRON-EXPIRATION] Sucesso! ${updateResult.rowCount} apólices foram marcadas como VENCIDAS.`);
             } else {
-                console.log(`[CRON-EXPIRATION] Nenhuma apólice nova precisou ser vencida hoje.`);
+                console.log(`[CRON-EXPIRATION] Checagem concluída. Nenhuma apólice nova precisou ser vencida hoje.`);
             }
 
         } catch (error) {
