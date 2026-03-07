@@ -929,8 +929,19 @@
                 // ─── SEGURADO ──────────────────────────────────────────────
                 json.segurado.nome = document.getElementById('edit-nome').value;
                 const doc = document.getElementById('edit-doc').value.replace(/\D/g, '');
-                if (doc.length === 11) { json.segurado.cpf = doc; json.segurado.cnpj = ""; }
-                else if (doc.length === 14) { json.segurado.cnpj = doc; json.segurado.cpf = ""; }
+
+                if (doc.length === 11) {
+                    json.segurado.cpf = doc;
+                    json.segurado.cnpj = "";
+                } else if (doc.length === 14) {
+                    json.segurado.cnpj = doc;
+                    json.segurado.cpf = "";
+                } else {
+                    alert('Erro de Validação: O CPF (11 números) ou CNPJ (14 números) é obrigatório e está inválido.');
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    return;
+                }
 
                 json.segurado.rg = document.getElementById('edit-rg').value;
                 json.segurado.data_nascimento = document.getElementById('edit-nascimento').value;
