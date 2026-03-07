@@ -81,20 +81,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         return true;
     }
 
-    // Converte qualquer link do Google Drive para download direto
+    // Mantém o link original do Google Drive para abrir no visualizador padrão
     function getDownloadLink(link) {
         if (!link) return '#';
-        // Formato: https://drive.google.com/file/d/FILE_ID/view?...
-        const matchFile = link.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-        if (matchFile) {
-            return `https://drive.google.com/uc?export=download&id=${matchFile[1]}`;
-        }
-        // Formato: https://drive.google.com/open?id=FILE_ID
-        const matchOpen = link.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-        if (matchOpen) {
-            return `https://drive.google.com/uc?export=download&id=${matchOpen[1]}`;
-        }
-        // Link direto (não é Google Drive) — retorna como está
+        // A API de export/download no Google Drive bloqueia frequentemente com avisos de segurança.
+        // É mais seguro enviar o usuário para a tela original do arquivo onde ele mesmo clica em "Baixar".
         return link;
     }
 
