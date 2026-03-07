@@ -28,11 +28,21 @@ async function runMigrations() {
                     ALTER TABLE public.portal_users ADD CONSTRAINT portal_users_celular_key UNIQUE (celular);
                 END IF;
 
-                -- REPARO DE AUTO-INCREMENTO (Garante que o ID não seja nulo nas tabelas migradas)
+                -- REPARO DE AUTO-INCREMENTO PORTAL_USERS (Garante que o ID não seja nulo nas tabelas migradas)
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'portal_users' AND column_name = 'id' AND column_default LIKE 'nextval%') THEN
                     CREATE SEQUENCE IF NOT EXISTS portal_users_id_seq;
                     ALTER TABLE public.portal_users ALTER COLUMN id SET DEFAULT nextval('portal_users_id_seq');
                     PERFORM setval('portal_users_id_seq', COALESCE((SELECT MAX(id) FROM public.portal_users), 0) + 1);
+                END IF;
+
+                -- REPARO CLÍNICO DE SEQUÊNCIA (CLIENTES_BROKERIA ID_CLIENTE)
+                -- Se o id_cliente perdeu o default nextval por causa de imports manuais, isso reconecta o motor.
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'clientes_brokeria' AND column_name = 'id_cliente' AND column_default LIKE 'nextval%') THEN
+                    CREATE SEQUENCE IF NOT EXISTS clientes_brokeria_id_cliente_seq;
+                    ALTER TABLE public.clientes_brokeria ALTER COLUMN id_cliente SET DEFAULT nextval('clientes_brokeria_id_cliente_seq');
+                    PERFORM setval('clientes_brokeria_id_cliente_seq', COALESCE((SELECT MAX(id_cliente) FROM public.clientes_brokeria), 0) + 1);
+                    -- Atualiza dinamicamente os nulls recentes
+                    UPDATE public.clientes_brokeria SET id_cliente = nextval('clientes_brokeria_id_cliente_seq') WHERE id_cliente IS NULL;
                 END IF;
 
                 -- Constraints para seguradoras
