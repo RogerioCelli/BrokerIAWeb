@@ -1,5 +1,4 @@
 const db = require('./db');
-const schedule = require('node-schedule'); // If node-schedule isn't available, we use setInterval fallback below
 
 function startDailyExpirationJob() {
     console.log("[CRON] Inicializando Job de Expiração de Apólices...");
