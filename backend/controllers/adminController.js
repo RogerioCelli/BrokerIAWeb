@@ -698,7 +698,7 @@ const adminController = {
             if (norm.google_drive_file_id && numApo && rawIdentifier) {
                 try {
                     console.log(`[INGEST] Disparando Organizador do Drive para arquivo ${norm.google_drive_file_id}...`);
-                    const DRIVE_WEBHOOK = process.env.N8N_DRIVE_WEBHOOK_URL || 'https://n8n-brokeriaweb.cx0m9g.easypanel.host/webhook/organiza-drive-apolice';
+                    const DRIVE_WEBHOOK = process.env.N8N_DRIVE_WEBHOOK_URL || 'https://brokeria-n8n.cx0m9g.easypanel.host/webhook/organiza-drive-apolice';
 
                     fetch(DRIVE_WEBHOOK, {
                         method: 'POST',
