@@ -252,6 +252,9 @@ const adminController = {
 
         const norm = { Segurado: {}, DadosApolice: {}, Endereco: {}, BemAuto: {}, Extras: {} };
 
+        // ─── 0. METADATA DA IMPORTAÇÃO ───────────────────────────────────────
+        norm.google_drive_file_id = data.google_drive_file_id || '';
+
         // ─── 1. IDENTIFICACAO / Segurado ─────────────────────────────────────
         const iden = getKey(data, 'segurado', 'identificacao', 'identificação', 'cliente') || data;
 
@@ -690,6 +693,27 @@ const adminController = {
                 JSON.stringify(extras.Condutor || {}),
                 JSON.stringify(extras.DadosAdicionais || {}),
             ]);
+
+            // 3. Gatilho de Organização Webhook n8n (Drive)
+            if (norm.google_drive_file_id && numApo && rawIdentifier) {
+                try {
+                    console.log(`[INGEST] Disparando Organizador do Drive para arquivo ${norm.google_drive_file_id}...`);
+                    const DRIVE_WEBHOOK = process.env.N8N_DRIVE_WEBHOOK_URL || 'https://n8n-brokeriaweb.cx0m9g.easypanel.host/webhook/organiza-drive-apolice';
+
+                    fetch(DRIVE_WEBHOOK, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            cpf: docCliRaw,
+                            numero_apolice: numApo,
+                            google_drive_file_id: norm.google_drive_file_id,
+                            id_banco: clienteId
+                        })
+                    }).catch(err => console.error("[INGEST] Drive Webhook Warning (Async):", err.message));
+                } catch (winError) {
+                    console.error("[INGEST] Drive Webhook falhou, mas dados salvos no BD.", winError);
+                }
+            }
 
             res.json({
                 success: true,
